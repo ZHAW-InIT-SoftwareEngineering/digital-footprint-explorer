@@ -2,7 +2,6 @@ package ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicela
 
 /**
  * The categories of apps.
- * Defined in report and issue: https://github.zhaw.ch/BA-PA-wahl/DigitalFootprintExplorer/issues/35
  */
 enum class AppCategory {
     VIDEO_STREAMING,

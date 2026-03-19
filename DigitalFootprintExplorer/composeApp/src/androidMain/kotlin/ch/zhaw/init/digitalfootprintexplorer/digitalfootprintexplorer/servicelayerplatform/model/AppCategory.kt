@@ -1,8 +1,5 @@
 package ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.model
 
-/**
- * The categories of apps.
- */
 enum class AppCategory {
     VIDEO_STREAMING,
     AUDIO_STREAMING,

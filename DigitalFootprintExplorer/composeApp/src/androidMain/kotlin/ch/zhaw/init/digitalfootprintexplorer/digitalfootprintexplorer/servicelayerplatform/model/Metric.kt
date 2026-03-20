@@ -5,5 +5,5 @@ data class Metric(
     val appCategory: AppCategory,
     val totalForegroundTime: Int,
     val dataVolumeInMB: Float,
-    val networkType: NetworkTyp
+    val networkType: NetworkType
 )

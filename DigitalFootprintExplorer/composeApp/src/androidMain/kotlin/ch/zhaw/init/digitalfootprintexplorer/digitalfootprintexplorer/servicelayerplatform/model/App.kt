@@ -6,5 +6,5 @@ package ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicela
 data class App(
     val uid: Int,
     val name: String,
-    val category: String
+    val category: AppCategory
 )

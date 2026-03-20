@@ -22,11 +22,9 @@ class NetworkUsageDataSource(
     ): Long? = withContext(Dispatchers.IO) {
         val networkStatsManager = context.getSystemService(Context.NETWORK_STATS_SERVICE) as NetworkStatsManager
 
-        //todo: check how to set the correct network type
         val androidNetworkType = when(networkType) {
             NetworkType.WIFI -> NetworkCapabilities.TRANSPORT_WIFI
-            NetworkType.FIVE_G,
-            NetworkType.FOUR_G -> NetworkCapabilities.TRANSPORT_CELLULAR
+            NetworkType.MOBILE -> NetworkCapabilities.TRANSPORT_CELLULAR
         }
 
         try {
@@ -35,7 +33,8 @@ class NetworkUsageDataSource(
                 subscriberId,
                 startTime,
                 endTime,
-                uid)
+                uid
+            )
 
             try {
                 var rxBytes = 0L

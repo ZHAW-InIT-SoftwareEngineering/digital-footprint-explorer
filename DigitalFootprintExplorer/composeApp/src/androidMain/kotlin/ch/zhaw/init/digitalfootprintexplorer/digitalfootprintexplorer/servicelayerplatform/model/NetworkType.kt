@@ -2,6 +2,5 @@ package ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicela
 
 enum class NetworkType {
     WIFI,
-    FOUR_G,
-    FIVE_G
+    MOBILE
 }

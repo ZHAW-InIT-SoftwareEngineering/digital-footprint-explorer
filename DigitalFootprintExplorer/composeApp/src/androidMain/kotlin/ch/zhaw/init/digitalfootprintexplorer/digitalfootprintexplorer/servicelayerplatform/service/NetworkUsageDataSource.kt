@@ -3,7 +3,7 @@ package ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicela
 import android.app.usage.NetworkStats
 import android.app.usage.NetworkStatsManager
 import android.content.Context
-import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.RemoteException
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.model.NetworkType
 import kotlinx.coroutines.Dispatchers
@@ -23,11 +23,10 @@ class NetworkUsageDataSource(
         val networkStatsManager = context.getSystemService(Context.NETWORK_STATS_SERVICE) as NetworkStatsManager
 
         //todo: check how to set the correct network type
-        //todo: check deprecated constants
         val androidNetworkType = when(networkType) {
-            NetworkType.WIFI -> ConnectivityManager.TYPE_WIFI
+            NetworkType.WIFI -> NetworkCapabilities.TRANSPORT_WIFI
             NetworkType.FIVE_G,
-            NetworkType.FOUR_G -> ConnectivityManager.TYPE_MOBILE
+            NetworkType.FOUR_G -> NetworkCapabilities.TRANSPORT_CELLULAR
         }
 
         try {

@@ -1,26 +1,28 @@
 package ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.service
 
 import android.content.Context
-import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.os.Build
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.datasource.AndroidLauncherAppQuery
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.datasource.LauncherAppQuery
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.model.App
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.model.AppCategory
 
-class InstalledAppProvider {
+class InstalledAppProvider(
+    private val launcherAppQuery: LauncherAppQuery = AndroidLauncherAppQuery()
+) {
 
     fun getInstalledLauncherApps(context: Context): List<App> {
-        val intent = Intent(Intent.ACTION_MAIN).apply {
-            addCategory(Intent.CATEGORY_LAUNCHER)
-        }
-
-        return context.packageManager
-            .queryIntentActivities(intent, 0)
+        return launcherAppQuery.create(context)
             .map { resolveInfo ->
                 val appInfo = resolveInfo.activityInfo.applicationInfo
                 App(
                     uid = appInfo.uid,
-                    name = appInfo.loadLabel(context.packageManager).toString(),
+                    /**todo: verfiy if works correctly, maybe use packageName instead of label.
+                     * Comment: The string provided in the AndroidManifest file, if any.
+                     * You probably don't want to use this. You probably want PackageManager.getApplicationLabel
+                     * **/
+                    name = appInfo.nonLocalizedLabel.toString(),
                     category = getAppCategory(appInfo)
                 )
             }

@@ -27,7 +27,7 @@ class InstalledAppProvider(
                 )
             }
             //remove duplicates because the uid could have multiple package names
-            //example: com.google.android.youtube and com.google.android.apps.youtube
+            //example: com.google.android.youtube and com.google.android.apps.youtube would have the same uid
             .distinctBy {it.uid}
     }
 

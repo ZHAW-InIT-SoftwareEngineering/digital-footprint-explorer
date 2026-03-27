@@ -19,6 +19,8 @@ class MetricCollector(
         endTime: Long,
         mobileSubscriberId: String?
     ): List<AppMetric> = coroutineScope {
+        if (startTime > endTime) throw IllegalArgumentException("Start time must be before end time.")
+
         val apps = installedAppProvider.getInstalledLauncherApps(context)
         val dispatcher = Dispatchers.IO.limitedParallelism(3)
 

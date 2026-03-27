@@ -20,6 +20,8 @@ class NetworkUsageDataSource(
         endTime: Long,
         uid: Int
     ): Long? = withContext(Dispatchers.IO) {
+        if (startTime > endTime) throw IllegalArgumentException("Start time must be before end time.")
+
         val networkStatsManager = context.getSystemService(Context.NETWORK_STATS_SERVICE) as NetworkStatsManager
 
         val androidNetworkType = when(networkType) {

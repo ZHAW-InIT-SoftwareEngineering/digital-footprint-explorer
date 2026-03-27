@@ -9,7 +9,9 @@ import io.mockk.every
 import io.mockk.mockk
 import junit.framework.TestCase.assertEquals
 import junit.framework.TestCase.assertTrue
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class MetricCollectorTest {
@@ -102,6 +104,22 @@ class MetricCollectorTest {
         assertEquals("Instagram", metrics[1].appName)
         assertEquals(AppCategory.SOCIAL_MEDIA, metrics[1].appCategory)
         assertEquals(170000L, metrics[1].totalBytes)
+    }
+
+    @Test
+    fun testStartTimeIsBeforeEndTime() = runTest {
+        setUpMocks()
+        val metricCollector = MetricCollector(installedAppProvider, networkUsageDataSource)
+        assertThrows(IllegalArgumentException::class.java) {
+            runBlocking {
+                metricCollector.collectNetworkMetrics(
+                    context = context,
+                    startTime = 1682222222,
+                    endTime = 1682222220,
+                    mobileSubscriberId = "123456789"
+                )
+            }
+        }
     }
 
     private fun setUpMocks(

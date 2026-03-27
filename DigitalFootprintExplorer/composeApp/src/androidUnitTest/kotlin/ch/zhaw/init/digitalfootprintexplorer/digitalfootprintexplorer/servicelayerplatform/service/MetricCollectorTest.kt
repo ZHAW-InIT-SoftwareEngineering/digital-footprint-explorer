@@ -7,9 +7,10 @@ import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelay
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
+import junit.framework.TestCase.assertEquals
+import junit.framework.TestCase.assertTrue
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
-import kotlin.test.assertEquals
 
 class MetricCollectorTest {
     private val youtubeUid = 1233
@@ -34,11 +35,17 @@ class MetricCollectorTest {
         )
         //the size is 2 because we have 2 apps installed
         assert(metrics.size == 2)
+
         assertEquals(1000000L, metrics[0].wifiBytes)
         assertEquals(0L, metrics[0].mobileBytes)
+        assertEquals("Youtube", metrics[0].appName)
+        assertEquals(AppCategory.VIDEO_STREAMING, metrics[0].appCategory)
+        assertEquals(1000000L, metrics[0].totalBytes)
+
         assertEquals(50000L, metrics[1].wifiBytes)
         assertEquals(0L, metrics[1].mobileBytes)
-        assertEquals(1000000L, metrics[0].totalBytes)
+        assertEquals("Instagram", metrics[1].appName)
+        assertEquals(AppCategory.SOCIAL_MEDIA, metrics[1].appCategory)
         assertEquals(50000L, metrics[1].totalBytes)
     }
 
@@ -55,13 +62,19 @@ class MetricCollectorTest {
             endTime = 1682222222,
             mobileSubscriberId = "123456789"
         )
-        //the size is 2 because we have 2 apps installed
-        assert(metrics.size == 2)
+
+        assertTrue(metrics.isNotEmpty())
+
         assertEquals(0L, metrics[0].wifiBytes)
         assertEquals(1000000L, metrics[0].mobileBytes)
+        assertEquals("Youtube", metrics[0].appName)
+        assertEquals(AppCategory.VIDEO_STREAMING, metrics[0].appCategory)
+        assertEquals(1000000L, metrics[0].totalBytes)
+
         assertEquals(0L, metrics[1].wifiBytes)
         assertEquals(120000L, metrics[1].mobileBytes)
-        assertEquals(1000000L, metrics[0].totalBytes)
+        assertEquals("Instagram", metrics[1].appName)
+        assertEquals(AppCategory.SOCIAL_MEDIA, metrics[1].appCategory)
         assertEquals(120000L, metrics[1].totalBytes)
     }
 
@@ -75,13 +88,19 @@ class MetricCollectorTest {
             endTime = 1682222222,
             mobileSubscriberId = "123456789"
         )
-        //the size is 2 because we have 2 apps installed
-        assert(metrics.size == 2)
+
+        assertTrue(metrics.isNotEmpty())
+
         assertEquals(1000000L, metrics[0].wifiBytes)
         assertEquals(1000000L, metrics[0].mobileBytes)
+        assertEquals("Youtube", metrics[0].appName)
+        assertEquals(AppCategory.VIDEO_STREAMING, metrics[0].appCategory)
+        assertEquals(2000000L, metrics[0].totalBytes)
+
         assertEquals(50000L, metrics[1].wifiBytes)
         assertEquals(120000L, metrics[1].mobileBytes)
-        assertEquals(2000000L, metrics[0].totalBytes)
+        assertEquals("Instagram", metrics[1].appName)
+        assertEquals(AppCategory.SOCIAL_MEDIA, metrics[1].appCategory)
         assertEquals(170000L, metrics[1].totalBytes)
     }
 

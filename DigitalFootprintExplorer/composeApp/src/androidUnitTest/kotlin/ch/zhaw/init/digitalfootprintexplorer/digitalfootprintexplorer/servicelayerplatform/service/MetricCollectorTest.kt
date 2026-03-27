@@ -12,6 +12,8 @@ import org.junit.Test
 import kotlin.test.assertEquals
 
 class MetricCollectorTest {
+    private val youtubeUid = 1233
+    private val instagramUid = 1234
 
     private val installedAppProvider = mockk<InstalledAppProvider>()
     private val networkUsageDataSource = mockk<NetworkUsageDataSource>()
@@ -19,7 +21,10 @@ class MetricCollectorTest {
 
     @Test
     fun testCollectNetworkMetricsForWifi() = runTest {
-        setUpMocks(mobileBytes = 0L)
+        setUpMocks(
+            instagramMobileBytes = 0L,
+            youtubeMobileBytes = 0L
+        )
         val metricCollector = MetricCollector(installedAppProvider, networkUsageDataSource)
         val metrics = metricCollector.collectNetworkMetrics(
             context = context,
@@ -31,15 +36,18 @@ class MetricCollectorTest {
         assert(metrics.size == 2)
         assertEquals(1000000L, metrics[0].wifiBytes)
         assertEquals(0L, metrics[0].mobileBytes)
-        assertEquals(1000000L, metrics[1].wifiBytes)
+        assertEquals(50000L, metrics[1].wifiBytes)
         assertEquals(0L, metrics[1].mobileBytes)
         assertEquals(1000000L, metrics[0].totalBytes)
-        assertEquals(1000000L, metrics[1].totalBytes)
+        assertEquals(50000L, metrics[1].totalBytes)
     }
 
     @Test
     fun testCollectNetworkMetricsForMobile() = runTest {
-        setUpMocks(wifiBytes = 0L)
+        setUpMocks(
+            instagramWifiBytes = 0L,
+            youtubeWifiBytes = 0L
+        )
         val metricCollector = MetricCollector(installedAppProvider, networkUsageDataSource)
         val metrics = metricCollector.collectNetworkMetrics(
             context = context,
@@ -52,9 +60,9 @@ class MetricCollectorTest {
         assertEquals(0L, metrics[0].wifiBytes)
         assertEquals(1000000L, metrics[0].mobileBytes)
         assertEquals(0L, metrics[1].wifiBytes)
-        assertEquals(1000000L, metrics[1].mobileBytes)
+        assertEquals(120000L, metrics[1].mobileBytes)
         assertEquals(1000000L, metrics[0].totalBytes)
-        assertEquals(1000000L, metrics[1].totalBytes)
+        assertEquals(120000L, metrics[1].totalBytes)
     }
 
     @Test
@@ -71,15 +79,19 @@ class MetricCollectorTest {
         assert(metrics.size == 2)
         assertEquals(1000000L, metrics[0].wifiBytes)
         assertEquals(1000000L, metrics[0].mobileBytes)
-        assertEquals(1000000L, metrics[1].wifiBytes)
-        assertEquals(1000000L, metrics[1].mobileBytes)
+        assertEquals(50000L, metrics[1].wifiBytes)
+        assertEquals(120000L, metrics[1].mobileBytes)
         assertEquals(2000000L, metrics[0].totalBytes)
-        assertEquals(2000000L, metrics[1].totalBytes)
+        assertEquals(170000L, metrics[1].totalBytes)
     }
 
     private fun setUpMocks(
-        wifiBytes: Long = 1000000L,
-        mobileBytes: Long = 1000000L,
+        youtubeUid: Int = 1233,
+        instagramUid: Int = 1234,
+        youtubeWifiBytes: Long = 1000000L,
+        instagramWifiBytes: Long = 50000L,
+        youtubeMobileBytes: Long = 1000000L,
+        instagramMobileBytes: Long = 120000L
     ) {
         every { installedAppProvider.getInstalledLauncherApps(context) } returns generateApps
         coEvery {
@@ -88,29 +100,50 @@ class MetricCollectorTest {
                 subscriberId = any(),
                 startTime = any(),
                 endTime = any(),
-                uid = any()
+                uid = youtubeUid
             )
-        } returns wifiBytes
+        } returns youtubeWifiBytes
+
         coEvery {
             networkUsageDataSource.getUsageBytes(
                 networkType = NetworkType.MOBILE,
                 subscriberId = any(),
                 startTime = any(),
                 endTime = any(),
-                uid = any()
+                uid = youtubeUid
             )
-        } returns mobileBytes
+        } returns youtubeMobileBytes
+
+        coEvery {
+            networkUsageDataSource.getUsageBytes(
+                networkType = NetworkType.WIFI,
+                subscriberId = any(),
+                startTime = any(),
+                endTime = any(),
+                uid = instagramUid
+            )
+        } returns instagramWifiBytes
+
+        coEvery {
+            networkUsageDataSource.getUsageBytes(
+                networkType = NetworkType.MOBILE,
+                subscriberId = any(),
+                startTime = any(),
+                endTime = any(),
+                uid = instagramUid
+            )
+        } returns instagramMobileBytes
 
     }
 
     private val generateApps = listOf(
         App(
-            uid = 1233,
+            uid = youtubeUid,
             name = "Youtube",
             category = AppCategory.VIDEO_STREAMING
         ),
         App(
-            uid = 1234,
+            uid = instagramUid,
             name = "Instagram",
             category = AppCategory.SOCIAL_MEDIA
         )

@@ -27,6 +27,7 @@ class MetricCollectorTest {
             endTime = 1682222222,
             mobileSubscriberId = null
         )
+        //the size is 2 because we have 2 apps installed
         assert(metrics.size == 2)
         assertEquals(1000000L, metrics[0].wifiBytes)
         assertEquals(0L, metrics[0].mobileBytes)
@@ -46,6 +47,7 @@ class MetricCollectorTest {
             endTime = 1682222222,
             mobileSubscriberId = "123456789"
         )
+        //the size is 2 because we have 2 apps installed
         assert(metrics.size == 2)
         assertEquals(0L, metrics[0].wifiBytes)
         assertEquals(1000000L, metrics[0].mobileBytes)
@@ -65,6 +67,7 @@ class MetricCollectorTest {
             endTime = 1682222222,
             mobileSubscriberId = "123456789"
         )
+        //the size is 2 because we have 2 apps installed
         assert(metrics.size == 2)
         assertEquals(1000000L, metrics[0].wifiBytes)
         assertEquals(1000000L, metrics[0].mobileBytes)
@@ -99,7 +102,7 @@ class MetricCollectorTest {
         } returns mobileBytes
 
     }
-    
+
     private val generateApps = listOf(
         App(
             uid = 1233,

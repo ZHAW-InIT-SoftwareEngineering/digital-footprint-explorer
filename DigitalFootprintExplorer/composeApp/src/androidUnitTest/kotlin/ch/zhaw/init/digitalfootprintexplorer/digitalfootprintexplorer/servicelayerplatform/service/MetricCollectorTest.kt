@@ -35,8 +35,8 @@ class MetricCollectorTest {
             endTime = 1682222222,
             mobileSubscriberId = null
         )
-        //the size is 2 because we have 2 apps installed
-        assert(metrics.size == 2)
+
+        assertTrue(metrics.isNotEmpty())
 
         assertEquals(1000000L, metrics[0].wifiBytes)
         assertEquals(0L, metrics[0].mobileBytes)

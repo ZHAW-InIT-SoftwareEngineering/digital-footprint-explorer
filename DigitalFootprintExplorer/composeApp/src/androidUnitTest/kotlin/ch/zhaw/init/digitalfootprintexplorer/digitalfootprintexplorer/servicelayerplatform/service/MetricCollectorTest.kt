@@ -25,8 +25,8 @@ class MetricCollectorTest {
     @Test
     fun testCollectNetworkMetricsForWifi() = runTest {
         setUpMocks(
-            instagramMobileBytes = 0L,
-            youtubeMobileBytes = 0L
+            appTwoMobileBytes = 0L,
+            appOneMobileBytes = 0L
         )
         val metricCollector = MetricCollector(installedAppProvider, networkUsageDataSource)
         val metrics = metricCollector.collectNetworkMetrics(
@@ -54,8 +54,8 @@ class MetricCollectorTest {
     @Test
     fun testCollectNetworkMetricsForMobile() = runTest {
         setUpMocks(
-            instagramWifiBytes = 0L,
-            youtubeWifiBytes = 0L
+            appTwoWifiBytes = 0L,
+            appOneWifiBytes = 0L
         )
         val metricCollector = MetricCollector(installedAppProvider, networkUsageDataSource)
         val metrics = metricCollector.collectNetworkMetrics(
@@ -123,12 +123,12 @@ class MetricCollectorTest {
     }
 
     private fun setUpMocks(
-        youtubeUid: Int = 1233,
-        instagramUid: Int = 1234,
-        youtubeWifiBytes: Long = 1000000L,
-        instagramWifiBytes: Long = 50000L,
-        youtubeMobileBytes: Long = 1000000L,
-        instagramMobileBytes: Long = 120000L
+        appOneUid: Int = 1233,
+        appTwoUid: Int = 1234,
+        appOneWifiBytes: Long = 1000000L,
+        appOneMobileBytes: Long = 1000000L,
+        appTwoWifiBytes: Long = 50000L,
+        appTwoMobileBytes: Long = 120000L
     ) {
         every { installedAppProvider.getInstalledLauncherApps(context) } returns generateApps
         coEvery {
@@ -137,9 +137,9 @@ class MetricCollectorTest {
                 subscriberId = any(),
                 startTime = any(),
                 endTime = any(),
-                uid = youtubeUid
+                uid = appOneUid
             )
-        } returns youtubeWifiBytes
+        } returns appOneWifiBytes
 
         coEvery {
             networkUsageDataSource.getUsageBytes(
@@ -147,9 +147,9 @@ class MetricCollectorTest {
                 subscriberId = any(),
                 startTime = any(),
                 endTime = any(),
-                uid = youtubeUid
+                uid = appOneUid
             )
-        } returns youtubeMobileBytes
+        } returns appOneMobileBytes
 
         coEvery {
             networkUsageDataSource.getUsageBytes(
@@ -157,9 +157,9 @@ class MetricCollectorTest {
                 subscriberId = any(),
                 startTime = any(),
                 endTime = any(),
-                uid = instagramUid
+                uid = appTwoUid
             )
-        } returns instagramWifiBytes
+        } returns appTwoWifiBytes
 
         coEvery {
             networkUsageDataSource.getUsageBytes(
@@ -167,9 +167,9 @@ class MetricCollectorTest {
                 subscriberId = any(),
                 startTime = any(),
                 endTime = any(),
-                uid = instagramUid
+                uid = appTwoUid
             )
-        } returns instagramMobileBytes
+        } returns appTwoMobileBytes
 
     }
 

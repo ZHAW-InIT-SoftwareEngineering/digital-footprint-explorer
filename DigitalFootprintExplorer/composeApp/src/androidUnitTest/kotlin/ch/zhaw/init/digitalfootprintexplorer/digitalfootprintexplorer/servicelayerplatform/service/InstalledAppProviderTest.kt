@@ -11,7 +11,6 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -112,8 +111,7 @@ class InstalledAppProviderTest {
 
         assertNotNull(apps)
         assertTrue(apps.isNotEmpty())
-
-        assertNotEquals(3, apps.size)
+        assertTrue(apps.size < 3)
 
         assertEquals("Youtube", apps[0].name)
         assertEquals(1000, apps[0].uid)

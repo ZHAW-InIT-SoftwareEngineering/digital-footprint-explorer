@@ -7,12 +7,12 @@ import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelay
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
-import junit.framework.TestCase.assertEquals
-import junit.framework.TestCase.assertTrue
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertThrows
-import org.junit.Test
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class MetricCollectorTest {
     private val youtubeUid = 1233

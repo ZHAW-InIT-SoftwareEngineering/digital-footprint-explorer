@@ -9,8 +9,8 @@ import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelay
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
-import org.junit.Test
 import kotlin.test.Ignore
+import kotlin.test.Test
 import kotlin.test.assertEquals
 
 @Ignore("This will be tested in the compose app itself, because mockk is too complicated to be used here")

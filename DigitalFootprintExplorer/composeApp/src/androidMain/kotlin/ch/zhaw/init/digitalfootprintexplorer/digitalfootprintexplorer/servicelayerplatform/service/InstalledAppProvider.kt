@@ -74,9 +74,7 @@ class InstalledAppProvider(
         }
     }
 
-    private fun compareAppCategoryConfigWithPackageName(
-        packageName: String
-    ): AppCategory {
+    private fun compareAppCategoryConfigWithPackageName(packageName: String): AppCategory {
         APP_CATEGORY_CONFIG.forEach {
             (category, packageNames) -> if (packageName in packageNames)
                 return selectAppCategoryFromAppCategoryConfig(category)

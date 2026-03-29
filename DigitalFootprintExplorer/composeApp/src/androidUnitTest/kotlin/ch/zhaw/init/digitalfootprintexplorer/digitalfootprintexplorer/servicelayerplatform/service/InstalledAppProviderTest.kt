@@ -166,6 +166,40 @@ class InstalledAppProviderTest {
         assertEquals(AppCategory.ARTIFICIAL_INTELLIGENCE, apps[0].category)
     }
 
+    @Test
+    fun testGetInstalledLauncherAppsWithEMailCategory() {
+        val installedAppProvider = InstalledAppProvider(
+            launcherAppQuery = launcherAppQuery,
+            appCategoryConfigLoader = appCategoryConfigLoader
+        )
+
+        val gmail = createApplicationInfo(
+            uid = 1000,
+            category = ApplicationInfo.CATEGORY_PRODUCTIVITY,
+            label = "GMail",
+            packageName = "com.google.android.gm"
+        )
+
+        val resolveInfo1 = createResolveInfo(
+            packageName = "com.google.android.gm",
+            applicationInfo = gmail
+        )
+
+        every { launcherAppQuery.create(context) } returns listOf(resolveInfo1)
+
+        every { appCategoryConfigLoader.load(context) } returns mapOf(
+            "AI" to listOf("com.openai.chatgpt"),
+            "Mail" to listOf("com.google.android.gm")
+        )
+
+        val apps: List<App> = installedAppProvider.getInstalledLauncherApps(context)
+
+        assertNotNull(apps)
+        assertTrue(apps.isNotEmpty())
+        assertEquals(1, apps.size)
+        assertEquals(AppCategory.E_MAIL, apps[0].category)
+    }
+
     private fun createApplicationInfo(
         uid: Int,
         category: Int,

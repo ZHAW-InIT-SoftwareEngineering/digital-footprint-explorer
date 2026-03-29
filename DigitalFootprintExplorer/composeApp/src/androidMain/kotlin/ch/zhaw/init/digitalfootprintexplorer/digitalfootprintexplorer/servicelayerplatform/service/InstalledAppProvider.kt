@@ -72,6 +72,7 @@ class InstalledAppProvider(
     private fun selectAppCategoryFromAppCategoryConfig(category: String): AppCategory {
         return when(category) {
             "AI" -> AppCategory.ARTIFICIAL_INTELLIGENCE
+            "Mail" -> AppCategory.E_MAIL
             else -> AppCategory.MISCELLANEOUS
         }
     }

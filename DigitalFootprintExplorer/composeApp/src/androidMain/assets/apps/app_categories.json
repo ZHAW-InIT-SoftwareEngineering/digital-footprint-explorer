@@ -17,5 +17,8 @@
     "com.facebook.orca",
     "jp.naver.line.android",
     "com.kakao.talk"
+  ],
+  "Video_Call": [
+    "com.recommended.videocall"
   ]
 }

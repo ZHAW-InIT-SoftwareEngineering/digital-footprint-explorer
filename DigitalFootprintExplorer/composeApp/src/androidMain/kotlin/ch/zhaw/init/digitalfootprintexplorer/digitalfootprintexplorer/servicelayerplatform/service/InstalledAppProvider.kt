@@ -74,6 +74,7 @@ class InstalledAppProvider(
             "AI" -> AppCategory.ARTIFICIAL_INTELLIGENCE
             "Mail" -> AppCategory.E_MAIL
             "Messaging" -> AppCategory.MESSAGING
+            "Video_Call" -> AppCategory.VIDEO_CALL
             else -> AppCategory.MISCELLANEOUS
         }
     }

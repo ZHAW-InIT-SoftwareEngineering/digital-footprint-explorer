@@ -238,6 +238,45 @@ class InstalledAppProviderTest {
         assertEquals(AppCategory.MESSAGING, apps[0].category)
     }
 
+    @Test
+    fun testGetInstalledLauncherAppsWithVideoCallCategory() {
+        val installedAppProvider = InstalledAppProvider(
+            launcherAppQuery = launcherAppQuery,
+            appCategoryConfigLoader = appCategoryConfigLoader
+        )
+
+        val videoCall = createApplicationInfo(
+            uid = 1000,
+            category = ApplicationInfo.CATEGORY_PRODUCTIVITY,
+            label = "Telegram",
+            packageName = "com.recommended.videocall"
+        )
+
+        val resolveInfo1 = createResolveInfo(
+            packageName = "com.recommended.videocall",
+            applicationInfo = videoCall
+        )
+
+        every { launcherAppQuery.create(context) } returns listOf(resolveInfo1)
+
+        every { appCategoryConfigLoader.load(context) } returns mapOf(
+            "AI" to listOf("com.openai.chatgpt"),
+            "Mail" to listOf("com.google.android.gm"),
+            "Messaging" to listOf(
+                "com.google.android.gm",
+                "org.telegram.messenger"
+            ),
+            "Video_Call" to listOf("com.recommended.videocall")
+        )
+
+        val apps: List<App> = installedAppProvider.getInstalledLauncherApps(context)
+
+        assertNotNull(apps)
+        assertTrue(apps.isNotEmpty())
+        assertEquals(1, apps.size)
+        assertEquals(AppCategory.VIDEO_CALL, apps[0].category)
+    }
+
     private fun createApplicationInfo(
         uid: Int,
         category: Int,

@@ -68,6 +68,8 @@ class InstalledAppProvider(
 
     /**
      * This method is used to select the app category from the appCategoryConfig.json file.
+     * @param category the category from the appCategoryConfig.json file.
+     * @return the app category.
      */
     private fun selectAppCategoryFromAppCategoryConfig(category: String): AppCategory {
         return when(category) {

@@ -200,6 +200,44 @@ class InstalledAppProviderTest {
         assertEquals(AppCategory.E_MAIL, apps[0].category)
     }
 
+    @Test
+    fun testGetInstalledLauncherAppsWithMessagingCategory() {
+        val installedAppProvider = InstalledAppProvider(
+            launcherAppQuery = launcherAppQuery,
+            appCategoryConfigLoader = appCategoryConfigLoader
+        )
+
+        val telegram = createApplicationInfo(
+            uid = 1000,
+            category = ApplicationInfo.CATEGORY_PRODUCTIVITY,
+            label = "Telegram",
+            packageName = "org.telegram.messenger"
+        )
+
+        val resolveInfo1 = createResolveInfo(
+            packageName = "org.telegram.messenger",
+            applicationInfo = telegram
+        )
+
+        every { launcherAppQuery.create(context) } returns listOf(resolveInfo1)
+
+        every { appCategoryConfigLoader.load(context) } returns mapOf(
+            "AI" to listOf("com.openai.chatgpt"),
+            "Mail" to listOf("com.google.android.gm"),
+            "Messaging" to listOf(
+                "com.google.android.gm",
+                "org.telegram.messenger"
+            )
+        )
+
+        val apps: List<App> = installedAppProvider.getInstalledLauncherApps(context)
+
+        assertNotNull(apps)
+        assertTrue(apps.isNotEmpty())
+        assertEquals(1, apps.size)
+        assertEquals(AppCategory.MESSAGING, apps[0].category)
+    }
+
     private fun createApplicationInfo(
         uid: Int,
         category: Int,

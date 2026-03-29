@@ -9,5 +9,13 @@
   "Mail": [
     "com.google.android.gm",
     "com.microsoft.office.outlook"
+  ],
+  "Messaging": [
+    "com.whatsapp",
+    "com.whatsapp.w4b",
+    "org.telegram.messenger",
+    "com.facebook.orca",
+    "jp.naver.line.android",
+    "com.kakao.talk"
   ]
 }

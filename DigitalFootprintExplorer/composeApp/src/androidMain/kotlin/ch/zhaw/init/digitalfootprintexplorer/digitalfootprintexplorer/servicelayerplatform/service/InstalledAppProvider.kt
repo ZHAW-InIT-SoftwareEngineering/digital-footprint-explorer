@@ -73,6 +73,7 @@ class InstalledAppProvider(
         return when(category) {
             "AI" -> AppCategory.ARTIFICIAL_INTELLIGENCE
             "Mail" -> AppCategory.E_MAIL
+            "Messaging" -> AppCategory.MESSAGING
             else -> AppCategory.MISCELLANEOUS
         }
     }

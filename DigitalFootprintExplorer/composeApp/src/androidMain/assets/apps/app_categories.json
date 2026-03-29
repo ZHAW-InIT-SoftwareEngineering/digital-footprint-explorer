@@ -1,0 +1,9 @@
+{
+  "AI": [
+    "com.openai.chatgpt",
+    "com.microsoft.copilot",
+    "ai.perplexity.app.android",
+    "com.google.android.apps.gemini",
+    "com.google.android.apps.bard"
+  ]
+}

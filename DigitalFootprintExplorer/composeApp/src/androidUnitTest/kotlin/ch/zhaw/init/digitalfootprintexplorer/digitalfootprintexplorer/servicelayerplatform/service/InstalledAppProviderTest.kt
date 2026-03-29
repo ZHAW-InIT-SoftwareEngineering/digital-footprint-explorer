@@ -5,8 +5,10 @@ import android.content.pm.ActivityInfo
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.datasource.AppCategoryConfigLoader
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.datasource.LauncherAppQuery
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.model.App
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.model.AppCategory
 import io.mockk.every
 import io.mockk.mockk
 import kotlin.test.Test
@@ -21,10 +23,14 @@ class InstalledAppProviderTest {
         every { packageManager } returns this@InstalledAppProviderTest.packageManager
     }
     private val launcherAppQuery = mockk<LauncherAppQuery>()
+    private val appCategoryConfigLoader = mockk<AppCategoryConfigLoader>()
 
     @Test
     fun testGetInstalledLauncherApps() {
-        val installedAppProvider = InstalledAppProvider(launcherAppQuery = launcherAppQuery)
+        val installedAppProvider = InstalledAppProvider(
+            launcherAppQuery = launcherAppQuery,
+            appCategoryConfigLoader = appCategoryConfigLoader
+        )
 
         val youtubeAppInfo = createApplicationInfo(
             uid = 1000,
@@ -52,6 +58,8 @@ class InstalledAppProviderTest {
 
         every { launcherAppQuery.create(context) } returns listOf(resolveInfo1, resolveInfo2)
 
+        every { appCategoryConfigLoader.load(context) } returns mapOf()
+
         val apps: List<App> = installedAppProvider.getInstalledLauncherApps(context)
 
         assertNotNull(apps)
@@ -67,7 +75,10 @@ class InstalledAppProviderTest {
 
     @Test
     fun testGetInstalledLauncherAppsWithoutDuplicates() {
-        val installedAppProvider = InstalledAppProvider(launcherAppQuery = launcherAppQuery)
+        val installedAppProvider = InstalledAppProvider(
+            launcherAppQuery = launcherAppQuery,
+            appCategoryConfigLoader = appCategoryConfigLoader
+        )
 
         val youtubeAppInfo = createApplicationInfo(
             uid = 1000,
@@ -107,6 +118,8 @@ class InstalledAppProviderTest {
 
         every { launcherAppQuery.create(context) } returns listOf(resolveInfo1, resolveInfo2, resolveInfo3)
 
+        every { appCategoryConfigLoader.load(context) } returns mapOf()
+
         val apps: List<App> = installedAppProvider.getInstalledLauncherApps(context)
 
         assertNotNull(apps)
@@ -118,6 +131,39 @@ class InstalledAppProviderTest {
 
         assertEquals("Chrome", apps[1].name)
         assertEquals(1001, apps[1].uid)
+    }
+
+    @Test
+    fun testGetInstalledLauncherAppsWithArtificialIntelligenceCategory() {
+        val installedAppProvider = InstalledAppProvider(
+            launcherAppQuery = launcherAppQuery,
+            appCategoryConfigLoader = appCategoryConfigLoader
+        )
+
+        val chatGptAppInfo = createApplicationInfo(
+            uid = 1000,
+            category = ApplicationInfo.CATEGORY_PRODUCTIVITY,
+            label = "ChatGPT",
+            packageName = "com.openai.chatgpt"
+        )
+
+        val resolveInfo1 = createResolveInfo(
+            packageName = "com.openai.chatgpt",
+            applicationInfo = chatGptAppInfo
+        )
+
+        every { launcherAppQuery.create(context) } returns listOf(resolveInfo1)
+
+        every { appCategoryConfigLoader.load(context) } returns mapOf(
+            "AI" to listOf("com.openai.chatgpt")
+        )
+
+        val apps: List<App> = installedAppProvider.getInstalledLauncherApps(context)
+
+        assertNotNull(apps)
+        assertTrue(apps.isNotEmpty())
+        assertEquals(1, apps.size)
+        assertEquals(AppCategory.ARTIFICIAL_INTELLIGENCE, apps[0].category)
     }
 
     private fun createApplicationInfo(
@@ -138,7 +184,6 @@ class InstalledAppProviderTest {
         packageName: String,
         applicationInfo: ApplicationInfo
     ): ResolveInfo {
-
         val activityInfo = ActivityInfo().apply {
             this.packageName = packageName
             this.applicationInfo = applicationInfo

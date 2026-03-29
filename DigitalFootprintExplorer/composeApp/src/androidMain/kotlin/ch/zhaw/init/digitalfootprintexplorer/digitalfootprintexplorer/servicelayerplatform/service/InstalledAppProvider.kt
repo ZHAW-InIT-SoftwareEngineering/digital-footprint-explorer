@@ -29,7 +29,7 @@ class InstalledAppProvider(
     }
 
     private fun generateApp(applicationInfo: ApplicationInfo, context: Context): App {
-        val foundCategory = compareAppCategoryConfigWithPackagename(
+        val foundCategory = compareAppCategoryConfigWithPackageName(
             packageName = applicationInfo.packageName,
             context = context
         )
@@ -78,7 +78,7 @@ class InstalledAppProvider(
         }
     }
 
-    private fun compareAppCategoryConfigWithPackagename(
+    private fun compareAppCategoryConfigWithPackageName(
         packageName: String,
         context: Context
     ): AppCategory {

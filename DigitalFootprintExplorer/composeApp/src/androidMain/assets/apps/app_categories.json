@@ -17,7 +17,8 @@
     "org.telegram.messenger",
     "com.facebook.orca",
     "jp.naver.line.android",
-    "com.kakao.talk"
+    "com.kakao.talk",
+    "org.thoughtcrime.securesms"
   ],
   "Video_Call": [
     "com.recommended.videocall"

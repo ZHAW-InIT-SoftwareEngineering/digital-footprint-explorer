@@ -3,36 +3,29 @@ package ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicela
 import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.os.Build
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.datasource.APP_CATEGORY_CONFIG
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.datasource.AndroidLauncherAppQuery
-import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.datasource.AppCategoryConfigLoader
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.datasource.LauncherAppQuery
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.model.App
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.model.AppCategory
 
 class InstalledAppProvider(
-    private val launcherAppQuery: LauncherAppQuery = AndroidLauncherAppQuery(),
-    private val appCategoryConfigLoader: AppCategoryConfigLoader = AppCategoryConfigLoader()
+    private val launcherAppQuery: LauncherAppQuery = AndroidLauncherAppQuery()
 ) {
 
     fun getInstalledLauncherApps(context: Context): List<App> {
         return launcherAppQuery.create(context)
             .map { resolveInfo ->
                 val appInfo = resolveInfo.activityInfo.applicationInfo
-                generateApp(
-                    applicationInfo = appInfo,
-                    context = context
-                )
+                generateApp(applicationInfo = appInfo)
             }
             //remove duplicates because the uid could have multiple package names
             //example: com.google.android.youtube and com.google.android.apps.youtube would have the same uid
             .distinctBy {it.uid}
     }
 
-    private fun generateApp(applicationInfo: ApplicationInfo, context: Context): App {
-        val foundCategory = compareAppCategoryConfigWithPackageName(
-            packageName = applicationInfo.packageName,
-            context = context
-        )
+    private fun generateApp(applicationInfo: ApplicationInfo): App {
+        val foundCategory = compareAppCategoryConfigWithPackageName(packageName = applicationInfo.packageName)
 
         return App(
             uid = applicationInfo.uid,
@@ -82,11 +75,12 @@ class InstalledAppProvider(
     }
 
     private fun compareAppCategoryConfigWithPackageName(
-        packageName: String,
-        context: Context
+        packageName: String
     ): AppCategory {
-        appCategoryConfigLoader.load(context)
-            .forEach { (category, packageNames) -> if (packageName in packageNames) return selectAppCategoryFromAppCategoryConfig(category) }
+        APP_CATEGORY_CONFIG.forEach {
+            (category, packageNames) -> if (packageName in packageNames)
+                return selectAppCategoryFromAppCategoryConfig(category)
+        }
         return AppCategory.MISCELLANEOUS
     }
 }

@@ -5,7 +5,6 @@ import android.content.pm.ActivityInfo
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
-import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.datasource.AppCategoryConfigLoader
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.datasource.LauncherAppQuery
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.model.App
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.model.AppCategory
@@ -23,14 +22,10 @@ class InstalledAppProviderTest {
         every { packageManager } returns this@InstalledAppProviderTest.packageManager
     }
     private val launcherAppQuery = mockk<LauncherAppQuery>()
-    private val appCategoryConfigLoader = mockk<AppCategoryConfigLoader>()
 
     @Test
     fun testGetInstalledLauncherApps() {
-        val installedAppProvider = InstalledAppProvider(
-            launcherAppQuery = launcherAppQuery,
-            appCategoryConfigLoader = appCategoryConfigLoader
-        )
+        val installedAppProvider = InstalledAppProvider(launcherAppQuery = launcherAppQuery)
 
         val youtubeAppInfo = createApplicationInfo(
             uid = 1000,
@@ -58,8 +53,6 @@ class InstalledAppProviderTest {
 
         every { launcherAppQuery.create(context) } returns listOf(resolveInfo1, resolveInfo2)
 
-        every { appCategoryConfigLoader.load(context) } returns mapOf()
-
         val apps: List<App> = installedAppProvider.getInstalledLauncherApps(context)
 
         assertNotNull(apps)
@@ -75,10 +68,7 @@ class InstalledAppProviderTest {
 
     @Test
     fun testGetInstalledLauncherAppsWithoutDuplicates() {
-        val installedAppProvider = InstalledAppProvider(
-            launcherAppQuery = launcherAppQuery,
-            appCategoryConfigLoader = appCategoryConfigLoader
-        )
+        val installedAppProvider = InstalledAppProvider(launcherAppQuery = launcherAppQuery)
 
         val youtubeAppInfo = createApplicationInfo(
             uid = 1000,
@@ -118,8 +108,6 @@ class InstalledAppProviderTest {
 
         every { launcherAppQuery.create(context) } returns listOf(resolveInfo1, resolveInfo2, resolveInfo3)
 
-        every { appCategoryConfigLoader.load(context) } returns mapOf()
-
         val apps: List<App> = installedAppProvider.getInstalledLauncherApps(context)
 
         assertNotNull(apps)
@@ -136,8 +124,7 @@ class InstalledAppProviderTest {
     @Test
     fun testGetInstalledLauncherAppsWithArtificialIntelligenceCategory() {
         val installedAppProvider = InstalledAppProvider(
-            launcherAppQuery = launcherAppQuery,
-            appCategoryConfigLoader = appCategoryConfigLoader
+            launcherAppQuery = launcherAppQuery
         )
 
         val chatGptAppInfo = createApplicationInfo(
@@ -154,10 +141,6 @@ class InstalledAppProviderTest {
 
         every { launcherAppQuery.create(context) } returns listOf(resolveInfo1)
 
-        every { appCategoryConfigLoader.load(context) } returns mapOf(
-            "AI" to listOf("com.openai.chatgpt")
-        )
-
         val apps: List<App> = installedAppProvider.getInstalledLauncherApps(context)
 
         assertNotNull(apps)
@@ -168,10 +151,7 @@ class InstalledAppProviderTest {
 
     @Test
     fun testGetInstalledLauncherAppsWithEMailCategory() {
-        val installedAppProvider = InstalledAppProvider(
-            launcherAppQuery = launcherAppQuery,
-            appCategoryConfigLoader = appCategoryConfigLoader
-        )
+        val installedAppProvider = InstalledAppProvider(launcherAppQuery = launcherAppQuery)
 
         val gmail = createApplicationInfo(
             uid = 1000,
@@ -187,11 +167,6 @@ class InstalledAppProviderTest {
 
         every { launcherAppQuery.create(context) } returns listOf(resolveInfo1)
 
-        every { appCategoryConfigLoader.load(context) } returns mapOf(
-            "AI" to listOf("com.openai.chatgpt"),
-            "Mail" to listOf("com.google.android.gm")
-        )
-
         val apps: List<App> = installedAppProvider.getInstalledLauncherApps(context)
 
         assertNotNull(apps)
@@ -202,10 +177,7 @@ class InstalledAppProviderTest {
 
     @Test
     fun testGetInstalledLauncherAppsWithMessagingCategory() {
-        val installedAppProvider = InstalledAppProvider(
-            launcherAppQuery = launcherAppQuery,
-            appCategoryConfigLoader = appCategoryConfigLoader
-        )
+        val installedAppProvider = InstalledAppProvider(launcherAppQuery = launcherAppQuery)
 
         val telegram = createApplicationInfo(
             uid = 1000,
@@ -221,15 +193,6 @@ class InstalledAppProviderTest {
 
         every { launcherAppQuery.create(context) } returns listOf(resolveInfo1)
 
-        every { appCategoryConfigLoader.load(context) } returns mapOf(
-            "AI" to listOf("com.openai.chatgpt"),
-            "Mail" to listOf("com.google.android.gm"),
-            "Messaging" to listOf(
-                "com.google.android.gm",
-                "org.telegram.messenger"
-            )
-        )
-
         val apps: List<App> = installedAppProvider.getInstalledLauncherApps(context)
 
         assertNotNull(apps)
@@ -240,10 +203,7 @@ class InstalledAppProviderTest {
 
     @Test
     fun testGetInstalledLauncherAppsWithVideoCallCategory() {
-        val installedAppProvider = InstalledAppProvider(
-            launcherAppQuery = launcherAppQuery,
-            appCategoryConfigLoader = appCategoryConfigLoader
-        )
+        val installedAppProvider = InstalledAppProvider(launcherAppQuery = launcherAppQuery)
 
         val videoCall = createApplicationInfo(
             uid = 1000,
@@ -258,16 +218,6 @@ class InstalledAppProviderTest {
         )
 
         every { launcherAppQuery.create(context) } returns listOf(resolveInfo1)
-
-        every { appCategoryConfigLoader.load(context) } returns mapOf(
-            "AI" to listOf("com.openai.chatgpt"),
-            "Mail" to listOf("com.google.android.gm"),
-            "Messaging" to listOf(
-                "com.google.android.gm",
-                "org.telegram.messenger"
-            ),
-            "Video_Call" to listOf("com.recommended.videocall")
-        )
 
         val apps: List<App> = installedAppProvider.getInstalledLauncherApps(context)
 

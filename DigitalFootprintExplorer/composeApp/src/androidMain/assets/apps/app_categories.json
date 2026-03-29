@@ -4,7 +4,8 @@
     "com.microsoft.copilot",
     "ai.perplexity.app.android",
     "com.google.android.apps.gemini",
-    "com.google.android.apps.bard"
+    "com.google.android.apps.bard",
+    "com.deepseek.chat"
   ],
   "Mail": [
     "com.google.android.gm",

@@ -13,7 +13,7 @@ import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.outp
  *   GHG_total = GHG_appUsage + GHG_display + GHG_background
  *
  * @param userEmissionFactor Emission factor of the user's electricity mix [kgCO2e/kWh].
- *   Default: Swiss electricity mix. Configurable later.
+ *   Default: Swiss electricity mix.
  */
 class EmissionsCalculator(
     private val userEmissionFactor: Double = ModelConstants.EF_SWISS
@@ -26,9 +26,9 @@ class EmissionsCalculator(
     ): EmissionResult {
         val categoryBreakdown = calculateAppUsage(appUsage)
         return EmissionResult(
-            ghgAppUsageKgCO2e = categoryBreakdown.fold(0.0) { acc, c -> acc + c.ghgTotalKgCO2e },
-            ghgDisplayKgCO2e = calculateDisplay(display),
-            ghgBackgroundKgCO2e = calculateBackground(background),
+            ghgAppUsage = categoryBreakdown.fold(0.0) { acc, c -> acc + c.ghgTotal },
+            ghgDisplay = calculateDisplay(display),
+            ghgBackground = calculateBackground(background),
             categoryBreakdown = categoryBreakdown
         )
     }
@@ -49,9 +49,9 @@ class EmissionsCalculator(
 
                 CategoryEmission(
                     category = category,
-                    ghgDeviceKgCO2e = calculateDevice(category, totalTimeH),
-                    ghgNetworkKgCO2e = calculateNetwork(totalWifiGB, totalCellularGB),
-                    ghgBackendKgCO2e = calculateBackend(category, totalWifiGB + totalCellularGB, totalTimeH)
+                    ghgDevice = calculateDevice(category, totalTimeH),
+                    ghgNetwork = calculateNetwork(totalWifiGB, totalCellularGB),
+                    ghgBackend = calculateBackend(category, totalWifiGB + totalCellularGB, totalTimeH)
                 )
             }
     }
@@ -68,9 +68,7 @@ class EmissionsCalculator(
 
     /**
      * GHG_network,k = (wifiGB * I_WIFI + cellularGB * I_CELLULAR) * EF_global
-     *
-     * Wi-Fi and cellular are calculated separately because their energy intensity
-     * differs significantly (factor ~9x).
+     *.
      */
     private fun calculateNetwork(wifiGB: Double, cellularGB: Double): Double {
         val energyKwh =

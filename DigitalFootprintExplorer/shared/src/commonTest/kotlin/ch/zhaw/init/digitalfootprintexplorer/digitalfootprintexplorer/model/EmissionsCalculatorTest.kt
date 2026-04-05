@@ -20,10 +20,10 @@ class EmissionsCalculatorTest {
     @Test
     fun `zero input yields zero emissions`() {
         val result = calculator.calculate(emptyList(), emptyDisplay, emptyBackground)
-        assertEquals(0.0, result.ghgTotalKgCO2e)
-        assertEquals(0.0, result.ghgAppUsageKgCO2e)
-        assertEquals(0.0, result.ghgDisplayKgCO2e)
-        assertEquals(0.0, result.ghgBackgroundKgCO2e)
+        assertEquals(0.0, result.ghgTotal)
+        assertEquals(0.0, result.ghgAppUsage)
+        assertEquals(0.0, result.ghgDisplay)
+        assertEquals(0.0, result.ghgBackground)
     }
 
     @Test
@@ -36,13 +36,13 @@ class EmissionsCalculatorTest {
             cellularBytes = 0L.dp()
         )
         val result = calculator.calculate(listOf(metric), emptyDisplay, emptyBackground)
-        assertTrue(result.ghgAppUsageKgCO2e > 0.0)
+        assertTrue(result.ghgAppUsage > 0.0)
         val wifiGB = 2_700_000_000.0 / 1_000_000_000.0
         val timeH = 60.0 / 60.0
         val expectedDevice = ModelConstants.P_DEVICE_BY_CATEGORY[AppCategory.VIDEO_STREAMING]!! *
             timeH / 1000.0 / ModelConstants.CHARGING_EFFICIENCY * ModelConstants.EF_SWISS
         val expectedNetwork = wifiGB * ModelConstants.NETWORK_INTENSITY_WIFI * ModelConstants.EF_GLOBAL
-        assertEquals(expectedDevice + expectedNetwork, result.ghgAppUsageKgCO2e, absoluteTolerance = 1e-9)
+        assertEquals(expectedDevice + expectedNetwork, result.ghgAppUsage, absoluteTolerance = 1e-9)
     }
 
     @Test
@@ -55,16 +55,16 @@ class EmissionsCalculatorTest {
         val wifiResult = calculator.calculate(listOf(wifiMetric), emptyDisplay, emptyBackground)
         val cellResult = calculator.calculate(listOf(cellMetric), emptyDisplay, emptyBackground)
 
-        assertTrue(cellResult.ghgNetworkKgCO2e(cellMetric) > wifiResult.ghgNetworkKgCO2e(wifiMetric))
+        assertTrue(cellResult.ghgNetwork(cellMetric) > wifiResult.ghgNetwork(wifiMetric))
     }
 
     @Test
     fun `only display input yields ghg only for display`() {
         val display = DisplayInput(listOf(BrightnessInterval(0.5, 1.0))) // 50% brightness, 1h
         val result = calculator.calculate(emptyList(), display, emptyBackground)
-        assertEquals(0.0, result.ghgAppUsageKgCO2e)
+        assertEquals(0.0, result.ghgAppUsage)
         // 0.4W * 0.5 * 1h / 1000 / 0.585 * 0.127 = ~0.0000434 kgCO2e
-        assertEquals(0.0000434, result.ghgDisplayKgCO2e, absoluteTolerance = 0.000001)
+        assertEquals(0.0000434, result.ghgDisplay, absoluteTolerance = 0.000001)
     }
 
     @Test
@@ -78,7 +78,7 @@ class EmissionsCalculatorTest {
         val singleMetric = AppUsageInput("Combined", AppCategory.VIDEO_STREAMING, 60, 1_000_000_000L.dp(), 0L.dp())
         val resultSingle = calculator.calculate(listOf(singleMetric), emptyDisplay, emptyBackground)
 
-        assertEquals(resultSingle.ghgTotalKgCO2e, resultAggregated.ghgTotalKgCO2e, absoluteTolerance = 1e-10)
+        assertEquals(resultSingle.ghgTotal, resultAggregated.ghgTotal, absoluteTolerance = 1e-10)
     }
 
     @Test
@@ -88,11 +88,11 @@ class EmissionsCalculatorTest {
         val background = BackgroundInput(listOf(ProcessUsage(BackgroundProcess.GPS, 1.0f)))
 
         val result = calculator.calculate(listOf(metric), display, background)
-        val expectedTotal = result.ghgAppUsageKgCO2e + result.ghgDisplayKgCO2e + result.ghgBackgroundKgCO2e
-        assertEquals(expectedTotal, result.ghgTotalKgCO2e, absoluteTolerance = 1e-10)
+        val expectedTotal = result.ghgAppUsage + result.ghgDisplay + result.ghgBackground
+        assertEquals(expectedTotal, result.ghgTotal, absoluteTolerance = 1e-10)
     }
 
     // Helper functions for the cellular test
-    private fun EmissionResult.ghgNetworkKgCO2e(metric: AppUsageInput): Double =
-        categoryBreakdown.firstOrNull { it.category == metric.appCategory }?.ghgNetworkKgCO2e ?: 0.0
+    private fun EmissionResult.ghgNetwork(metric: AppUsageInput): Double =
+        categoryBreakdown.firstOrNull { it.category == metric.appCategory }?.ghgNetwork ?: 0.0
 }

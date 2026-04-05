@@ -4,10 +4,10 @@ import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.AppC
 
 data class CategoryEmission(
     val category: AppCategory,
-    val ghgDeviceKgCO2e: Double,
-    val ghgNetworkKgCO2e: Double,
-    val ghgBackendKgCO2e: Double
+    val ghgDevice: Double,
+    val ghgNetwork: Double,
+    val ghgBackend: Double
 ) {
-    val ghgTotalKgCO2e: Double
-        get() = ghgDeviceKgCO2e + ghgNetworkKgCO2e + ghgBackendKgCO2e
+    val ghgTotal: Double
+        get() = ghgDevice + ghgNetwork + ghgBackend
 }

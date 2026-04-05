@@ -9,7 +9,4 @@ data class AppUsageInput(
     val totalForegroundTime: Int = 0,
     val wifiBytes: DataPoint,
     val cellularBytes: DataPoint,
-) {
-    val totalBytes: Double
-        get() = wifiBytes.valueOrDefault() + cellularBytes.valueOrDefault()
-}
+)

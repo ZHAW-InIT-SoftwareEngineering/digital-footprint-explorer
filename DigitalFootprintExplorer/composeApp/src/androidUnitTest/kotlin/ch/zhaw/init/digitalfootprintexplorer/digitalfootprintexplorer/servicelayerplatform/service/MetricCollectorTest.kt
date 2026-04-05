@@ -43,13 +43,11 @@ class MetricCollectorTest {
         assertEquals(DataPoint.Measured(0.0), metrics[0].cellularBytes)
         assertEquals("Youtube", metrics[0].appName)
         assertEquals(AppCategory.VIDEO_STREAMING, metrics[0].appCategory)
-        assertEquals(1000000.0, metrics[0].totalBytes)
 
         assertEquals(DataPoint.Measured(50000.0), metrics[1].wifiBytes)
         assertEquals(DataPoint.Measured(0.0), metrics[1].cellularBytes)
         assertEquals("Instagram", metrics[1].appName)
         assertEquals(AppCategory.SOCIAL_MEDIA, metrics[1].appCategory)
-        assertEquals(50000.0, metrics[1].totalBytes)
     }
 
     @Test
@@ -72,13 +70,11 @@ class MetricCollectorTest {
         assertEquals(DataPoint.Measured(1000000.0), metrics[0].cellularBytes)
         assertEquals("Youtube", metrics[0].appName)
         assertEquals(AppCategory.VIDEO_STREAMING, metrics[0].appCategory)
-        assertEquals(1000000.0, metrics[0].totalBytes)
 
         assertEquals(DataPoint.Measured(0.0), metrics[1].wifiBytes)
         assertEquals(DataPoint.Measured(120000.0), metrics[1].cellularBytes)
         assertEquals("Instagram", metrics[1].appName)
         assertEquals(AppCategory.SOCIAL_MEDIA, metrics[1].appCategory)
-        assertEquals(120000.0, metrics[1].totalBytes)
     }
 
     @Test
@@ -98,13 +94,11 @@ class MetricCollectorTest {
         assertEquals(DataPoint.Measured(1000000.0), metrics[0].cellularBytes)
         assertEquals("Youtube", metrics[0].appName)
         assertEquals(AppCategory.VIDEO_STREAMING, metrics[0].appCategory)
-        assertEquals(2000000.0, metrics[0].totalBytes)
 
         assertEquals(DataPoint.Measured(50000.0), metrics[1].wifiBytes)
         assertEquals(DataPoint.Measured(120000.0), metrics[1].cellularBytes)
         assertEquals("Instagram", metrics[1].appName)
         assertEquals(AppCategory.SOCIAL_MEDIA, metrics[1].appCategory)
-        assertEquals(170000.0, metrics[1].totalBytes)
     }
 
     @Test

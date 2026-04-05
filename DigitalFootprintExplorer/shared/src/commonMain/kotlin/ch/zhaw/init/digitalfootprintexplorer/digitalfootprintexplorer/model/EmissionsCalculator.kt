@@ -97,15 +97,15 @@ class EmissionsCalculator(
             }
             AppCategory.MESSAGING -> {
                 // Proxy: kWh/message (TODO: estimate message count from data volume)
-                0.0
+                ModelConstants.BACKEND_INTENSITY_PER_MESSAGE_MESSAGING
             }
             AppCategory.E_MAIL -> {
                 // Proxy: kWh/message (TODO)
-                0.0
+                ModelConstants.BACKEND_INTENSITY_PER_MESSAGE_EMAIL
             }
             AppCategory.ARTIFICIAL_INTELLIGENCE -> {
                 // Proxy: kWh/query (TODO: ~50–80 KB/query → count estimable from data volume)
-                0.0
+                ModelConstants.BACKEND_INTENSITY_PER_QUERY_AI
             }
             AppCategory.GAMING -> {
                 // Proxy: kWh/h

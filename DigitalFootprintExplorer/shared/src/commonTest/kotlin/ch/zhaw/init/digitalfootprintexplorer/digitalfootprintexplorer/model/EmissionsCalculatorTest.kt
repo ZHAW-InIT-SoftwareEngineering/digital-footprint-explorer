@@ -4,7 +4,6 @@ import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.inpu
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.input.BackgroundInput
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.input.BrightnessInterval
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.input.DisplayInput
-import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.output.CategoryEmission
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.output.EmissionResult
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -38,10 +37,12 @@ class EmissionsCalculatorTest {
         )
         val result = calculator.calculate(listOf(metric), emptyDisplay, emptyBackground)
         assertTrue(result.ghgAppUsageKgCO2e > 0.0)
-        // Device: 1.0 W * 1h / 1000 / 0.585 * 0.127 = ~0.000217 kgCO2e
-        // Network: 2.7 GB * 0.006 kWh/GB * 0.538 = ~0.00872 kgCO2e
-        val expected = 0.000217 + 0.00872
-        assertEquals(expected, result.ghgAppUsageKgCO2e, absoluteTolerance = 0.0001)
+        val wifiGB = 2_700_000_000.0 / 1_000_000_000.0
+        val timeH = 60.0 / 60.0
+        val expectedDevice = ModelConstants.P_DEVICE_BY_CATEGORY[AppCategory.VIDEO_STREAMING]!! *
+            timeH / 1000.0 / ModelConstants.CHARGING_EFFICIENCY * ModelConstants.EF_SWISS
+        val expectedNetwork = wifiGB * ModelConstants.NETWORK_INTENSITY_WIFI * ModelConstants.EF_GLOBAL
+        assertEquals(expectedDevice + expectedNetwork, result.ghgAppUsageKgCO2e, absoluteTolerance = 1e-9)
     }
 
     @Test
@@ -59,7 +60,7 @@ class EmissionsCalculatorTest {
 
     @Test
     fun `only display input yields ghg only for display`() {
-        val display = DisplayInput(listOf(BrightnessInterval(0.5f, 1.0f))) // 50% brightness, 1h
+        val display = DisplayInput(listOf(BrightnessInterval(0.5, 1.0))) // 50% brightness, 1h
         val result = calculator.calculate(emptyList(), display, emptyBackground)
         assertEquals(0.0, result.ghgAppUsageKgCO2e)
         // 0.4W * 0.5 * 1h / 1000 / 0.585 * 0.127 = ~0.0000434 kgCO2e
@@ -83,7 +84,7 @@ class EmissionsCalculatorTest {
     @Test
     fun `ghg total is sum of the three components`() {
         val metric = AppUsageInput("App", AppCategory.SOCIAL_MEDIA, 60, 100_000_000L.dp(), 0L.dp())
-        val display = DisplayInput(listOf(BrightnessInterval(0.7f, 0.5f)))
+        val display = DisplayInput(listOf(BrightnessInterval(0.7, 0.5)))
         val background = BackgroundInput(listOf(ProcessUsage(BackgroundProcess.GPS, 1.0f)))
 
         val result = calculator.calculate(listOf(metric), display, background)

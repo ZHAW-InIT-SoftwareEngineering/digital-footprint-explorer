@@ -1,7 +1,8 @@
 package ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.service
 
 import android.content.Context
-import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.AppMetric
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.input.AppUsageInput
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.DataPoint
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.NetworkType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -18,7 +19,7 @@ class MetricCollector(
         startTime: Long,
         endTime: Long,
         mobileSubscriberId: String?
-    ): List<AppMetric> = coroutineScope {
+    ): List<AppUsageInput> = coroutineScope {
         if (startTime > endTime) throw IllegalArgumentException("Start time must be before end time.")
 
         val apps = installedAppProvider.getInstalledLauncherApps(context)
@@ -26,23 +27,25 @@ class MetricCollector(
 
         apps.map { app ->
             async(dispatcher) {
-                val wifiBytes: Long = networkUsageDataSource.getUsageBytes(
+                val wifiBytes: DataPoint = networkUsageDataSource.getUsageBytes(
                     networkType = NetworkType.WIFI,
                     subscriberId = null,
                     startTime = startTime,
                     endTime = endTime,
                     uid = app.uid
-                ) ?: 0L
+                )?.let { DataPoint.Measured(it.toDouble()) }
+                    ?: DataPoint.Unavailable("permission denied")
 
-                val cellularBytes: Long = networkUsageDataSource.getUsageBytes(
+                val cellularBytes: DataPoint = networkUsageDataSource.getUsageBytes(
                     networkType = NetworkType.CELLULAR,
                     subscriberId = mobileSubscriberId,
                     startTime = startTime,
                     endTime = endTime,
                     uid = app.uid
-                ) ?: 0L
+                )?.let { DataPoint.Measured(it.toDouble()) }
+                    ?: DataPoint.Unavailable("permission denied")
 
-                AppMetric(
+                AppUsageInput(
                     appName = app.name,
                     wifiBytes = wifiBytes,
                     cellularBytes = cellularBytes,

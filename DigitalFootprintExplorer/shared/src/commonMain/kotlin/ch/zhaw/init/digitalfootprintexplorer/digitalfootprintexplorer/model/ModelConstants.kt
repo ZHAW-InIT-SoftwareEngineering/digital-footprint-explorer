@@ -8,7 +8,7 @@ object ModelConstants {
 
     // --- Emission factors [kgCO2e/kWh] ---
     const val EF_SWISS = 0.127
-    const val EF_GLOBAL = 0.538
+    const val EF_GLOBAL = 0.471
 
     // --- Charging loss ---
     const val CHARGING_EFFICIENCY = 0.585

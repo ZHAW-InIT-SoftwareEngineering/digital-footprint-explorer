@@ -3,9 +3,9 @@ package ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicela
 import android.app.usage.NetworkStats
 import android.app.usage.NetworkStatsManager
 import android.content.Context
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.AppCategory
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.NetworkType
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.model.App
-import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.model.AppCategory
-import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.model.NetworkType
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.test.runTest

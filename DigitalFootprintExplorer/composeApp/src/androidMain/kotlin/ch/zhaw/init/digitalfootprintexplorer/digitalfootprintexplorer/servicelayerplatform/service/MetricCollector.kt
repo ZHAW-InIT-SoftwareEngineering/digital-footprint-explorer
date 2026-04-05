@@ -1,8 +1,8 @@
 package ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.service
 
 import android.content.Context
-import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.model.AppMetric
-import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.model.NetworkType
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.AppMetric
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.NetworkType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -34,8 +34,8 @@ class MetricCollector(
                     uid = app.uid
                 ) ?: 0L
 
-                val mobileNetworkBytes: Long = networkUsageDataSource.getUsageBytes(
-                    networkType = NetworkType.MOBILE,
+                val cellularBytes: Long = networkUsageDataSource.getUsageBytes(
+                    networkType = NetworkType.CELLULAR,
                     subscriberId = mobileSubscriberId,
                     startTime = startTime,
                     endTime = endTime,
@@ -45,7 +45,7 @@ class MetricCollector(
                 AppMetric(
                     appName = app.name,
                     wifiBytes = wifiBytes,
-                    mobileBytes = mobileNetworkBytes,
+                    cellularBytes = cellularBytes,
                     appCategory = app.category,
                     //todo calculate total foreground time
                     totalForegroundTime = 0

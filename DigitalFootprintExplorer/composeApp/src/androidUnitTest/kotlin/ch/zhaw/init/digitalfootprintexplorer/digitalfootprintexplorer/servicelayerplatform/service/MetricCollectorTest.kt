@@ -1,9 +1,9 @@
 package ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.service
 
 import android.content.Context
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.AppCategory
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.NetworkType
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.model.App
-import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.model.AppCategory
-import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.model.NetworkType
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -25,8 +25,8 @@ class MetricCollectorTest {
     @Test
     fun testCollectNetworkMetricsForWifi() = runTest {
         setUpMocks(
-            appTwoMobileBytes = 0L,
-            appOneMobileBytes = 0L
+            appTwoCellularBytes = 0L,
+            appOneCellularBytes = 0L
         )
         val metricCollector = MetricCollector(installedAppProvider, networkUsageDataSource)
         val metrics = metricCollector.collectNetworkMetrics(
@@ -39,13 +39,13 @@ class MetricCollectorTest {
         assertTrue(metrics.isNotEmpty())
 
         assertEquals(1000000L, metrics[0].wifiBytes)
-        assertEquals(0L, metrics[0].mobileBytes)
+        assertEquals(0L, metrics[0].cellularBytes)
         assertEquals("Youtube", metrics[0].appName)
         assertEquals(AppCategory.VIDEO_STREAMING, metrics[0].appCategory)
         assertEquals(1000000L, metrics[0].totalBytes)
 
         assertEquals(50000L, metrics[1].wifiBytes)
-        assertEquals(0L, metrics[1].mobileBytes)
+        assertEquals(0L, metrics[1].cellularBytes)
         assertEquals("Instagram", metrics[1].appName)
         assertEquals(AppCategory.SOCIAL_MEDIA, metrics[1].appCategory)
         assertEquals(50000L, metrics[1].totalBytes)
@@ -68,13 +68,13 @@ class MetricCollectorTest {
         assertTrue(metrics.isNotEmpty())
 
         assertEquals(0L, metrics[0].wifiBytes)
-        assertEquals(1000000L, metrics[0].mobileBytes)
+        assertEquals(1000000L, metrics[0].cellularBytes)
         assertEquals("Youtube", metrics[0].appName)
         assertEquals(AppCategory.VIDEO_STREAMING, metrics[0].appCategory)
         assertEquals(1000000L, metrics[0].totalBytes)
 
         assertEquals(0L, metrics[1].wifiBytes)
-        assertEquals(120000L, metrics[1].mobileBytes)
+        assertEquals(120000L, metrics[1].cellularBytes)
         assertEquals("Instagram", metrics[1].appName)
         assertEquals(AppCategory.SOCIAL_MEDIA, metrics[1].appCategory)
         assertEquals(120000L, metrics[1].totalBytes)
@@ -94,13 +94,13 @@ class MetricCollectorTest {
         assertTrue(metrics.isNotEmpty())
 
         assertEquals(1000000L, metrics[0].wifiBytes)
-        assertEquals(1000000L, metrics[0].mobileBytes)
+        assertEquals(1000000L, metrics[0].cellularBytes)
         assertEquals("Youtube", metrics[0].appName)
         assertEquals(AppCategory.VIDEO_STREAMING, metrics[0].appCategory)
         assertEquals(2000000L, metrics[0].totalBytes)
 
         assertEquals(50000L, metrics[1].wifiBytes)
-        assertEquals(120000L, metrics[1].mobileBytes)
+        assertEquals(120000L, metrics[1].cellularBytes)
         assertEquals("Instagram", metrics[1].appName)
         assertEquals(AppCategory.SOCIAL_MEDIA, metrics[1].appCategory)
         assertEquals(170000L, metrics[1].totalBytes)
@@ -126,9 +126,9 @@ class MetricCollectorTest {
         appOneUid: Int = 1233,
         appTwoUid: Int = 1234,
         appOneWifiBytes: Long = 1000000L,
-        appOneMobileBytes: Long = 1000000L,
+        appOneCellularBytes: Long = 1000000L,
         appTwoWifiBytes: Long = 50000L,
-        appTwoMobileBytes: Long = 120000L
+        appTwoCellularBytes: Long = 120000L
     ) {
         every { installedAppProvider.getInstalledLauncherApps(context) } returns generateApps
         coEvery {
@@ -143,13 +143,13 @@ class MetricCollectorTest {
 
         coEvery {
             networkUsageDataSource.getUsageBytes(
-                networkType = NetworkType.MOBILE,
+                networkType = NetworkType.CELLULAR,
                 subscriberId = any(),
                 startTime = any(),
                 endTime = any(),
                 uid = appOneUid
             )
-        } returns appOneMobileBytes
+        } returns appOneCellularBytes
 
         coEvery {
             networkUsageDataSource.getUsageBytes(
@@ -163,13 +163,13 @@ class MetricCollectorTest {
 
         coEvery {
             networkUsageDataSource.getUsageBytes(
-                networkType = NetworkType.MOBILE,
+                networkType = NetworkType.CELLULAR,
                 subscriberId = any(),
                 startTime = any(),
                 endTime = any(),
                 uid = appTwoUid
             )
-        } returns appTwoMobileBytes
+        } returns appTwoCellularBytes
 
     }
 

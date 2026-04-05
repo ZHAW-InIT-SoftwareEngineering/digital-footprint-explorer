@@ -1,5 +1,7 @@
 package ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.model
 
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.AppCategory
+
 /**
  * Stores information about an installed app.
  */

@@ -6,18 +6,18 @@ package ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model
  */
 object ModelConstants {
 
-    // --- Emission factors [kgCO2e/kWh] ---
+    /* Emission factors [kgCO2e/kWh] */
     const val EF_SWISS = 0.127
     const val EF_GLOBAL = 0.471
 
-    // --- Charging loss ---
+    /* Charging loss */
     const val CHARGING_EFFICIENCY = 0.585
 
-    // --- Network intensity [kWh/GB] ---
+    /* Network intensity [kWh/GB] */
     const val NETWORK_INTENSITY_WIFI = 0.006
     const val NETWORK_INTENSITY_CELLULAR = 0.055
 
-    // --- Device power consumption P_device [W] per category ---
+    /* Device power consumption P_device [W] per category */
     val P_DEVICE_BY_CATEGORY: Map<AppCategory, Double> = mapOf(
         AppCategory.VIDEO_STREAMING      to 1.0,
         AppCategory.AUDIO_STREAMING      to 0.5,
@@ -31,20 +31,31 @@ object ModelConstants {
         AppCategory.MISCELLANEOUS        to 0.5
     )
 
-    // --- Display ---
-    /** Maximum display power at brightness=1.0 [W] */
+    /**
+     * Display
+     *
+     * Maximum display power at brightness=1.0 \[W]
+     */
     const val P_DISPLAY_MAX_WATT = 0.4
 
-    // --- Background processes [W] ---
+    /**
+     * Background processes \[W]
+     *
+     * TODO: fill in literature values after research.
+     * TODO: other processes
+     */
     val P_BACKGROUND_BY_PROCESS: Map<BackgroundProcess, Double> = mapOf(
-        BackgroundProcess.GPS       to 0.2,   // TODO: verify literature value
-        BackgroundProcess.BLUETOOTH to 0.05   // TODO: verify literature value
-        // TODO: other processes
+        BackgroundProcess.GPS       to 0.2,
+        BackgroundProcess.BLUETOOTH to 0.05
+
     )
 
-    // --- Backend energy intensities ---
-    // TODO: fill in literature values after research.
-    // TODO: assign Navigation to a proxy
+    /**
+     * Backend energy intensities
+     *
+     * TODO: fill in literature values after research.
+     * TODO: assign Navigation to a proxy
+     */
     val BACKEND_INTENSITY_GB: Map<AppCategory, Double> = mapOf(
         AppCategory.VIDEO_STREAMING  to 0.0,
         AppCategory.AUDIO_STREAMING  to 0.0,

@@ -33,13 +33,14 @@ class EmissionsCalculator(
         )
     }
 
-    // -------------------------------------------------------------------------
-    // Block 1: App usage
-    // GHG_appUsage = Σ_k [GHG_device,k + GHG_network,k + GHG_backend,k]
-    // -------------------------------------------------------------------------
+    /**
+     * Block 1: App Usage
+     *
+     * GHG_appUsage = Σ_k [GHG_device,k + GHG_network,k + GHG_backend,k]
+     */
 
     private fun calculateAppUsage(metrics: List<AppUsageInput>): List<CategoryEmission> {
-        // Aggregate by category
+        /* Aggregate by category */
         return metrics
             .groupBy { it.appCategory }
             .map { (category, entries) ->
@@ -57,7 +58,7 @@ class EmissionsCalculator(
     }
 
     /**
-     * GHG_device,k = P_device,k [W] * t_k [h] / 1000 * (1/η) * EF_user
+     * GHG_device,k = P_device,k \[W] * t_k \[h] / 1000 * (1/η) * EF_user
      */
     private fun calculateDevice(category: AppCategory, timeH: Double): Double {
         val pWatt = ModelConstants.P_DEVICE_BY_CATEGORY[category]
@@ -68,7 +69,7 @@ class EmissionsCalculator(
 
     /**
      * GHG_network,k = (wifiGB * I_WIFI + cellularGB * I_CELLULAR) * EF_global
-     *.
+     *
      */
     private fun calculateNetwork(wifiGB: Double, cellularGB: Double): Double {
         val energyKwh =
@@ -90,38 +91,39 @@ class EmissionsCalculator(
             AppCategory.SOCIAL_MEDIA,
             AppCategory.VIDEO_CALL,
             AppCategory.MISCELLANEOUS -> {
-                // Proxy: kWh/GB
+                /* Proxy: kWh/GB */
                 totalDataGB * (ModelConstants.BACKEND_INTENSITY_GB[category] ?: 0.0)
             }
             AppCategory.MESSAGING -> {
-                // Proxy: kWh/message (TODO: estimate message count from data volume)
+                /* Proxy: kWh/message (TODO: estimate message count from data volume) */
                 ModelConstants.BACKEND_INTENSITY_PER_MESSAGE_MESSAGING
             }
             AppCategory.E_MAIL -> {
-                // Proxy: kWh/message (TODO)
+                /* Proxy: kWh/message (TODO) */
                 ModelConstants.BACKEND_INTENSITY_PER_MESSAGE_EMAIL
             }
             AppCategory.ARTIFICIAL_INTELLIGENCE -> {
-                // Proxy: kWh/query (TODO: ~50–80 KB/query → count estimable from data volume)
+                /* Proxy: kWh/query (TODO: ~50–80 KB/query → count estimable from data volume) */
                 ModelConstants.BACKEND_INTENSITY_PER_QUERY_AI
             }
             AppCategory.GAMING -> {
-                // Proxy: kWh/h
+                /* Proxy: kWh/h */
                 timeH * ModelConstants.BACKEND_INTENSITY_PER_HOUR_GAMING
             }
             AppCategory.NAVIGATION -> {
-                // Proxy: not yet defined
+                /* Proxy: not yet defined */
                 0.0
             }
         }
         return eBackendKwh * ModelConstants.EF_GLOBAL
     }
 
-    // -------------------------------------------------------------------------
-    // Block 2: Display
-    // E_display [Wh] = P_display [W] * Σ_i (B̃_i * Δt_i [h])
-    // GHG_display = E_display/1000 * (1/η) * EF_user
-    // -------------------------------------------------------------------------
+    /**
+     * Block 2: Display
+     *
+     * E_display \[Wh] = P_display \[W] * Σ_i (B̃_i * Δt_i \[h])
+     * GHG_display = E_display/1000 * (1/η) * EF_user
+     */
 
     private fun calculateDisplay(display: DisplayInput): Double {
         val energyWh = ModelConstants.P_DISPLAY_MAX_WATT *
@@ -130,10 +132,11 @@ class EmissionsCalculator(
         return energyKwh / ModelConstants.CHARGING_EFFICIENCY * userEmissionFactor
     }
 
-    // -------------------------------------------------------------------------
-    // Block 3: Background processes
-    // GHG_background = Σ_p (P_p [W] * t_p [h] / 1000 * (1/η) * EF_user)
-    // -------------------------------------------------------------------------
+    /**
+     * Block 3: Background processes
+     *
+     * GHG_background = Σ_p (P_p \[W] * t_p \[h] / 1000 * (1/η) * EF_global)
+     */
 
     private fun calculateBackground(background: BackgroundInput): Double {
         return background.activeProcesses.fold(0.0) { acc, proc ->

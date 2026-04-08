@@ -31,8 +31,8 @@ class EmissionsCalculatorTest {
         val metric = AppUsageInput(
             appName = "Netflix",
             appCategory = AppCategory.VIDEO_STREAMING,
-            totalForegroundTime = 60, // 1 hour in minutes
-            wifiBytes = 2_700_000_000L.dp(), // ~2.7 GB/h typical for HD
+            totalForegroundTime = 60, /* 1 hour in minutes */
+            wifiBytes = 2_700_000_000L.dp(), /* ~2.7 GB/h typical for HD */
             cellularBytes = 0L.dp()
         )
         val result = calculator.calculate(listOf(metric), emptyDisplay, emptyBackground)
@@ -63,7 +63,7 @@ class EmissionsCalculatorTest {
         val display = DisplayInput(listOf(BrightnessInterval(0.5, 1.0))) // 50% brightness, 1h
         val result = calculator.calculate(emptyList(), display, emptyBackground)
         assertEquals(0.0, result.ghgAppUsage)
-        // 0.4W * 0.5 * 1h / 1000 / 0.585 * 0.127 = ~0.0000434 kgCO2e
+        /* 0.4W * 0.5 * 1h / 1000 / 0.585 * 0.127 = ~0.0000434 kgCO2e */
         assertEquals(0.0000434, result.ghgDisplay, absoluteTolerance = 0.000001)
     }
 
@@ -92,7 +92,7 @@ class EmissionsCalculatorTest {
         assertEquals(expectedTotal, result.ghgTotal, absoluteTolerance = 1e-10)
     }
 
-    // Helper functions for the cellular test
+    /* Helper functions for the cellular test */
     private fun EmissionResult.ghgNetwork(metric: AppUsageInput): Double =
         categoryBreakdown.firstOrNull { it.category == metric.appCategory }?.ghgNetwork ?: 0.0
 }

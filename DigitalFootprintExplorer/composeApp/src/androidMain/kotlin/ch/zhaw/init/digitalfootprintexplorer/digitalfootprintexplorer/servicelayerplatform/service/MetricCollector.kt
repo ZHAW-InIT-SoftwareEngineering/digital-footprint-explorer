@@ -1,8 +1,9 @@
 package ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.service
 
 import android.content.Context
-import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.model.AppMetric
-import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.model.NetworkType
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.input.AppUsageInput
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.DataPoint
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.NetworkType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -18,7 +19,7 @@ class MetricCollector(
         startTime: Long,
         endTime: Long,
         mobileSubscriberId: String?
-    ): List<AppMetric> = coroutineScope {
+    ): List<AppUsageInput> = coroutineScope {
         if (startTime > endTime) throw IllegalArgumentException("Start time must be before end time.")
 
         val apps = installedAppProvider.getInstalledLauncherApps(context)
@@ -26,26 +27,28 @@ class MetricCollector(
 
         apps.map { app ->
             async(dispatcher) {
-                val wifiBytes: Long = networkUsageDataSource.getUsageBytes(
+                val wifiBytes: DataPoint = networkUsageDataSource.getUsageBytes(
                     networkType = NetworkType.WIFI,
                     subscriberId = null,
                     startTime = startTime,
                     endTime = endTime,
                     uid = app.uid
-                ) ?: 0L
+                )?.let { DataPoint.Measured(it.toDouble()) }
+                    ?: DataPoint.Unavailable("permission denied")
 
-                val mobileNetworkBytes: Long = networkUsageDataSource.getUsageBytes(
-                    networkType = NetworkType.MOBILE,
+                val cellularBytes: DataPoint = networkUsageDataSource.getUsageBytes(
+                    networkType = NetworkType.CELLULAR,
                     subscriberId = mobileSubscriberId,
                     startTime = startTime,
                     endTime = endTime,
                     uid = app.uid
-                ) ?: 0L
+                )?.let { DataPoint.Measured(it.toDouble()) }
+                    ?: DataPoint.Unavailable("permission denied")
 
-                AppMetric(
+                AppUsageInput(
                     appName = app.name,
                     wifiBytes = wifiBytes,
-                    mobileBytes = mobileNetworkBytes,
+                    cellularBytes = cellularBytes,
                     appCategory = app.category,
                     //todo calculate total foreground time
                     totalForegroundTime = 0

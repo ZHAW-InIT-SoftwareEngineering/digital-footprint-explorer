@@ -5,7 +5,7 @@ import android.app.usage.NetworkStatsManager
 import android.content.Context
 import android.net.NetworkCapabilities
 import android.os.RemoteException
-import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.model.NetworkType
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.NetworkType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -26,7 +26,7 @@ class NetworkUsageDataSource(
 
         val androidNetworkType = when(networkType) {
             NetworkType.WIFI -> NetworkCapabilities.TRANSPORT_WIFI
-            NetworkType.MOBILE -> NetworkCapabilities.TRANSPORT_CELLULAR
+            NetworkType.CELLULAR -> NetworkCapabilities.TRANSPORT_CELLULAR
         }
 
         try {

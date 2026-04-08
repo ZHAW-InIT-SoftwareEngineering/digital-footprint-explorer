@@ -1,4 +1,4 @@
-package ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.model
+package ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model
 
 enum class AppCategory {
     VIDEO_STREAMING,

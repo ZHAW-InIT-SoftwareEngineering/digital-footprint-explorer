@@ -135,7 +135,7 @@ class EmissionsCalculator(
     /**
      * Block 3: Background processes
      *
-     * GHG_background = Σ_p (P_p \[W] * t_p \[h] / 1000 * (1/η) * EF_global)
+     * GHG_background = Σ_p (P_p \[W] * t_p \[h] / 1000 * (1/η) * EF_user)
      */
 
     private fun calculateBackground(background: BackgroundInput): Double {

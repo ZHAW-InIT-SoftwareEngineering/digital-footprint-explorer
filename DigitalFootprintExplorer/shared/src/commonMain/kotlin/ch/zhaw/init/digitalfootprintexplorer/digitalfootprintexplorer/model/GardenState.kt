@@ -8,6 +8,7 @@ enum class GardenState {
     WITHERED;
 
     companion object {
+        // TODO: Implementierung eines definitiven Ansatzes wie der GardenState berechnet wird.
         fun fromEmissions(kgCO2e: Double): GardenState = when {
             kgCO2e < 0.5 -> FLOURISHING
             kgCO2e < 1.5 -> GROWING

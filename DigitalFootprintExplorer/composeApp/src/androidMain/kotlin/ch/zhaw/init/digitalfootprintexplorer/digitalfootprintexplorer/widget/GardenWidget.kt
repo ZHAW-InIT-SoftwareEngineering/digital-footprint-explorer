@@ -7,6 +7,8 @@ import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
 import androidx.glance.Image
 import androidx.glance.ImageProvider
+import androidx.glance.action.actionStartActivity
+import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
@@ -14,6 +16,7 @@ import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
 import androidx.glance.layout.ContentScale
 import androidx.glance.layout.fillMaxSize
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.MainActivity
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.R
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.GardenState
 
@@ -41,7 +44,8 @@ class GardenWidget : GlanceAppWidget() {
             Box(
                 modifier = GlanceModifier
                     .fillMaxSize()
-                    .background(GlanceTheme.colors.background),
+                    .background(GlanceTheme.colors.background)
+                    .clickable(actionStartActivity<MainActivity>()),
                 contentAlignment = Alignment.Center
             ) {
                 Image(

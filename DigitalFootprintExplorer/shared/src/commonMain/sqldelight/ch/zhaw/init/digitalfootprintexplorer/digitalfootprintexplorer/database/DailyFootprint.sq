@@ -1,0 +1,17 @@
+CREATE TABLE DailyFootprintEntry (
+    date    TEXT NOT NULL PRIMARY KEY,
+    kgCO2e  REAL NOT NULL
+);
+
+selectAll:
+SELECT * FROM DailyFootprintEntry ORDER BY date ASC;
+
+insert:
+INSERT OR REPLACE INTO DailyFootprintEntry(date, kgCO2e) VALUES (?, ?);
+
+deleteOldest:
+DELETE FROM DailyFootprintEntry
+WHERE date = (SELECT date FROM DailyFootprintEntry ORDER BY date ASC LIMIT 1);
+
+count:
+SELECT COUNT(*) FROM DailyFootprintEntry;

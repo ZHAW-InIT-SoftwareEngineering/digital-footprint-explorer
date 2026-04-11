@@ -3,6 +3,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
     alias(libs.plugins.androidLibrary)
+    alias(libs.plugins.sqldelight)
 }
 
 kotlin {
@@ -24,10 +25,25 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            // put your Multiplatform dependencies here
+            implementation(libs.sqldelight.runtime)
+            implementation(libs.kotlinx.datetime)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
+        }
+        androidMain.dependencies {
+            implementation(libs.sqldelight.androidDriver)
+        }
+        iosMain.dependencies {
+            implementation(libs.sqldelight.nativeDriver)
+        }
+    }
+}
+
+sqldelight {
+    databases {
+        create("DFEDatabase") {
+            packageName.set("ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.database")
         }
     }
 }

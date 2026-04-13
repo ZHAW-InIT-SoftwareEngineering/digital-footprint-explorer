@@ -36,7 +36,7 @@ object ModelConstants {
      *
      * Maximum display power at brightness=1.0 \[W]
      */
-    const val P_DISPLAY_MAX_WATT = 0.4
+    const val P_DISPLAY_MAX_WATT = 30.4
 
     /**
      * Background processes \[W]
@@ -47,7 +47,6 @@ object ModelConstants {
     val P_BACKGROUND_BY_PROCESS: Map<BackgroundProcess, Double> = mapOf(
         BackgroundProcess.GPS       to 0.2,
         BackgroundProcess.BLUETOOTH to 0.05
-
     )
 
     /**

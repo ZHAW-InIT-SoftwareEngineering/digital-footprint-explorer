@@ -10,6 +10,7 @@ import androidx.glance.ImageProvider
 import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
+import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
 import androidx.glance.layout.Alignment
@@ -23,8 +24,7 @@ import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.Gard
 class GardenWidget : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val state = GardenState.FLOURISHING /* TODO: Status updaten wenn neue Berechnungen gemacht wurden. */
-
+        val state = readState(context)
         provideContent {
             GardenContent(state)
         }
@@ -55,6 +55,29 @@ class GardenWidget : GlanceAppWidget() {
                     contentScale = ContentScale.Fit
                 )
             }
+        }
+    }
+
+    companion object {
+        private const val PREFS_NAME  = "garden_widget_prefs"
+        private const val KEY_STATE   = "garden_state"
+
+        private fun readState(context: Context): GardenState {
+            val prefs     = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val stateName = prefs.getString(KEY_STATE, GardenState.STABLE.name) ?: GardenState.STABLE.name
+            return runCatching { GardenState.valueOf(stateName) }.getOrDefault(GardenState.STABLE)
+        }
+
+        /** Called by [DailyFootprintWorker] after each calculation to persist and refresh the widget. */
+        suspend fun updateState(context: Context, state: GardenState) {
+            context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                .edit()
+                .putString(KEY_STATE, state.name)
+                .apply()
+
+            GlanceAppWidgetManager(context)
+                .getGlanceIds(GardenWidget::class.java)
+                .forEach { id -> GardenWidget().update(context, id) }
         }
     }
 }

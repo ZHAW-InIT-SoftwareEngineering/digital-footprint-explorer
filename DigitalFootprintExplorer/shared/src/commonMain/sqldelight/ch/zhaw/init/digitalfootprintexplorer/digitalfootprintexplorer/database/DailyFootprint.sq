@@ -1,13 +1,18 @@
 CREATE TABLE DailyFootprintEntry (
-    date    TEXT NOT NULL PRIMARY KEY,
-    kgCO2e  REAL NOT NULL
+    date          TEXT NOT NULL PRIMARY KEY,
+    kgCO2e        REAL NOT NULL,
+    ghgAppUsage   REAL NOT NULL DEFAULT 0,
+    ghgDisplay    REAL NOT NULL DEFAULT 0,
+    ghgBackground REAL NOT NULL DEFAULT 0,
+    measuredAt    TEXT NOT NULL DEFAULT ''
 );
 
 selectAll:
 SELECT * FROM DailyFootprintEntry ORDER BY date ASC;
 
 insert:
-INSERT OR REPLACE INTO DailyFootprintEntry(date, kgCO2e) VALUES (?, ?);
+INSERT OR REPLACE INTO DailyFootprintEntry(date, kgCO2e, ghgAppUsage, ghgDisplay, ghgBackground, measuredAt)
+VALUES (?, ?, ?, ?, ?, ?);
 
 deleteOldest:
 DELETE FROM DailyFootprintEntry

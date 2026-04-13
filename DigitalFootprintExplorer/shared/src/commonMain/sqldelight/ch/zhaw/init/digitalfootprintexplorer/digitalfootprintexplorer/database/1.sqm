@@ -1,4 +1,0 @@
-ALTER TABLE DailyFootprintEntry ADD COLUMN ghgAppUsage   REAL NOT NULL DEFAULT 0;
-ALTER TABLE DailyFootprintEntry ADD COLUMN ghgDisplay    REAL NOT NULL DEFAULT 0;
-ALTER TABLE DailyFootprintEntry ADD COLUMN ghgBackground REAL NOT NULL DEFAULT 0;
-ALTER TABLE DailyFootprintEntry ADD COLUMN measuredAt    TEXT NOT NULL DEFAULT '';

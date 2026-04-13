@@ -19,10 +19,26 @@ import kotlinx.datetime.LocalDate
 class GardenStateCalculator(private val database: DFEDatabase) {
 
     /**
-     * Persists [kgCO2e] for [date] and trims the window to the 7 most recent days.
+     * Persists a daily footprint entry and trims the window to the 7 most recent days.
+     *
+     * @param date           The calendar day of the measurement.
+     * @param kgCO2e         Total footprint used for baseline comparisons.
+     * @param ghgAppUsage    CO₂e from app network/device usage [kgCO₂e].
+     * @param ghgDisplay     CO₂e from screen energy [kgCO₂e].
+     * @param ghgBackground  CO₂e from background processes [kgCO₂e].
+     * @param measuredAt     ISO-8601 timestamp of when the measurement was taken.
      */
-    fun recordDailyFootprint(date: LocalDate, kgCO2e: Double) {
-        database.dailyFootprintQueries.insert(date.toString(), kgCO2e)
+    fun recordDailyFootprint(
+        date: LocalDate,
+        kgCO2e: Double,
+        ghgAppUsage: Double,
+        ghgDisplay: Double,
+        ghgBackground: Double,
+        measuredAt: String
+    ) {
+        database.dailyFootprintQueries.insert(
+            date.toString(), kgCO2e, ghgAppUsage, ghgDisplay, ghgBackground, measuredAt
+        )
         val count = database.dailyFootprintQueries.count().executeAsOne()
         if (count > 7L) {
             database.dailyFootprintQueries.deleteOldest()

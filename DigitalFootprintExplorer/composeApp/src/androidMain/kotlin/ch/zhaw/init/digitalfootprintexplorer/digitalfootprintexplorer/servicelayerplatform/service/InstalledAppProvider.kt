@@ -33,7 +33,7 @@ class InstalledAppProvider(
              * Comment: The string provided in the AndroidManifest file, if any.
              * You probably don't want to use this. You probably want PackageManager.getApplicationLabel
              * **/
-            name = applicationInfo.nonLocalizedLabel.toString(),
+            name = applicationInfo.nonLocalizedLabel?.toString() ?: applicationInfo.packageName,
             category = if (foundCategory != AppCategory.MISCELLANEOUS) foundCategory else selectAppCategory(applicationInfo)
         )
     }

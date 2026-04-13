@@ -20,6 +20,8 @@ kotlin {
             implementation(libs.androidx.activity.compose)
             implementation(libs.glance.appwidget)
             implementation(libs.glance.material3)
+            implementation(libs.androidx.work.runtime)
+            implementation(libs.kotlinx.datetime)
             implementation(libs.compose.ui.googleFonts)
         }
         commonMain.dependencies {

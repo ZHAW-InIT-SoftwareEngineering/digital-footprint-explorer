@@ -30,6 +30,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.output.EmissionResult
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.ui.theme.DFETheme
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.widget.GardenWidget
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.widget.GardenWidgetReceiver
@@ -38,7 +39,6 @@ import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.worker.Dai
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.worker.DemoCalculator
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.worker.KEY_DEBUG_SUMMARY
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.worker.TAG_DEBUG_RUN
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import java.util.UUID
@@ -76,32 +76,16 @@ fun App() {
 
         // ── Demo mode state ───────────────────────────────────────────────────
         var demoActive      by remember { mutableStateOf(false) }
-        var demoSummary     by remember { mutableStateOf<String?>(null) }
+        var demoResult      by remember { mutableStateOf<EmissionResult?>(null) }
         var demoGardenState by remember { mutableStateOf<String?>(null) }
         var demoRefreshing  by remember { mutableStateOf(false) }
 
-        // Helper: runs one demo calculation and updates state
-        suspend fun runDemoCalculation() {
-            demoRefreshing = true
-            try {
-                val (result, state) = DemoCalculator.calculate(context)
-                GardenWidget.updateState(context, state)
-                demoGardenState = state.name
-                demoSummary     = buildDemoSummary(result, state.name)
-            } catch (_: Exception) { /* ignore transient errors */ }
-            demoRefreshing = false
-        }
-
-        // Coroutine loop: runs every POLL_MS while demo is active
+        // When demo is toggled ON: capture baseline immediately
         LaunchedEffect(demoActive) {
-            if (!demoActive) {
-                demoSummary     = null
+            if (demoActive) {
+                DemoCalculator.resetBaseline(context)
+                demoResult      = null
                 demoGardenState = null
-                return@LaunchedEffect
-            }
-            while (true) {
-                runDemoCalculation()
-                delay(DemoCalculator.POLL_MS)
             }
         }
 
@@ -122,12 +106,13 @@ fun App() {
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
 
-            // ── Demo mode toggle ──────────────────────────────────────────────
+            // ── Demo mode card ────────────────────────────────────────────────
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 12.dp)
             ) {
+                // Toggle row
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -137,10 +122,8 @@ fun App() {
                     Column(modifier = Modifier.weight(1f)) {
                         Text("Demo-Modus", style = MaterialTheme.typography.titleMedium)
                         Text(
-                            if (demoActive)
-                                "Aktiv — aktualisiert alle ${DemoCalculator.POLL_MS / 1000}s"
-                            else
-                                "30-Sekunden-Fenster, kalibrierte Schwellenwerte",
+                            if (demoActive) "Aktiv — Baseline gesetzt"
+                            else            "Echtzeit-Messung seit letztem Reset",
                             style = MaterialTheme.typography.bodySmall
                         )
                     }
@@ -148,41 +131,51 @@ fun App() {
                 }
 
                 if (demoActive) {
+                    // Garden state label
                     demoGardenState?.let { state ->
                         Text(
                             text     = "🌱 Gartenzustand: $state",
-                            modifier = Modifier.padding(start = 16.dp, bottom = 4.dp),
+                            modifier = Modifier.padding(start = 16.dp, bottom = 8.dp),
                             style    = MaterialTheme.typography.bodyMedium
                         )
                     }
 
+                    // Refresh button
                     Button(
                         modifier = Modifier.padding(start = 16.dp, bottom = 8.dp),
                         enabled  = !demoRefreshing,
-                        onClick  = { scope.launch { runDemoCalculation() } }
+                        onClick  = {
+                            scope.launch {
+                                demoRefreshing = true
+                                try {
+                                    val (result, state) = DemoCalculator.calculate(context)
+                                    GardenWidget.updateState(context, state)
+                                    demoResult      = result
+                                    demoGardenState = state.name
+                                } catch (_: Exception) { }
+                                demoRefreshing = false
+                            }
+                        }
                     ) {
                         if (demoRefreshing) {
                             CircularProgressIndicator(
-                                modifier  = Modifier.padding(end = 8.dp),
+                                modifier    = Modifier.padding(end = 8.dp),
                                 strokeWidth = 2.dp,
-                                color     = MaterialTheme.colorScheme.onPrimary
+                                color       = MaterialTheme.colorScheme.onPrimary
                             )
                         }
                         Text("Gartenzustand aktualisieren")
                     }
 
-                    demoSummary?.let { summary ->
+                    // Result summary
+                    demoResult?.let { result ->
                         Text(
-                            text     = summary,
-                            modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
-                            style    = MaterialTheme.typography.bodySmall,
+                            text       = buildDemoSummary(result, demoGardenState ?: ""),
+                            modifier   = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
+                            style      = MaterialTheme.typography.bodySmall,
                             fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
                         )
-                    } ?: CircularProgressIndicator(
-                        modifier = Modifier
-                            .padding(16.dp)
-                            .align(Alignment.CenterHorizontally)
-                    )
+                    }
                 }
             }
 
@@ -224,20 +217,13 @@ fun App() {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-private fun buildDemoSummary(
-    result: ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.output.EmissionResult,
-    state: String
-): String {
-    fun f(v: Double) = when {
-        v == 0.0 -> "0.000000"
-        else     -> "%.6f".format(v)
-    }
+private fun buildDemoSummary(result: EmissionResult, state: String): String {
+    fun f(v: Double) = "%.6f".format(v)
     return """
-window: 30 s
-app    : ${f(result.ghgAppUsage  * 1000)} gCO₂e
-display: ${f(result.ghgDisplay   * 1000)} gCO₂e
+app    : ${f(result.ghgAppUsage   * 1000)} gCO₂e
+display: ${f(result.ghgDisplay    * 1000)} gCO₂e
 bg     : ${f(result.ghgBackground * 1000)} gCO₂e
-total  : ${f(result.ghgTotal     * 1000)} gCO₂e
+total  : ${f(result.ghgTotal      * 1000)} gCO₂e
 state  : $state
     """.trimIndent()
 }

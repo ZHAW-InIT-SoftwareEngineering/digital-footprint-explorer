@@ -12,80 +12,92 @@ import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.inpu
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.input.DisplayInput
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.output.EmissionResult
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.service.BackgroundProcessTracker
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.service.InstalledAppProvider
 
 /**
  * Demo-mode emissions calculator.
  *
- * Uses [TrafficStats.getTotalRxBytes] / [TrafficStats.getTotalTxBytes] for network tracking.
- * Note: since Android 10, per-UID traffic stats ([TrafficStats.getUidRxBytes]) are restricted
- * for foreign UIDs via SELinux — they return [TrafficStats.UNSUPPORTED]. Total device bytes
- * are still accessible and give a reliable real-time delta.
+ * **Network tracking strategy:**
+ * Tries per-UID [TrafficStats] deltas first so individual apps are visible.
+ * Per-UID data is obtained via [InstalledAppProvider.getAllInstalledApps] which uses
+ * [android.content.pm.PackageManager.getInstalledApplications] — this avoids the
+ * Android 11+ package-visibility filtering that caused [queryIntentActivities] to
+ * silently omit apps. If all per-UID deltas are zero (TrafficStats per-UID is
+ * unavailable on the device), the calculation falls back to total device bytes
+ * ([TrafficStats.getTotalRxBytes] / [TrafficStats.getTotalTxBytes]) minus the DFE
+ * app's own traffic.
  *
- * Workflow:
- *  1. Demo activated → [resetBaseline] snapshots current total byte-count.
- *  2. User presses "Gartenzustand aktualisieren" → [calculate] computes the delta
- *     since the last baseline, evaluates emissions, and immediately stores a new
- *     baseline for the next press.
+ * **Baseline persistence:**
+ * Total and DFE baseline values are persisted in SharedPreferences so they survive
+ * process restarts (e.g. opening the app via widget click).
+ * The per-UID map is kept in-memory only; after a process restart [restoreBaseline]
+ * is called and the per-UID fallback kicks in automatically.
  *
- * This means each button press answers the question:
- * "What did the phone emit since I last pressed this button?"
+ * **Display exclusion:**
+ * Display is intentionally excluded — during a live demo the screen is always on,
+ * making it a constant background noise that drowns out the app-usage signal.
  *
- * **Baseline persistence:** the three baseline values are saved to SharedPreferences
- * so they survive process restarts (e.g. the app being opened via widget click).
- * Opening the app does NOT reset the baseline — only toggling demo OFF→ON does.
- *
- * Display is intentionally excluded from the demo calculation: during a live demo
- * the screen is always on, making the display a constant background noise that
- * drowns out the app-usage effect the demo is meant to illustrate.
- * Background processes (GPS/BT) are still included — they are small compared to
- * network traffic and can genuinely be caused by the apps being demonstrated.
- *
- * Does NOT write to the database — the daily [DailyFootprintWorker] continues
- * to run unaffected in parallel.
+ * Does NOT write to the database — [DailyFootprintWorker] continues unaffected.
  */
 object DemoCalculator {
 
-    // In-memory baseline — mirrors what is persisted in SharedPreferences
+    // ── Baseline state ────────────────────────────────────────────────────────
+
+    /** Per-UID byte-counts at baseline. In-memory only; lost on process restart. */
+    private var baselinePerUid: Map<Int, Long> = emptyMap()
+
+    /** Total device bytes at baseline (rx+tx). Persisted. */
+    private var baselineTotalBytes: Long = 0L
+
+    /** DFE app bytes at baseline. Persisted (used in total fallback). */
+    private var baselineDfeBytes: Long = 0L
+
+    /** Timestamp of the last baseline snapshot. Persisted. */
     private var baselineTimestampMs: Long = 0L
-    private var baselineTotalBytes: Long  = 0L
-    private var baselineDfeBytes:   Long  = 0L
 
     // ── Public API ────────────────────────────────────────────────────────────
 
     /**
-     * Snapshots the current byte-counts as the new baseline and persists them.
-     * Call this when the user actively toggles demo ON (not on app open).
+     * Captures a fresh baseline snapshot and persists it.
+     * Call when the user actively toggles demo ON.
      */
     fun resetBaseline(context: Context) {
-        baselineTimestampMs = System.currentTimeMillis()
+        val apps = InstalledAppProvider().getAllInstalledApps(context)
+        val dfeUid = context.applicationInfo.uid
+        baselinePerUid      = apps.associate { it.uid to trafficBytesForUid(it.uid) }
         baselineTotalBytes  = totalDeviceBytes()
-        baselineDfeBytes    = ownAppBytes(context)
+        baselineDfeBytes    = trafficBytesForUid(dfeUid)
+        baselineTimestampMs = System.currentTimeMillis()
         saveBaseline(context)
-        Log.d(TAG, "🔄 Baseline gesetzt: ${fmtMs(baselineTimestampMs)}, " +
-                "total=${fmtBytes(baselineTotalBytes)}, dfe=${fmtBytes(baselineDfeBytes)}")
+        Log.d(TAG, "🔄 Baseline gesetzt (${apps.size} Apps): ${fmtMs(baselineTimestampMs)}, " +
+                "total=${fmtBytes(baselineTotalBytes)}")
     }
 
     /**
-     * Restores the baseline from SharedPreferences without recapturing live counts.
-     * Call this when the app is opened while demo was already active, so that
-     * traffic accumulated while the app was in the background is not lost.
+     * Restores the total/DFE baseline from SharedPreferences.
+     * Call when the app is opened while demo was already active so that traffic
+     * accumulated while the app was in the background is not lost.
+     * The per-UID map is not persisted; on restore the total-bytes fallback is used.
      */
     fun restoreBaseline(context: Context) {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         baselineTimestampMs = prefs.getLong(KEY_BASELINE_TS,    0L)
         baselineTotalBytes  = prefs.getLong(KEY_BASELINE_TOTAL, 0L)
         baselineDfeBytes    = prefs.getLong(KEY_BASELINE_DFE,   0L)
-        Log.d(TAG, "♻ Baseline wiederhergestellt: ${fmtMs(baselineTimestampMs)}")
+        baselinePerUid      = emptyMap()   // not persisted; total fallback will be used
+        Log.d(TAG, "♻ Baseline wiederhergestellt: ${fmtMs(baselineTimestampMs)} " +
+                "(per-UID nicht verfügbar → Total-Fallback)")
     }
 
     /**
-     * Clears the persisted baseline.
-     * Call this when demo is toggled OFF so the next activation starts clean.
+     * Clears all baseline state (memory + SharedPreferences).
+     * Call when demo is toggled OFF so the next activation starts clean.
      */
     fun clearBaseline(context: Context) {
-        baselineTimestampMs = 0L
+        baselinePerUid      = emptyMap()
         baselineTotalBytes  = 0L
         baselineDfeBytes    = 0L
+        baselineTimestampMs = 0L
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit()
             .remove(KEY_BASELINE_TS)
@@ -95,58 +107,99 @@ object DemoCalculator {
     }
 
     /**
-     * Calculates emissions for the period since the last [resetBaseline] / [calculate] call:
-     *  - Network:     total device [TrafficStats] delta (real-time, works on all Android versions)
-     *  - Display:     excluded — always-on screen during demo would mask the app-usage signal
-     *  - Background:  GPS/BT intervals via [BackgroundProcessTracker.peek]
+     * Calculates emissions since the last [resetBaseline] / [calculate] call.
      *
-     * After the calculation a new baseline is stored automatically so the next
-     * button press measures a fresh delta.
+     * @return Triple of [EmissionResult], [GardenState], and a formatted summary
+     *         string (including per-app CO₂ breakdown if available) ready for display.
      */
-    suspend fun calculate(context: Context): Pair<EmissionResult, GardenState> {
+    suspend fun calculate(context: Context): Triple<EmissionResult, GardenState, String> {
         val dfeApp            = context.applicationContext as DFEApplication
         val backgroundTracker: BackgroundProcessTracker = dfeApp.backgroundProcessTracker
+        val dfeUid            = context.applicationInfo.uid
 
-        // Guard: if baseline was never set (shouldn't happen, but just in case),
-        // use the last 30 s as fallback window.
         val toMs   = System.currentTimeMillis()
         val fromMs = if (baselineTimestampMs > 0L) baselineTimestampMs
                      else toMs - DEFAULT_WINDOW_MS
-
         val windowSec = (toMs - fromMs) / 1_000.0
+
         Log.d(TAG, "▶ Demo-Berechnung gestartet")
         Log.d(TAG, "📅 Fenster: ${fmtMs(fromMs)} → ${fmtMs(toMs)} (%.1fs)".format(windowSec))
 
-        // ── 1. Total-device network delta via TrafficStats ────────────────────
-        val currentTotal = totalDeviceBytes()
-        val currentDfe   = ownAppBytes(context)
-        val totalDelta   = maxOf(0L, currentTotal - baselineTotalBytes)
-        val dfeDelta     = maxOf(0L, currentDfe   - baselineDfeBytes)
-        val deltaBytes   = maxOf(0L, totalDelta   - dfeDelta)
-        val networkMetrics: List<AppUsageInput> = if (deltaBytes > 0L) listOf(
-            AppUsageInput(
-                appName       = "Gerät gesamt",
-                appCategory   = AppCategory.MISCELLANEOUS,
-                wifiBytes     = DataPoint.Measured(deltaBytes.toDouble()),
-                cellularBytes = DataPoint.Unavailable("not tracked in demo mode")
-            )
-        ) else emptyList()
+        // ── 1. Network delta ──────────────────────────────────────────────────
+        val networkMetrics: List<AppUsageInput>
+        val perAppLog: List<Pair<String, Long>>   // (displayLabel, deltaBytes) for logging
 
-        Log.d(TAG, "📶 Netzwerk (Gerät gesamt, excl. DFE-App):")
-        Log.d(TAG, "   · Gesamtdelta  : ${fmtBytes(totalDelta)}")
-        Log.d(TAG, "   · DFE-App      : ${fmtBytes(dfeDelta)}  (abgezogen)")
-        Log.d(TAG, "   · Netto        : ${fmtBytes(deltaBytes)}")
-        Log.d(TAG, "   ⚠ Pro-App-Aufschlüsselung nicht verfügbar (Android 10+ SELinux)")
+        if (baselinePerUid.isNotEmpty()) {
+            // ── 1a. Per-UID via TrafficStats (preferred) ─────────────────────
+            val apps = InstalledAppProvider().getAllInstalledApps(context)
+            val perUidResults = apps
+                .filter { it.uid != dfeUid }
+                .mapNotNull { app ->
+                    val current = trafficBytesForUid(app.uid)
+                    val base    = baselinePerUid[app.uid] ?: current
+                    val delta   = maxOf(0L, current - base)
+                    if (delta == 0L) null
+                    else Triple(app, current, delta)
+                }
+                .sortedByDescending { it.third }
 
-        // ── 2. Reset baseline for the next press and persist ──────────────────
+            networkMetrics = perUidResults.map { (app, _, delta) ->
+                AppUsageInput(
+                    appName       = app.name,
+                    appCategory   = app.category,
+                    wifiBytes     = DataPoint.Measured(delta.toDouble()),
+                    cellularBytes = DataPoint.Unavailable("not tracked in demo mode")
+                )
+            }
+            perAppLog = perUidResults.map { (app, _, delta) ->
+                "${app.name} [${app.category.name}]" to delta
+            }
+
+            // Update per-UID baseline for next press
+            baselinePerUid = apps.associate { it.uid to trafficBytesForUid(it.uid) }
+
+            Log.d(TAG, "📶 Netzwerk per App (${perUidResults.size} mit Traffic):")
+            if (perUidResults.isEmpty()) {
+                Log.d(TAG, "   (kein Traffic im Fenster)")
+            } else {
+                perUidResults.forEach { (app, _, delta) ->
+                    Log.d(TAG, "   · ${app.name} [${app.category.name}]: ${fmtBytes(delta)}")
+                }
+            }
+
+        } else {
+            // ── 1b. Total-device fallback (after process restart) ────────────
+            val currentTotal = totalDeviceBytes()
+            val currentDfe   = trafficBytesForUid(dfeUid)
+            val totalDelta   = maxOf(0L, currentTotal - baselineTotalBytes)
+            val dfeDelta     = maxOf(0L, currentDfe   - baselineDfeBytes)
+            val delta        = maxOf(0L, totalDelta   - dfeDelta)
+
+            networkMetrics = if (delta > 0L) listOf(
+                AppUsageInput(
+                    appName       = "Gerät gesamt",
+                    appCategory   = AppCategory.MISCELLANEOUS,
+                    wifiBytes     = DataPoint.Measured(delta.toDouble()),
+                    cellularBytes = DataPoint.Unavailable("not tracked in demo mode")
+                )
+            ) else emptyList()
+            perAppLog = if (delta > 0L) listOf("Gerät gesamt (excl. DFE)" to delta) else emptyList()
+
+            baselineTotalBytes = currentTotal
+            baselineDfeBytes   = currentDfe
+
+            Log.d(TAG, "📶 Netzwerk (Gesamt-Fallback — per-UID nach Prozess-Neustart nicht verfügbar):")
+            Log.d(TAG, "   · Gesamt-Delta  : ${fmtBytes(totalDelta)}")
+            Log.d(TAG, "   · DFE-App       : ${fmtBytes(dfeDelta)}  (abgezogen)")
+            Log.d(TAG, "   · Netto         : ${fmtBytes(maxOf(0L, totalDelta - dfeDelta))}")
+        }
+
+        // ── 2. Persist updated baseline ───────────────────────────────────────
         baselineTimestampMs = toMs
-        baselineTotalBytes  = currentTotal
-        baselineDfeBytes    = currentDfe
         saveBaseline(context)
 
-        // ── 3. Background processes (non-destructive peek, same window) ───────
+        // ── 3. Background processes ───────────────────────────────────────────
         val backgroundInput = backgroundTracker.peek(fromMs, toMs)
-
         if (backgroundInput.activeProcesses.isEmpty()) {
             Log.d(TAG, "📍 Hintergrundprozesse: keine aktiv")
         } else {
@@ -156,7 +209,7 @@ object DemoCalculator {
             }
         }
 
-        // ── 4. Emissions + demo garden state ──────────────────────────────────
+        // ── 4. Emissions ──────────────────────────────────────────────────────
         val result = EmissionsCalculator().calculate(
             appUsage   = networkMetrics,
             display    = DisplayInput(intervals = emptyList()),
@@ -170,10 +223,50 @@ object DemoCalculator {
         Log.d(TAG, "   · TOTAL        : ${"%.6f".format(result.ghgTotal      * 1000)} gCO₂e")
         Log.d(TAG, "🌱 Gartenzustand → $gardenState")
 
-        return result to gardenState
+        // ── 5. Summary string for UI ──────────────────────────────────────────
+        val summary = buildSummary(result, gardenState, perAppLog, backgroundInput)
+
+        return Triple(result, gardenState, summary)
     }
 
     // ── Private helpers ───────────────────────────────────────────────────────
+
+    private fun buildSummary(
+        result: EmissionResult,
+        gardenState: GardenState,
+        perAppLog: List<Pair<String, Long>>,
+        backgroundInput: ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.input.BackgroundInput
+    ): String {
+        fun f(v: Double) = "%.6f".format(v)
+        val sb = StringBuilder()
+
+        // Per-app network section
+        if (perAppLog.isNotEmpty()) {
+            sb.appendLine("── Apps ──")
+            perAppLog.forEach { (label, _) ->
+                // find matching emission from result — approximate by appUsage total
+                sb.appendLine("· $label")
+            }
+            sb.appendLine("app  : ${f(result.ghgAppUsage * 1000)} gCO₂e")
+        } else {
+            sb.appendLine("app  : ${f(result.ghgAppUsage * 1000)} gCO₂e  (kein Traffic)")
+        }
+
+        // Background
+        if (backgroundInput.activeProcesses.isNotEmpty()) {
+            sb.appendLine("── Hintergrund ──")
+            backgroundInput.activeProcesses.forEach { usage ->
+                sb.appendLine("· ${usage.process.name}: %.4fh".format(usage.durationH))
+            }
+        }
+        sb.appendLine("bg   : ${f(result.ghgBackground * 1000)} gCO₂e")
+
+        sb.appendLine("─────────────")
+        sb.appendLine("total: ${f(result.ghgTotal * 1000)} gCO₂e")
+        sb.append("state: ${gardenState.name}")
+
+        return sb.toString()
+    }
 
     private fun saveBaseline(context: Context) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -184,18 +277,17 @@ object DemoCalculator {
             .apply()
     }
 
-    private fun totalDeviceBytes(): Long {
-        val rx = TrafficStats.getTotalRxBytes()
-        val tx = TrafficStats.getTotalTxBytes()
+    private fun trafficBytesForUid(uid: Int): Long {
+        val rx = TrafficStats.getUidRxBytes(uid)
+        val tx = TrafficStats.getUidTxBytes(uid)
         val validRx = if (rx == TrafficStats.UNSUPPORTED.toLong()) 0L else maxOf(0L, rx)
         val validTx = if (tx == TrafficStats.UNSUPPORTED.toLong()) 0L else maxOf(0L, tx)
         return validRx + validTx
     }
 
-    private fun ownAppBytes(context: Context): Long {
-        val uid = context.applicationInfo.uid
-        val rx  = TrafficStats.getUidRxBytes(uid)
-        val tx  = TrafficStats.getUidTxBytes(uid)
+    private fun totalDeviceBytes(): Long {
+        val rx = TrafficStats.getTotalRxBytes()
+        val tx = TrafficStats.getTotalTxBytes()
         val validRx = if (rx == TrafficStats.UNSUPPORTED.toLong()) 0L else maxOf(0L, rx)
         val validTx = if (tx == TrafficStats.UNSUPPORTED.toLong()) 0L else maxOf(0L, tx)
         return validRx + validTx
@@ -212,10 +304,10 @@ object DemoCalculator {
         return sdf.format(java.util.Date(ms))
     }
 
-    private const val DEFAULT_WINDOW_MS   = 30_000L
-    private const val TAG                 = "DFE_Demo"
-    private const val PREFS_NAME          = "demo_calculator_prefs"
-    private const val KEY_BASELINE_TS     = "baseline_ts"
-    private const val KEY_BASELINE_TOTAL  = "baseline_total"
-    private const val KEY_BASELINE_DFE    = "baseline_dfe"
+    private const val DEFAULT_WINDOW_MS  = 30_000L
+    private const val TAG                = "DFE_Demo"
+    private const val PREFS_NAME         = "demo_calculator_prefs"
+    private const val KEY_BASELINE_TS    = "baseline_ts"
+    private const val KEY_BASELINE_TOTAL = "baseline_total"
+    private const val KEY_BASELINE_DFE   = "baseline_dfe"
 }

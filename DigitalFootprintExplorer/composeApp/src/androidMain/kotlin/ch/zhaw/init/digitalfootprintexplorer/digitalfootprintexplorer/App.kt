@@ -184,9 +184,8 @@ fun App() {
                             scope.launch {
                                 demoRefreshing = true
                                 try {
-                                    val (result, state) = DemoCalculator.calculate(context)
+                                    val (result, state, summary) = DemoCalculator.calculate(context)
                                     GardenWidget.updateState(context, state)
-                                    val summary = buildDemoSummary(result, state.name)
                                     demoGardenState = state.name
                                     demoSummaryText = summary
                                     // Persist so the result survives activity restarts
@@ -258,21 +257,6 @@ fun App() {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-private fun buildDemoSummary(
-    result: ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.output.EmissionResult,
-    state: String
-): String {
-    fun f(v: Double) = "%.6f".format(v)
-    // Display is excluded from the demo calculation (always-on screen is a constant
-    // noise factor that masks the app-usage signal), so it is not shown here.
-    return """
-app  : ${f(result.ghgAppUsage   * 1000)} gCO₂e
-bg   : ${f(result.ghgBackground * 1000)} gCO₂e
-total: ${f(result.ghgTotal      * 1000)} gCO₂e
-state: $state
-    """.trimIndent()
-}
 
 @Composable
 private fun DebugResultCard(text: String) {

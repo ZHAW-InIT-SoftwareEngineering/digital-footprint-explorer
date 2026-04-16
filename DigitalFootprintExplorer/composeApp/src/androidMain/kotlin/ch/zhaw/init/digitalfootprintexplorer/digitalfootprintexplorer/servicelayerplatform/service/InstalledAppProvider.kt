@@ -24,6 +24,37 @@ class InstalledAppProvider(
             .distinctBy {it.uid}
     }
 
+    /**
+     * Returns all user-installed apps (including updated system apps) using
+     * [android.content.pm.PackageManager.getInstalledApplications].
+     *
+     * Unlike [getInstalledLauncherApps] this does **not** use [queryIntentActivities],
+     * which is subject to Android 11+ package-visibility filtering and would silently
+     * omit apps not declared in `<queries>`. This method is therefore more reliable
+     * for UID-based [android.net.TrafficStats] lookups where completeness matters.
+     *
+     * Pure system apps (no user-facing counterpart) are excluded; apps that were
+     * originally system apps but later updated by the user are kept.
+     *
+     * App names are resolved via [android.content.pm.PackageManager.getApplicationLabel]
+     * for correct localised labels.
+     */
+    fun getAllInstalledApps(context: Context): List<App> {
+        val pm = context.packageManager
+        return pm.getInstalledApplications(0)
+            .filter { appInfo ->
+                // Keep user-installed apps and system apps updated by the user
+                (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) == 0 ||
+                (appInfo.flags and ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0
+            }
+            .map { appInfo ->
+                val base = generateApp(applicationInfo = appInfo)
+                // Override with the proper localised label from PackageManager
+                base.copy(name = pm.getApplicationLabel(appInfo).toString())
+            }
+            .distinctBy { it.uid }
+    }
+
     private fun generateApp(applicationInfo: ApplicationInfo): App {
         val foundCategory = compareAppCategoryConfigWithPackageName(packageName = applicationInfo.packageName)
 

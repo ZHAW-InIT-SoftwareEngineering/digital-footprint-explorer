@@ -78,6 +78,19 @@ fun App() {
         var demoActive      by remember { mutableStateOf(false) }
         var demoSummary     by remember { mutableStateOf<String?>(null) }
         var demoGardenState by remember { mutableStateOf<String?>(null) }
+        var demoRefreshing  by remember { mutableStateOf(false) }
+
+        // Helper: runs one demo calculation and updates state
+        suspend fun runDemoCalculation() {
+            demoRefreshing = true
+            try {
+                val (result, state) = DemoCalculator.calculate(context)
+                GardenWidget.updateState(context, state)
+                demoGardenState = state.name
+                demoSummary     = buildDemoSummary(result, state.name)
+            } catch (_: Exception) { /* ignore transient errors */ }
+            demoRefreshing = false
+        }
 
         // Coroutine loop: runs every POLL_MS while demo is active
         LaunchedEffect(demoActive) {
@@ -87,12 +100,7 @@ fun App() {
                 return@LaunchedEffect
             }
             while (true) {
-                try {
-                    val (result, state) = DemoCalculator.calculate(context)
-                    GardenWidget.updateState(context, state)
-                    demoGardenState = state.name
-                    demoSummary = buildDemoSummary(result, state.name)
-                } catch (_: Exception) { /* ignore transient errors */ }
+                runDemoCalculation()
                 delay(DemoCalculator.POLL_MS)
             }
         }
@@ -147,6 +155,22 @@ fun App() {
                             style    = MaterialTheme.typography.bodyMedium
                         )
                     }
+
+                    Button(
+                        modifier = Modifier.padding(start = 16.dp, bottom = 8.dp),
+                        enabled  = !demoRefreshing,
+                        onClick  = { scope.launch { runDemoCalculation() } }
+                    ) {
+                        if (demoRefreshing) {
+                            CircularProgressIndicator(
+                                modifier  = Modifier.padding(end = 8.dp),
+                                strokeWidth = 2.dp,
+                                color     = MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
+                        Text("Gartenzustand aktualisieren")
+                    }
+
                     demoSummary?.let { summary ->
                         Text(
                             text     = summary,

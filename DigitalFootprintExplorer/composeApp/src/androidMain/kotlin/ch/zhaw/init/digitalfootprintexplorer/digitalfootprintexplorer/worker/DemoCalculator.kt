@@ -2,6 +2,7 @@ package ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.worker
 
 import android.content.Context
 import android.net.TrafficStats
+import android.util.Log
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.DFEApplication
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.AppCategory
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.DataPoint
@@ -72,6 +73,10 @@ object DemoCalculator {
         val fromMs = if (baselineTimestampMs > 0L) baselineTimestampMs
                      else toMs - DEFAULT_WINDOW_MS
 
+        val windowSec = (toMs - fromMs) / 1_000.0
+        Log.d(TAG, "▶ Demo-Berechnung gestartet")
+        Log.d(TAG, "📅 Fenster: ${fmtMs(fromMs)} → ${fmtMs(toMs)} (%.1fs)".format(windowSec))
+
         // ── 1. Total-device network delta via TrafficStats ────────────────────
         // Per-UID access is blocked on Android 10+ for foreign UIDs (SELinux);
         // total bytes are still reliable and sufficient for demo purposes.
@@ -93,6 +98,12 @@ object DemoCalculator {
             )
         ) else emptyList()
 
+        Log.d(TAG, "📶 Netzwerk (Gerät gesamt, excl. DFE-App):")
+        Log.d(TAG, "   · Gesamtdelta  : ${fmtBytes(totalDelta)}")
+        Log.d(TAG, "   · DFE-App      : ${fmtBytes(dfeDelta)}  (abgezogen)")
+        Log.d(TAG, "   · Netto        : ${fmtBytes(deltaBytes)}")
+        Log.d(TAG, "   ⚠ Pro-App-Aufschlüsselung nicht verfügbar (Android 10+ SELinux)")
+
         // ── 2. Reset baseline immediately so the next press measures a fresh delta
         baselineTimestampMs = toMs
         baselineTotalBytes  = currentTotal
@@ -100,6 +111,15 @@ object DemoCalculator {
 
         // ── 3. Background processes (non-destructive peek, same window)
         val backgroundInput = backgroundTracker.peek(fromMs, toMs)
+
+        if (backgroundInput.activeProcesses.isEmpty()) {
+            Log.d(TAG, "📍 Hintergrundprozesse: keine aktiv")
+        } else {
+            Log.d(TAG, "📍 Hintergrundprozesse:")
+            backgroundInput.activeProcesses.forEach { usage ->
+                Log.d(TAG, "   · ${usage.process.name}: %.4fh".format(usage.durationH))
+            }
+        }
 
         // ── 4. Emissions + demo garden state ──────────────────────────────────
         // Display is passed as empty — see class KDoc for the reasoning.
@@ -109,6 +129,13 @@ object DemoCalculator {
             background = backgroundInput
         )
         val gardenState = dfeApp.gardenStateCalculator.calculateDemoGardenState(result.ghgTotal)
+
+        Log.d(TAG, "🔢 Emissionen:")
+        Log.d(TAG, "   · App-Nutzung  : ${"%.6f".format(result.ghgAppUsage   * 1000)} gCO₂e")
+        Log.d(TAG, "   · Hintergrund  : ${"%.6f".format(result.ghgBackground * 1000)} gCO₂e")
+        Log.d(TAG, "   · TOTAL        : ${"%.6f".format(result.ghgTotal      * 1000)} gCO₂e")
+        Log.d(TAG, "🌱 Gartenzustand → $gardenState")
+
         return result to gardenState
     }
 
@@ -141,4 +168,18 @@ object DemoCalculator {
     }
 
     private const val DEFAULT_WINDOW_MS = 30_000L  // fallback if baseline was never set
+    private const val TAG = "DFE_Demo"
+
+    // ── Log formatters ────────────────────────────────────────────────────────
+
+    private fun fmtBytes(bytes: Long): String = when {
+        bytes >= 1_000_000 -> "%.2f MB".format(bytes / 1_000_000.0)
+        bytes >= 1_000     -> "%.1f KB".format(bytes / 1_000.0)
+        else               -> "$bytes B"
+    }
+
+    private fun fmtMs(ms: Long): String {
+        val sdf = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault())
+        return sdf.format(java.util.Date(ms))
+    }
 }

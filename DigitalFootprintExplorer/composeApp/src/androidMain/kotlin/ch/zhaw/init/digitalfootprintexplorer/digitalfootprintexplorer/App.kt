@@ -31,7 +31,6 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.GardenState
-import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.output.EmissionResult
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.ui.theme.DFETheme
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.widget.GardenWidget
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.widget.GardenWidgetReceiver
@@ -76,25 +75,29 @@ fun App() {
         }
 
         // ── Demo mode state ───────────────────────────────────────────────────
-        // Persisted in SharedPreferences so the state survives activity restarts
-        // (e.g. when the app is opened via a widget click).
+        // All three values are persisted in SharedPreferences so that they survive
+        // activity restarts — e.g. when the user opens the app via a widget click
+        // while demo mode was already active.
         val demoPrefs = remember { context.getSharedPreferences("demo_prefs", Context.MODE_PRIVATE) }
         var demoActive      by remember { mutableStateOf(demoPrefs.getBoolean("demo_active", false)) }
-        var demoResult      by remember { mutableStateOf<EmissionResult?>(null) }
-        var demoGardenState by remember { mutableStateOf<String?>(null) }
+        var demoGardenState by remember { mutableStateOf(demoPrefs.getString("demo_garden_state", null)) }
+        var demoSummaryText by remember { mutableStateOf(demoPrefs.getString("demo_summary", null)) }
         var demoRefreshing  by remember { mutableStateOf(false) }
 
-        // When demo is toggled ON: capture baseline and sync widget.
-        // When toggled OFF: clear persisted flag.
+        // When demo is toggled ON:
+        //   - reset the network baseline so the next button press measures a fresh delta
+        //   - keep demoGardenState / demoSummaryText → last result stays visible
+        // When toggled OFF:
+        //   - clear result state so the next activation starts with a clean slate
         LaunchedEffect(demoActive) {
             demoPrefs.edit().putBoolean("demo_active", demoActive).apply()
             if (demoActive) {
                 DemoCalculator.resetBaseline(context)
-                demoResult      = null
+                // No widget reset here — the widget already shows the last correct state.
+            } else {
                 demoGardenState = null
-                // Reset widget to STABLE so it matches the "no result yet" state
-                // in the app and the two displays stay in sync from the start.
-                GardenWidget.updateState(context, GardenState.STABLE)
+                demoSummaryText = null
+                demoPrefs.edit().remove("demo_garden_state").remove("demo_summary").apply()
             }
         }
 
@@ -159,8 +162,14 @@ fun App() {
                                 try {
                                     val (result, state) = DemoCalculator.calculate(context)
                                     GardenWidget.updateState(context, state)
-                                    demoResult      = result
+                                    val summary = buildDemoSummary(result, state.name)
                                     demoGardenState = state.name
+                                    demoSummaryText = summary
+                                    // Persist so the result survives activity restarts
+                                    demoPrefs.edit()
+                                        .putString("demo_garden_state", state.name)
+                                        .putString("demo_summary", summary)
+                                        .apply()
                                 } catch (_: Exception) { }
                                 demoRefreshing = false
                             }
@@ -176,10 +185,10 @@ fun App() {
                         Text("Gartenzustand aktualisieren")
                     }
 
-                    // Result summary
-                    demoResult?.let { result ->
+                    // Result summary (persisted — visible even after app restart)
+                    demoSummaryText?.let { summary ->
                         Text(
-                            text       = buildDemoSummary(result, demoGardenState ?: ""),
+                            text       = summary,
                             modifier   = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
                             style      = MaterialTheme.typography.bodySmall,
                             fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
@@ -226,7 +235,10 @@ fun App() {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-private fun buildDemoSummary(result: EmissionResult, state: String): String {
+private fun buildDemoSummary(
+    result: ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.output.EmissionResult,
+    state: String
+): String {
     fun f(v: Double) = "%.6f".format(v)
     return """
 app    : ${f(result.ghgAppUsage   * 1000)} gCO₂e

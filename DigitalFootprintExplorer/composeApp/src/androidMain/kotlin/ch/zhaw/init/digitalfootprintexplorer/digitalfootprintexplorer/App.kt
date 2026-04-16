@@ -19,6 +19,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.glance.appwidget.GlanceAppWidgetManager
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.permission.UsageStatsPermissionSheet
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.permission.hasUsageStatsPermission
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.permission.openUsageStatsSettings
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.ui.theme.DFETheme
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.widget.GardenWidget
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.widget.GardenWidgetReceiver
@@ -33,29 +36,44 @@ import org.jetbrains.compose.resources.painterResource
 fun App() {
     DFETheme {
         val context = LocalContext.current
-        val scope = rememberCoroutineScope()
-        var showOnboarding by remember { mutableStateOf(false) }
+        val scope   = rememberCoroutineScope()
+        var showWidgetOnboarding by remember { mutableStateOf(false) }
         var showContent by remember { mutableStateOf(false) }
+        var showPermissionOnboarding by remember { mutableStateOf(false) }
 
         LaunchedEffect(Unit) {
             val installedIds = GlanceAppWidgetManager(context).getGlanceIds(GardenWidget::class.java)
-            showOnboarding = installedIds.isEmpty()
+            showWidgetOnboarding = installedIds.isEmpty()
+
+            if (!hasUsageStatsPermission(context)) {
+                showPermissionOnboarding = true
+            }
         }
 
-        if (showOnboarding) {
+        if (showWidgetOnboarding) {
             WidgetOnboardingSheet(
-                onDismiss = { showOnboarding = false },
+                onDismiss = { showWidgetOnboarding = false },
                 onPin = {
                     scope.launch {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                             GlanceAppWidgetManager(context).requestPinGlanceAppWidget(
-                                receiver = GardenWidgetReceiver::class.java,
-                                preview = GardenWidget(),
+                                receiver     = GardenWidgetReceiver::class.java,
+                                preview      = GardenWidget(),
                                 previewState = DpSize(245.dp, 115.dp)
                             )
                         }
-                        showOnboarding = false
+                        showWidgetOnboarding = false
                     }
+                }
+            )
+        }
+
+        if (showPermissionOnboarding) {
+            UsageStatsPermissionSheet(
+                onDismiss = { showPermissionOnboarding = false },
+                onOpenSettings = {
+                    openUsageStatsSettings(context)
+                    showPermissionOnboarding = false
                 }
             )
         }

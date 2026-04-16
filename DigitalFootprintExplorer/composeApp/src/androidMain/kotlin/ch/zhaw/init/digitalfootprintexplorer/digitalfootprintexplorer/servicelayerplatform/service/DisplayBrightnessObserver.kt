@@ -6,6 +6,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.PowerManager
 import android.provider.Settings
+import java.util.Locale
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.input.BrightnessInterval
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.input.DisplayInput
 
@@ -147,10 +148,14 @@ class DisplayBrightnessObserver(private val context: Context) {
         }
     }
 
-    /** Appends one entry in the format "brightness:startMs:endMs" to SharedPreferences. */
+    /**
+     * Appends one entry in the format "brightness:startMs:endMs" to SharedPreferences.
+     * Locale.ROOT is used explicitly so the brightness Double is always serialised with
+     * a dot as decimal separator, regardless of the device locale (e.g. German uses comma).
+     */
     private fun appendInterval(brightness: Double, startMs: Long, endMs: Long) {
         val existing = prefs.getString(KEY_INTERVALS, "") ?: ""
-        val entry    = "$brightness:$startMs:$endMs"
+        val entry    = String.format(Locale.ROOT, "%.10f:%d:%d", brightness, startMs, endMs)
         val updated  = if (existing.isEmpty()) entry else "$existing,$entry"
         prefs.edit().putString(KEY_INTERVALS, updated).apply()
     }

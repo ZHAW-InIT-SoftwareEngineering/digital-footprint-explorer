@@ -17,23 +17,24 @@ class InstalledAppProvider(
         return launcherAppQuery.create(context)
             .map { resolveInfo ->
                 val appInfo = resolveInfo.activityInfo.applicationInfo
-                generateApp(applicationInfo = appInfo)
+                generateApp(context = context, applicationInfo = appInfo)
             }
-            //remove duplicates because the uid could have multiple package names
-            //example: com.google.android.youtube and com.google.android.apps.youtube would have the same uid
-            .distinctBy {it.uid}
+            // Remove duplicates because one UID can have multiple package names,
+            // e.g. com.google.android.youtube and com.google.android.apps.youtube share a UID.
+            .distinctBy { it.uid }
     }
 
-    private fun generateApp(applicationInfo: ApplicationInfo): App {
+    private fun generateApp(context: Context, applicationInfo: ApplicationInfo): App {
         val foundCategory = compareAppCategoryConfigWithPackageName(packageName = applicationInfo.packageName)
+        // Use PackageManager.getApplicationLabel() to obtain the localised, user-visible app name.
+        // Falls back to the package name if the label cannot be resolved.
+        val appName = runCatching {
+            context.packageManager.getApplicationLabel(applicationInfo).toString()
+        }.getOrDefault(applicationInfo.packageName)
 
         return App(
-            uid = applicationInfo.uid,
-            /**todo: verfiy if works correctly, maybe use packageName instead of label.
-             * Comment: The string provided in the AndroidManifest file, if any.
-             * You probably don't want to use this. You probably want PackageManager.getApplicationLabel
-             * **/
-            name = applicationInfo.nonLocalizedLabel?.toString() ?: applicationInfo.packageName,
+            uid      = applicationInfo.uid,
+            name     = appName,
             category = if (foundCategory != AppCategory.MISCELLANEOUS) foundCategory else selectAppCategory(applicationInfo)
         )
     }

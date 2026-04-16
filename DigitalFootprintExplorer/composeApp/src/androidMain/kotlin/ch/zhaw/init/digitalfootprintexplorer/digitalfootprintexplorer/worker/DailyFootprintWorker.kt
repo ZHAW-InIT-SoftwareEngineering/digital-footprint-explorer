@@ -204,9 +204,10 @@ class DailyFootprintWorker(
         private const val WORK_NAME = "daily_footprint"
 
         fun schedule(context: Context) {
-            val request = PeriodicWorkRequestBuilder<DailyFootprintWorker>(24, TimeUnit.HOURS)
-                .setFlexTimeInterval(2, TimeUnit.HOURS)
-                .build()
+            val request = PeriodicWorkRequestBuilder<DailyFootprintWorker>(
+                24, TimeUnit.HOURS,
+                2,  TimeUnit.HOURS   // flex interval: run in the last 2 h of each 24 h period
+            ).build()
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
                 WORK_NAME,
                 ExistingPeriodicWorkPolicy.KEEP,

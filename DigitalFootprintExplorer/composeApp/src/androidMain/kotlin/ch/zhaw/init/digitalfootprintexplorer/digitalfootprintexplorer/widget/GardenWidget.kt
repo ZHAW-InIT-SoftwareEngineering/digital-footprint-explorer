@@ -55,7 +55,7 @@ class GardenWidget : GlanceAppWidget() {
     @Composable
     private fun GardenContent(state: GardenState) {
         val imageRes = when (state) {
-            GardenState.FLOURISHING -> R.drawable.garden_state_1_flourshining
+            GardenState.FLOURISHING -> R.drawable.garden_state_1_flourishing
             GardenState.GROWING     -> R.drawable.garden_state_2_growing
             GardenState.STABLE      -> R.drawable.garden_state_3_stable
             GardenState.WILTING     -> R.drawable.garden_state_4_wilting

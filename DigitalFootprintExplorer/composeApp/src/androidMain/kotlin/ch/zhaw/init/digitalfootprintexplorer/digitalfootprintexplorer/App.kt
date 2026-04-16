@@ -235,7 +235,7 @@ fun App() {
                     currentJobId = request.id
                 }
             ) {
-                Text("[DEBUG] Run footprint worker now")
+                Text("[DEBUG] footprint vergangener Tag")
             }
 
             when (currentWorkInfo?.state) {

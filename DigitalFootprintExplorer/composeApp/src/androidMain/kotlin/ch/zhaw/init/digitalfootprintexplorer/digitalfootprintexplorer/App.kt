@@ -89,13 +89,6 @@ fun App() {
         var demoSummaryText by remember { mutableStateOf(demoPrefs.getString(DemoPreferences.KEY_SUMMARY, null)) }
         var demoRefreshing  by remember { mutableStateOf(false) }
 
-        // On first composition, restore the persisted baseline so traffic accumulated
-        // while the app was in the background (between last button press and now)
-        // is not lost when the user opens the app.
-        LaunchedEffect(Unit) {
-            if (wasActiveOnStart) DemoCalculator.restoreBaseline(context)
-        }
-
         // Reacts to explicit user toggles only (not the initial state from SharedPreferences,
         // since that is handled by the LaunchedEffect(Unit) above).
         // demoActive changes AFTER the first composition, so LaunchedEffect(demoActive)

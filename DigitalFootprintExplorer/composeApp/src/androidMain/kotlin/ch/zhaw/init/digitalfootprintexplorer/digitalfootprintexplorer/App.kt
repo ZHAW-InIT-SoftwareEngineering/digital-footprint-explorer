@@ -1,7 +1,7 @@
 package ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer
 
-import android.content.Context
 import android.os.Build
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -31,16 +31,15 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
-import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.GardenState
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.ui.theme.DFETheme
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.widget.GardenWidget
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.widget.GardenWidgetReceiver
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.widget.WidgetOnboardingSheet
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.worker.DailyFootprintWorker
-import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.worker.DemoCalculator
-import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.worker.DemoPreferences
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.worker.DemoRepository
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.worker.KEY_DEBUG_SUMMARY
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.worker.TAG_DEBUG_RUN
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import java.util.UUID
@@ -77,47 +76,13 @@ fun App() {
         }
 
         // ── Demo mode state ───────────────────────────────────────────────────
-        // All values are persisted in SharedPreferences so they survive activity restarts
-        // (e.g. when the user opens the app via a widget click while demo is active).
-        val demoPrefs = remember { context.getSharedPreferences(DemoPreferences.PREFS_STATE_FILE, Context.MODE_PRIVATE) }
-
-        // Remember whether demo was already active when this composable first ran.
-        // Used to distinguish "app opened while demo was on" from "user toggled demo on".
-        val wasActiveOnStart = remember { demoPrefs.getBoolean(DemoPreferences.KEY_ACTIVE, false) }
-        var demoActive      by remember { mutableStateOf(wasActiveOnStart) }
-        var demoGardenState by remember { mutableStateOf(demoPrefs.getString(DemoPreferences.KEY_GARDEN_STATE, null)) }
-        var demoSummaryText by remember { mutableStateOf(demoPrefs.getString(DemoPreferences.KEY_SUMMARY, null)) }
+        // DemoRepository owns all SharedPreferences access and DemoCalculator calls.
+        // State is persisted so it survives activity restarts (e.g. widget click → app open).
+        val repo            = remember { DemoRepository(context) }
+        var demoActive      by remember { mutableStateOf(repo.wasActiveOnStart) }
+        var demoGardenState by remember { mutableStateOf(repo.loadGardenState()) }
+        var demoSummaryText by remember { mutableStateOf(repo.loadSummary()) }
         var demoRefreshing  by remember { mutableStateOf(false) }
-
-        // Reacts to explicit user toggles only (not the initial state from SharedPreferences,
-        // since that is handled by the LaunchedEffect(Unit) above).
-        // demoActive changes AFTER the first composition, so LaunchedEffect(demoActive)
-        // fires exactly once on start (with the initial value) and then on each toggle.
-        // We skip the first firing by checking against wasActiveOnStart:
-        //   - same value as start → no change, already handled above
-        //   - different value     → user toggled
-        var demoInitialized by remember { mutableStateOf(false) }
-        LaunchedEffect(demoActive) {
-            if (!demoInitialized) {
-                demoInitialized = true
-                return@LaunchedEffect   // initial fire — already handled by LaunchedEffect(Unit)
-            }
-            // User explicitly toggled demo
-            demoPrefs.edit().putBoolean(DemoPreferences.KEY_ACTIVE, demoActive).apply()
-            if (demoActive) {
-                // Toggled ON → fresh start: new baseline, clear old result
-                DemoCalculator.resetBaseline(context)
-                demoGardenState = null
-                demoSummaryText = null
-                demoPrefs.edit().remove(DemoPreferences.KEY_GARDEN_STATE).remove(DemoPreferences.KEY_SUMMARY).apply()
-            } else {
-                // Toggled OFF → clear everything so the next activation starts clean
-                DemoCalculator.clearBaseline(context)
-                demoGardenState = null
-                demoSummaryText = null
-                demoPrefs.edit().remove(DemoPreferences.KEY_GARDEN_STATE).remove(DemoPreferences.KEY_SUMMARY).apply()
-            }
-        }
 
         // ── Daily debug job state ─────────────────────────────────────────────
         var currentJobId by remember { mutableStateOf<UUID?>(null) }
@@ -153,11 +118,19 @@ fun App() {
                         Text("Demo-Modus", style = MaterialTheme.typography.titleMedium)
                         Text(
                             if (demoActive) "Aktiv — Baseline gesetzt"
-                            else            "Echtzeit-Messung seit letztem Reset",
+                            else            "Demo-Modus inaktiv",
                             style = MaterialTheme.typography.bodySmall
                         )
                     }
-                    Switch(checked = demoActive, onCheckedChange = { demoActive = it })
+                    Switch(
+                        checked = demoActive,
+                        onCheckedChange = { enabled ->
+                            demoActive = enabled
+                            demoGardenState = null
+                            demoSummaryText = null
+                            if (enabled) repo.activate() else repo.deactivate()
+                        }
+                    )
                 }
 
                 if (demoActive) {
@@ -178,18 +151,16 @@ fun App() {
                             scope.launch {
                                 demoRefreshing = true
                                 try {
-                                    val (result, state) = DemoCalculator.calculate(context)
-                                    GardenWidget.updateState(context, state)
-                                    val summary = buildDemoSummary(result, state.name)
+                                    val (result, state) = repo.refresh()
                                     demoGardenState = state.name
-                                    demoSummaryText = summary
-                                    // Persist so the result survives activity restarts
-                                    demoPrefs.edit()
-                                        .putString(DemoPreferences.KEY_GARDEN_STATE, state.name)
-                                        .putString(DemoPreferences.KEY_SUMMARY, summary)
-                                        .apply()
-                                } catch (_: Exception) { }
-                                demoRefreshing = false
+                                    demoSummaryText = repo.buildSummary(result, state.name)
+                                } catch (e: CancellationException) {
+                                    throw e
+                                } catch (e: Exception) {
+                                    Log.e("DFE_Demo", "Refresh failed", e)
+                                } finally {
+                                    demoRefreshing = false
+                                }
                             }
                         }
                     ) {
@@ -249,23 +220,6 @@ fun App() {
             }
         }
     }
-}
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-private fun buildDemoSummary(
-    result: ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.output.EmissionResult,
-    state: String
-): String {
-    fun f(v: Double) = "%.6f".format(v)
-    // Display is excluded from the demo calculation (always-on screen is a constant
-    // noise factor that masks the app-usage signal), so it is not shown here.
-    return """
-app  : ${f(result.ghgAppUsage   * 1000)} gCO₂e
-bg   : ${f(result.ghgBackground * 1000)} gCO₂e
-total: ${f(result.ghgTotal      * 1000)} gCO₂e
-state: $state
-    """.trimIndent()
 }
 
 @Composable

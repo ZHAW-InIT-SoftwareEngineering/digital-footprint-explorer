@@ -240,12 +240,13 @@ private fun buildDemoSummary(
     state: String
 ): String {
     fun f(v: Double) = "%.6f".format(v)
+    // Display is excluded from the demo calculation (always-on screen is a constant
+    // noise factor that masks the app-usage signal), so it is not shown here.
     return """
-app    : ${f(result.ghgAppUsage   * 1000)} gCO₂e
-display: ${f(result.ghgDisplay    * 1000)} gCO₂e
-bg     : ${f(result.ghgBackground * 1000)} gCO₂e
-total  : ${f(result.ghgTotal      * 1000)} gCO₂e
-state  : $state
+app  : ${f(result.ghgAppUsage   * 1000)} gCO₂e
+bg   : ${f(result.ghgBackground * 1000)} gCO₂e
+total: ${f(result.ghgTotal      * 1000)} gCO₂e
+state: $state
     """.trimIndent()
 }
 

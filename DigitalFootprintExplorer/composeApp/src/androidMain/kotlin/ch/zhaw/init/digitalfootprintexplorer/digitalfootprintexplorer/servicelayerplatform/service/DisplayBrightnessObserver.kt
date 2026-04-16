@@ -82,6 +82,33 @@ class DisplayBrightnessObserver(private val context: Context) {
     }
 
     /**
+     * Returns all [BrightnessInterval]s clipped to [fromMs]..[toMs] without resetting
+     * stored state. Used by [DemoCalculator] to read recent data non-destructively.
+     *
+     * Includes both persisted completed intervals and the currently open in-memory
+     * interval so that short windows (e.g. 30 s) return meaningful data even if the
+     * brightness has not changed recently.
+     *
+     * Returns an empty [DisplayInput] (no fallback) when no intervals are found.
+     */
+    fun peek(fromMs: Long, toMs: Long): DisplayInput {
+        val now = System.currentTimeMillis()
+        val persisted = parseAndClip(prefs.getString(KEY_INTERVALS, "") ?: "", fromMs, toMs)
+
+        // Include the currently open interval (not yet flushed to SharedPreferences)
+        val openStart = maxOf(intervalStartMs, fromMs)
+        val openEnd   = minOf(now, toMs)
+        val openInterval = if (openEnd > openStart) {
+            listOf(BrightnessInterval(
+                normalizedBrightness = currentBrightness,
+                durationH = (openEnd - openStart) / MILLIS_PER_HOUR
+            ))
+        } else emptyList()
+
+        return DisplayInput(intervals = persisted + openInterval)
+    }
+
+    /**
      * Flushes the current open interval, returns all [BrightnessInterval]s clipped to
      * [fromMs]..[toMs] (yesterday midnight → today midnight), and clears stored state
      * for the next day.

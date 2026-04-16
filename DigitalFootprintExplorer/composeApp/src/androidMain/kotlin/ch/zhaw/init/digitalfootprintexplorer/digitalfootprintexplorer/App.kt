@@ -38,6 +38,7 @@ import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.widget.Gar
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.widget.WidgetOnboardingSheet
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.worker.DailyFootprintWorker
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.worker.DemoCalculator
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.worker.DemoPreferences
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.worker.KEY_DEBUG_SUMMARY
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.worker.TAG_DEBUG_RUN
 import kotlinx.coroutines.flow.flowOf
@@ -78,14 +79,14 @@ fun App() {
         // ── Demo mode state ───────────────────────────────────────────────────
         // All values are persisted in SharedPreferences so they survive activity restarts
         // (e.g. when the user opens the app via a widget click while demo is active).
-        val demoPrefs = remember { context.getSharedPreferences("demo_prefs", Context.MODE_PRIVATE) }
+        val demoPrefs = remember { context.getSharedPreferences(DemoPreferences.PREFS_STATE_FILE, Context.MODE_PRIVATE) }
 
         // Remember whether demo was already active when this composable first ran.
         // Used to distinguish "app opened while demo was on" from "user toggled demo on".
-        val wasActiveOnStart = remember { demoPrefs.getBoolean("demo_active", false) }
+        val wasActiveOnStart = remember { demoPrefs.getBoolean(DemoPreferences.KEY_ACTIVE, false) }
         var demoActive      by remember { mutableStateOf(wasActiveOnStart) }
-        var demoGardenState by remember { mutableStateOf(demoPrefs.getString("demo_garden_state", null)) }
-        var demoSummaryText by remember { mutableStateOf(demoPrefs.getString("demo_summary", null)) }
+        var demoGardenState by remember { mutableStateOf(demoPrefs.getString(DemoPreferences.KEY_GARDEN_STATE, null)) }
+        var demoSummaryText by remember { mutableStateOf(demoPrefs.getString(DemoPreferences.KEY_SUMMARY, null)) }
         var demoRefreshing  by remember { mutableStateOf(false) }
 
         // On first composition, restore the persisted baseline so traffic accumulated
@@ -109,19 +110,19 @@ fun App() {
                 return@LaunchedEffect   // initial fire — already handled by LaunchedEffect(Unit)
             }
             // User explicitly toggled demo
-            demoPrefs.edit().putBoolean("demo_active", demoActive).apply()
+            demoPrefs.edit().putBoolean(DemoPreferences.KEY_ACTIVE, demoActive).apply()
             if (demoActive) {
                 // Toggled ON → fresh start: new baseline, clear old result
                 DemoCalculator.resetBaseline(context)
                 demoGardenState = null
                 demoSummaryText = null
-                demoPrefs.edit().remove("demo_garden_state").remove("demo_summary").apply()
+                demoPrefs.edit().remove(DemoPreferences.KEY_GARDEN_STATE).remove(DemoPreferences.KEY_SUMMARY).apply()
             } else {
                 // Toggled OFF → clear everything so the next activation starts clean
                 DemoCalculator.clearBaseline(context)
                 demoGardenState = null
                 demoSummaryText = null
-                demoPrefs.edit().remove("demo_garden_state").remove("demo_summary").apply()
+                demoPrefs.edit().remove(DemoPreferences.KEY_GARDEN_STATE).remove(DemoPreferences.KEY_SUMMARY).apply()
             }
         }
 
@@ -191,8 +192,8 @@ fun App() {
                                     demoSummaryText = summary
                                     // Persist so the result survives activity restarts
                                     demoPrefs.edit()
-                                        .putString("demo_garden_state", state.name)
-                                        .putString("demo_summary", summary)
+                                        .putString(DemoPreferences.KEY_GARDEN_STATE, state.name)
+                                        .putString(DemoPreferences.KEY_SUMMARY, summary)
                                         .apply()
                                 } catch (_: Exception) { }
                                 demoRefreshing = false

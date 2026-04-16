@@ -61,6 +61,7 @@ object DemoCalculator {
         baselineTotalBytes  = totalDeviceBytes()
         baselineDfeBytes    = ownAppBytes(context)
         saveBaseline(context)
+
         Log.d(TAG, "🔄 Baseline gesetzt: ${fmtMs(baselineTimestampMs)}, " +
                 "total=${fmtBytes(baselineTotalBytes)}, dfe=${fmtBytes(baselineDfeBytes)}")
     }
@@ -71,10 +72,10 @@ object DemoCalculator {
      * traffic accumulated while the app was in the background is not lost.
      */
     fun restoreBaseline(context: Context) {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        baselineTimestampMs = prefs.getLong(KEY_BASELINE_TS,    0L)
-        baselineTotalBytes  = prefs.getLong(KEY_BASELINE_TOTAL, 0L)
-        baselineDfeBytes    = prefs.getLong(KEY_BASELINE_DFE,   0L)
+        val prefs = context.getSharedPreferences(DemoPreferences.PREFS_CALCULATOR_FILE, Context.MODE_PRIVATE)
+        baselineTimestampMs = prefs.getLong(DemoPreferences.KEY_BASELINE_TS,    0L)
+        baselineTotalBytes  = prefs.getLong(DemoPreferences.KEY_BASELINE_TOTAL, 0L)
+        baselineDfeBytes    = prefs.getLong(DemoPreferences.KEY_BASELINE_DFE,   0L)
         Log.d(TAG, "♻ Baseline wiederhergestellt: ${fmtMs(baselineTimestampMs)}")
     }
 
@@ -86,11 +87,11 @@ object DemoCalculator {
         baselineTimestampMs = 0L
         baselineTotalBytes  = 0L
         baselineDfeBytes    = 0L
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        context.getSharedPreferences(DemoPreferences.PREFS_CALCULATOR_FILE, Context.MODE_PRIVATE)
             .edit()
-            .remove(KEY_BASELINE_TS)
-            .remove(KEY_BASELINE_TOTAL)
-            .remove(KEY_BASELINE_DFE)
+            .remove(DemoPreferences.KEY_BASELINE_TS)
+            .remove(DemoPreferences.KEY_BASELINE_TOTAL)
+            .remove(DemoPreferences.KEY_BASELINE_DFE)
             .apply()
     }
 
@@ -176,11 +177,11 @@ object DemoCalculator {
     // ── Private helpers ───────────────────────────────────────────────────────
 
     private fun saveBaseline(context: Context) {
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        context.getSharedPreferences(DemoPreferences.PREFS_CALCULATOR_FILE, Context.MODE_PRIVATE)
             .edit()
-            .putLong(KEY_BASELINE_TS,    baselineTimestampMs)
-            .putLong(KEY_BASELINE_TOTAL, baselineTotalBytes)
-            .putLong(KEY_BASELINE_DFE,   baselineDfeBytes)
+            .putLong(DemoPreferences.KEY_BASELINE_TS,    baselineTimestampMs)
+            .putLong(DemoPreferences.KEY_BASELINE_TOTAL, baselineTotalBytes)
+            .putLong(DemoPreferences.KEY_BASELINE_DFE,   baselineDfeBytes)
             .apply()
     }
 
@@ -212,10 +213,6 @@ object DemoCalculator {
         return sdf.format(java.util.Date(ms))
     }
 
-    private const val DEFAULT_WINDOW_MS   = 30_000L
-    private const val TAG                 = "DFE_Demo"
-    private const val PREFS_NAME          = "demo_calculator_prefs"
-    private const val KEY_BASELINE_TS     = "baseline_ts"
-    private const val KEY_BASELINE_TOTAL  = "baseline_total"
-    private const val KEY_BASELINE_DFE    = "baseline_dfe"
+    private const val DEFAULT_WINDOW_MS = 30_000L
+    private const val TAG               = "DFE_Demo"
 }

@@ -5,14 +5,16 @@
     <!-- App usage stats – user must grant manually in Settings -->
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
-<!--    &lt;!&ndash; Battery stats for precise background-process energy (signature – for future use) &ndash;&gt;-->
-<!--    <uses-permission android:name="android.permission.BATTERY_STATS"-->
-<!--        tools:ignore="ProtectedPermissions" />-->
     <!-- Bluetooth state tracking (API < 31) -->
     <uses-permission android:name="android.permission.BLUETOOTH"
         android:maxSdkVersion="30" />
     <!-- Bluetooth state tracking (API 31+) -->
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <!-- Foreground service for continuous brightness / GPS / Bluetooth tracking -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <!-- Restart TrackingService after device reboot -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <queries>
         <intent>
@@ -34,10 +36,24 @@
                 android:name=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
-
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+
+        <!-- Foreground service: hosts DisplayBrightnessObserver and BackgroundProcessTracker -->
+        <service
+            android:name=".servicelayerplatform.service.TrackingService"
+            android:foregroundServiceType="dataSync"
+            android:exported="false" />
+
+        <!-- Restarts TrackingService and WorkManager after device reboot -->
+        <receiver
+            android:name=".worker.BootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
 
         <receiver
             android:name=".widget.GardenWidgetReceiver"

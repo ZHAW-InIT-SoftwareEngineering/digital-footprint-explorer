@@ -22,6 +22,7 @@ import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.widget.Gar
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import java.util.Calendar
 import java.util.concurrent.TimeUnit
 
 const val KEY_DEBUG_SUMMARY = "debug_summary"
@@ -45,8 +46,9 @@ class DailyFootprintWorker(
         Log.d(TAG, "▶ Worker started")
         val app = appContext.applicationContext as DFEApplication
 
-        val endTime   = System.currentTimeMillis()
-        val startTime = endTime - TimeUnit.HOURS.toMillis(24)
+        // ── Calendar-day boundaries: yesterday 00:00 → today 00:00 ───────────
+        val (startTime, endTime) = yesterdayBoundaries()
+        Log.d(TAG, "📅 Calculating emissions for window [$startTime, $endTime]")
 
         // ── 1. Network metrics ────────────────────────────────────────────────
         val subscriberId   = readSubscriberId()
@@ -64,11 +66,11 @@ class DailyFootprintWorker(
         }
 
         // ── 2. Display brightness ─────────────────────────────────────────────
-        val displayInput = app.displayBrightnessObserver.collectAndReset()
+        val displayInput = app.displayBrightnessObserver.collectAndReset(startTime, endTime)
         logDisplay(displayInput)
 
         // ── 3. Background processes ───────────────────────────────────────────
-        val backgroundInput = app.backgroundProcessTracker.collectAndReset()
+        val backgroundInput = app.backgroundProcessTracker.collectAndReset(startTime, endTime)
         logBackground(backgroundInput)
 
         // ── 4. Emissions calculation ──────────────────────────────────────────
@@ -108,7 +110,7 @@ class DailyFootprintWorker(
         return Result.success(workDataOf(KEY_DEBUG_SUMMARY to summary))
     }
 
-    // ── Logging helpers ─────────────────────────────────────────────────────── ───────────────────────────────────────────────────────
+    // ── Logging helpers ───────────────────────────────────────────────────────
 
     private fun logDisplay(display: DisplayInput) {
         val avgBrightness = if (display.intervals.isEmpty()) 0.0
@@ -168,10 +170,10 @@ class DailyFootprintWorker(
 
     /** Formats with enough precision to show small values (e.g. 0.0024g instead of 0.00g). */
     private fun f(v: Double) = when {
-        v == 0.0        -> "0.00"
-        v < 0.01        -> "%.5f".format(v)
-        v < 1.0         -> "%.4f".format(v)
-        else            -> "%.2f".format(v)
+        v == 0.0 -> "0.00"
+        v < 0.01 -> "%.5f".format(v)
+        v < 1.0  -> "%.4f".format(v)
+        else     -> "%.2f".format(v)
     }
 
     @Suppress("DEPRECATION", "MissingPermission")
@@ -182,12 +184,28 @@ class DailyFootprintWorker(
         null
     }
 
+    /**
+     * Returns the Unix-ms boundaries for yesterday's full calendar day:
+     * yesterday 00:00:00.000 → today 00:00:00.000.
+     */
+    private fun yesterdayBoundaries(): Pair<Long, Long> {
+        val todayMidnight = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
+        val yesterdayMidnight = todayMidnight - TimeUnit.DAYS.toMillis(1)
+        return yesterdayMidnight to todayMidnight
+    }
+
     companion object {
         const val TAG       = "DFE_Worker"
         private const val WORK_NAME = "daily_footprint"
 
         fun schedule(context: Context) {
             val request = PeriodicWorkRequestBuilder<DailyFootprintWorker>(24, TimeUnit.HOURS)
+                .setFlexTimeInterval(2, TimeUnit.HOURS)
                 .build()
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
                 WORK_NAME,

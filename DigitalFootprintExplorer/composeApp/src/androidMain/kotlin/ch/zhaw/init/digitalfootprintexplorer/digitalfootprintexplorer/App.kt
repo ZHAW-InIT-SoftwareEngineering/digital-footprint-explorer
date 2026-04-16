@@ -30,6 +30,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.GardenState
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.output.EmissionResult
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.ui.theme.DFETheme
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.widget.GardenWidget
@@ -75,17 +76,25 @@ fun App() {
         }
 
         // ── Demo mode state ───────────────────────────────────────────────────
-        var demoActive      by remember { mutableStateOf(false) }
+        // Persisted in SharedPreferences so the state survives activity restarts
+        // (e.g. when the app is opened via a widget click).
+        val demoPrefs = remember { context.getSharedPreferences("demo_prefs", Context.MODE_PRIVATE) }
+        var demoActive      by remember { mutableStateOf(demoPrefs.getBoolean("demo_active", false)) }
         var demoResult      by remember { mutableStateOf<EmissionResult?>(null) }
         var demoGardenState by remember { mutableStateOf<String?>(null) }
         var demoRefreshing  by remember { mutableStateOf(false) }
 
-        // When demo is toggled ON: capture baseline immediately
+        // When demo is toggled ON: capture baseline and sync widget.
+        // When toggled OFF: clear persisted flag.
         LaunchedEffect(demoActive) {
+            demoPrefs.edit().putBoolean("demo_active", demoActive).apply()
             if (demoActive) {
                 DemoCalculator.resetBaseline(context)
                 demoResult      = null
                 demoGardenState = null
+                // Reset widget to STABLE so it matches the "no result yet" state
+                // in the app and the two displays stay in sync from the start.
+                GardenWidget.updateState(context, GardenState.STABLE)
             }
         }
 

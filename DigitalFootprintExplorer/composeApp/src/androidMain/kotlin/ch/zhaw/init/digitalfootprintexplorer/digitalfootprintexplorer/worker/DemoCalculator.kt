@@ -3,6 +3,7 @@ package ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.worker
 import android.content.Context
 import android.net.TrafficStats
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.DFEApplication
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.AppCategory
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.DataPoint
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.EmissionsCalculator
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.GardenState
@@ -10,20 +11,20 @@ import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.inpu
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.output.EmissionResult
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.service.BackgroundProcessTracker
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.service.DisplayBrightnessObserver
-import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.service.InstalledAppProvider
 
 /**
  * Demo-mode emissions calculator.
  *
- * Instead of querying [NetworkStatsManager] (which has a 2-5 min aggregation delay),
- * this uses [TrafficStats] which reads directly from the Linux kernel and is
- * near-real-time.
+ * Uses [TrafficStats.getTotalRxBytes] / [TrafficStats.getTotalTxBytes] for network tracking.
+ * Note: since Android 10, per-UID traffic stats ([TrafficStats.getUidRxBytes]) are restricted
+ * for foreign UIDs via SELinux — they return [TrafficStats.UNSUPPORTED]. Total device bytes
+ * are still accessible and give a reliable real-time delta.
  *
  * Workflow:
- *  1. Demo activated → [resetBaseline] stores current byte-counts per app UID.
+ *  1. Demo activated → [resetBaseline] snapshots current total byte-count.
  *  2. User presses "Gartenzustand aktualisieren" → [calculate] computes the delta
- *     since the last baseline, evaluates emissions, updates the widget, and
- *     immediately stores a new baseline for the next press.
+ *     since the last baseline, evaluates emissions, and immediately stores a new
+ *     baseline for the next press.
  *
  * This means each button press answers the question:
  * "What did the phone emit since I last pressed this button?"
@@ -38,22 +39,21 @@ object DemoCalculator {
 
     // Baseline state — reset on demo activation and after each calculation
     private var baselineTimestampMs: Long = 0L
-    private var baselineBytes: Map<Int, Long> = emptyMap()  // uid → total bytes at baseline
+    private var baselineTotalBytes: Long  = 0L
 
     /**
-     * Captures the current [TrafficStats] byte-counts for all installed apps.
+     * Snapshots the current total device byte-count.
      * Call this when the demo toggle is turned ON.
      */
     fun resetBaseline(context: Context) {
-        val apps = InstalledAppProvider().getInstalledLauncherApps(context)
         baselineTimestampMs = System.currentTimeMillis()
-        baselineBytes = apps.associate { it.uid to totalBytesForUid(it.uid) }
+        baselineTotalBytes  = totalDeviceBytes()
     }
 
     /**
      * Calculates emissions for the period since the last [resetBaseline] / [calculate] call:
-     *  - Network: [TrafficStats] delta per app UID (real-time, no aggregation delay)
-     *  - Display:  brightness intervals via [DisplayBrightnessObserver.peek]
+     *  - Network: total device [TrafficStats] delta (real-time, works on all Android versions)
+     *  - Display: brightness intervals via [DisplayBrightnessObserver.peek]
      *  - Background: GPS/BT intervals via [BackgroundProcessTracker.peek]
      *
      * After the calculation a new baseline is stored automatically so the next
@@ -68,26 +68,25 @@ object DemoCalculator {
         val fromMs = if (baselineTimestampMs > 0L) baselineTimestampMs
                      else toMs - DEFAULT_WINDOW_MS
 
-        // ── 1. Network delta via TrafficStats ─────────────────────────────────
-        val apps = InstalledAppProvider().getInstalledLauncherApps(context)
-        val networkMetrics: List<AppUsageInput> = apps.mapNotNull { app ->
-            val currentBytes = totalBytesForUid(app.uid)
-            val baseBytes    = baselineBytes[app.uid] ?: currentBytes
-            val deltaBytes   = maxOf(0L, currentBytes - baseBytes)
-            if (deltaBytes == 0L) return@mapNotNull null
+        // ── 1. Total-device network delta via TrafficStats ────────────────────
+        // Per-UID access is blocked on Android 10+ for foreign UIDs (SELinux);
+        // total bytes are still reliable and sufficient for demo purposes.
+        val currentTotal = totalDeviceBytes()
+        val deltaBytes   = maxOf(0L, currentTotal - baselineTotalBytes)
+        val networkMetrics: List<AppUsageInput> = if (deltaBytes > 0L) listOf(
             AppUsageInput(
-                appName            = app.name,
-                appCategory        = app.category,
+                appName       = "Gerät gesamt",
+                appCategory   = AppCategory.MISCELLANEOUS,
                 // TrafficStats does not distinguish WiFi vs. cellular;
                 // attribute all bytes to WiFi (conservative, lower emission factor)
-                wifiBytes          = DataPoint.Measured(deltaBytes.toDouble()),
-                cellularBytes      = DataPoint.Unavailable("not tracked in demo mode")
+                wifiBytes     = DataPoint.Measured(deltaBytes.toDouble()),
+                cellularBytes = DataPoint.Unavailable("not tracked in demo mode")
             )
-        }
+        ) else emptyList()
 
         // ── 2. Reset baseline immediately so the next press measures a fresh delta
         baselineTimestampMs = toMs
-        baselineBytes = apps.associate { it.uid to totalBytesForUid(it.uid) }
+        baselineTotalBytes  = currentTotal
 
         // ── 3. Display brightness (non-destructive peek, same window as network)
         val displayInput    = brightnessObserver.peek(fromMs, toMs)
@@ -108,12 +107,12 @@ object DemoCalculator {
     // ── Private helpers ───────────────────────────────────────────────────────
 
     /**
-     * Returns total bytes (rx + tx) for [uid] from the kernel traffic table.
-     * Returns 0 for UIDs not tracked by the kernel ([TrafficStats.UNSUPPORTED]).
+     * Returns total device bytes (rx + tx across all interfaces).
+     * Falls back to 0 if [TrafficStats] is not supported on this device.
      */
-    private fun totalBytesForUid(uid: Int): Long {
-        val rx = TrafficStats.getUidRxBytes(uid)
-        val tx = TrafficStats.getUidTxBytes(uid)
+    private fun totalDeviceBytes(): Long {
+        val rx = TrafficStats.getTotalRxBytes()
+        val tx = TrafficStats.getTotalTxBytes()
         val validRx = if (rx == TrafficStats.UNSUPPORTED.toLong()) 0L else maxOf(0L, rx)
         val validTx = if (tx == TrafficStats.UNSUPPORTED.toLong()) 0L else maxOf(0L, tx)
         return validRx + validTx

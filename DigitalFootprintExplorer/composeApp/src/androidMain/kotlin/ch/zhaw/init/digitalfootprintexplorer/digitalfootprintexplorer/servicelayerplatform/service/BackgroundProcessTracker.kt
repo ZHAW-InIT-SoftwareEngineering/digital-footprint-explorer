@@ -66,6 +66,33 @@ class BackgroundProcessTracker(private val context: Context) {
     }
 
     /**
+     * Returns accumulated active durations for each [BackgroundProcess] clipped to
+     * [fromMs]..[toMs] without resetting stored state. Used by [DemoFootprintWorker]
+     * to read recent data non-destructively.
+     */
+    fun peek(fromMs: Long, toMs: Long): BackgroundInput {
+        val now = System.currentTimeMillis()
+        val processes = BackgroundProcess.entries.mapNotNull { process ->
+            val isActive = prefs.getBoolean(activeKey(process), false)
+            val startMs  = prefs.getLong(startKey(process), now)
+
+            val raw = prefs.getString(intervalsKey(process), "") ?: ""
+            val completedMs = parseAndClip(raw, fromMs, toMs).sum()
+
+            // Also include the currently open (active) interval clipped to the window
+            val openMs = if (isActive) {
+                val clippedStart = maxOf(startMs, fromMs)
+                val clippedEnd   = minOf(now, toMs)
+                if (clippedEnd > clippedStart) clippedEnd - clippedStart else 0L
+            } else 0L
+
+            val totalH = ((completedMs + openMs) / MILLIS_PER_HOUR).toFloat()
+            if (totalH > 0f) ProcessUsage(process = process, durationH = totalH) else null
+        }
+        return BackgroundInput(activeProcesses = processes)
+    }
+
+    /**
      * Flushes any currently active interval, returns accumulated active durations for each
      * [BackgroundProcess] clipped to [fromMs]..[toMs] (yesterday midnight → today midnight),
      * and clears stored intervals for the next day.

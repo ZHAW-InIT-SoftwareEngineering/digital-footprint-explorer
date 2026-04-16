@@ -1,5 +1,6 @@
 package ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer
 
+import android.content.Context
 import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column

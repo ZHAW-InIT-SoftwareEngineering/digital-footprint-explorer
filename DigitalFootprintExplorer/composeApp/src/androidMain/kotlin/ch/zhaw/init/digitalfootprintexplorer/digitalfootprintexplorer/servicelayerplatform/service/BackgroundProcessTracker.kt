@@ -15,13 +15,18 @@ import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.inpu
 /**
  * Tracks GPS and Bluetooth active-time by listening to system broadcast events.
  *
- * Active durations are accumulated in SharedPreferences so intervals survive app restarts.
+ * Each on/off transition is stored as a timestamped interval ("startMs:endMs") in
+ * SharedPreferences so that [collectAndReset] can clip the data to any arbitrary
+ * calendar-day window — ensuring the daily emissions calculation always covers exactly
+ * 24 h regardless of when the [DailyFootprintWorker] happens to run.
+ *
  * No BATTERY_STATS permission is needed — on/off state is enough to estimate durations,
  * which are then fed into [EmissionsCalculator] using the power constants in ModelConstants.
  *
- * Lifecycle:
- *  - Call [register] in Application.onCreate.
- *  - Call [collectAndReset] from [DailyFootprintWorker] to get today's [BackgroundInput].
+ * Lifecycle (managed by [TrackingService]):
+ *  - Call [register] when the service starts.
+ *  - Call [unregister] when the service is destroyed.
+ *  - Call [collectAndReset] from [DailyFootprintWorker] with yesterday's boundaries.
  */
 class BackgroundProcessTracker(private val context: Context) {
 
@@ -61,22 +66,29 @@ class BackgroundProcessTracker(private val context: Context) {
     }
 
     /**
-     * Returns accumulated active durations for each [BackgroundProcess] since the last reset
-     * and clears the stored state for the next day.
+     * Flushes any currently active interval, returns accumulated active durations for each
+     * [BackgroundProcess] clipped to [fromMs]..[toMs] (yesterday midnight → today midnight),
+     * and clears stored intervals for the next day.
      */
-    fun collectAndReset(): BackgroundInput {
+    fun collectAndReset(fromMs: Long, toMs: Long): BackgroundInput {
         val now = System.currentTimeMillis()
         val processes = BackgroundProcess.entries.mapNotNull { process ->
-            val accumulatedMs = prefs.getLong(durationKey(process), 0L)
-            val isActive      = prefs.getBoolean(activeKey(process), false)
-            val startMs       = prefs.getLong(startKey(process), now)
+            val isActive = prefs.getBoolean(activeKey(process), false)
+            val startMs  = prefs.getLong(startKey(process), now)
 
-            val totalMs = if (isActive) accumulatedMs + (now - startMs) else accumulatedMs
-            val totalH  = (totalMs / 3_600_000.0).toFloat()
+            // Flush the currently open (active) interval up to the end of the window
+            if (isActive) {
+                val flushEnd = minOf(now, toMs)
+                if (flushEnd > startMs) appendInterval(process, startMs, flushEnd)
+            }
 
-            // Reset accumulated duration; keep active state, restart start-timestamp
+            val raw    = prefs.getString(intervalsKey(process), "") ?: ""
+            val totalMs = parseAndClip(raw, fromMs, toMs).sum()
+            val totalH  = (totalMs / MILLIS_PER_HOUR).toFloat()
+
+            // Clear completed intervals; keep active state; restart start-timestamp
             prefs.edit()
-                .putLong(durationKey(process), 0L)
+                .remove(intervalsKey(process))
                 .putLong(startKey(process), now)
                 .apply()
 
@@ -87,30 +99,56 @@ class BackgroundProcessTracker(private val context: Context) {
 
     // ── Private helpers ──────────────────────────────────────────────────────
 
-    /** Called once on startup to seed the initial state without double-counting. */
+    /** Seeds initial state on first ever registration without double-counting. */
     private fun initState(process: BackgroundProcess, isActive: Boolean) {
         if (!prefs.contains(activeKey(process))) {
             prefs.edit()
                 .putBoolean(activeKey(process), isActive)
                 .putLong(startKey(process), System.currentTimeMillis())
-                .putLong(durationKey(process), 0L)
                 .apply()
         }
     }
 
     private fun updateState(process: BackgroundProcess, isNowActive: Boolean) {
-        val now       = System.currentTimeMillis()
+        val now      = System.currentTimeMillis()
         val wasActive = prefs.getBoolean(activeKey(process), false)
-        val editor    = prefs.edit().putBoolean(activeKey(process), isNowActive)
+        val editor   = prefs.edit().putBoolean(activeKey(process), isNowActive)
 
         if (wasActive && !isNowActive) {
-            val start       = prefs.getLong(startKey(process), now)
-            val accumulated = prefs.getLong(durationKey(process), 0L)
-            editor.putLong(durationKey(process), accumulated + (now - start))
+            // Process just turned off → close the interval
+            val start = prefs.getLong(startKey(process), now)
+            appendInterval(process, start, now)
         } else if (!wasActive && isNowActive) {
+            // Process just turned on → record start timestamp
             editor.putLong(startKey(process), now)
         }
         editor.apply()
+    }
+
+    /** Appends one entry in the format "startMs:endMs" to SharedPreferences. */
+    private fun appendInterval(process: BackgroundProcess, startMs: Long, endMs: Long) {
+        val existing = prefs.getString(intervalsKey(process), "") ?: ""
+        val entry    = "$startMs:$endMs"
+        val updated  = if (existing.isEmpty()) entry else "$existing,$entry"
+        prefs.edit().putString(intervalsKey(process), updated).apply()
+    }
+
+    /**
+     * Parses stored intervals, clips each one to [fromMs]..[toMs], and returns the
+     * list of clipped durations in milliseconds.
+     */
+    private fun parseAndClip(raw: String, fromMs: Long, toMs: Long): List<Long> {
+        if (raw.isBlank()) return emptyList()
+        return raw.split(",").mapNotNull { entry ->
+            val parts = entry.split(":")
+            if (parts.size == 2) {
+                val s = parts[0].toLongOrNull() ?: return@mapNotNull null
+                val e = parts[1].toLongOrNull() ?: return@mapNotNull null
+                val clippedStart = maxOf(s, fromMs)
+                val clippedEnd   = minOf(e, toMs)
+                if (clippedEnd > clippedStart) clippedEnd - clippedStart else null
+            } else null
+        }
     }
 
     private fun isGpsEnabled(): Boolean {
@@ -123,11 +161,12 @@ class BackgroundProcessTracker(private val context: Context) {
         return manager?.adapter?.isEnabled == true
     }
 
-    private fun activeKey(p: BackgroundProcess)   = "active_${p.name}"
-    private fun durationKey(p: BackgroundProcess) = "duration_${p.name}"
-    private fun startKey(p: BackgroundProcess)    = "start_${p.name}"
+    private fun activeKey(p: BackgroundProcess)    = "active_${p.name}"
+    private fun startKey(p: BackgroundProcess)     = "start_${p.name}"
+    private fun intervalsKey(p: BackgroundProcess) = "intervals_${p.name}"
 
     companion object {
-        private const val PREFS_NAME = "background_process_tracker"
+        private const val PREFS_NAME      = "background_process_tracker"
+        private const val MILLIS_PER_HOUR = 3_600_000.0
     }
 }

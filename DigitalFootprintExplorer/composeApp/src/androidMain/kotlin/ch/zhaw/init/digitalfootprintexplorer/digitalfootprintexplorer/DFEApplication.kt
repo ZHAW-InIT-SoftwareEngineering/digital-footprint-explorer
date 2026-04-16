@@ -6,6 +6,7 @@ import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.database.c
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.GardenStateCalculator
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.service.BackgroundProcessTracker
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.service.DisplayBrightnessObserver
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.service.TrackingService
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.worker.DailyFootprintWorker
 
 /**
@@ -13,8 +14,9 @@ import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.worker.Dai
  *
  * Initialises:
  *  - SQLDelight database and [GardenStateCalculator]
- *  - [DisplayBrightnessObserver] to track screen-brightness intervals across the day
- *  - [BackgroundProcessTracker] to track GPS/Bluetooth active durations
+ *  - [DisplayBrightnessObserver] and [BackgroundProcessTracker] (registration is handled
+ *    by [TrackingService] so that tracking continues even when the app is not in the foreground)
+ *  - [TrackingService] as a foreground service for continuous brightness / GPS / Bluetooth tracking
  *  - [DailyFootprintWorker] scheduled via WorkManager (runs once per 24 h)
  */
 class DFEApplication : Application() {
@@ -34,9 +36,11 @@ class DFEApplication : Application() {
         val db = createDatabase(DatabaseDriverFactory(this))
         gardenStateCalculator = GardenStateCalculator(db)
 
-        displayBrightnessObserver = DisplayBrightnessObserver(this).also { it.register() }
-        backgroundProcessTracker  = BackgroundProcessTracker(this).also  { it.register() }
+        // Create observers — TrackingService calls register() on both
+        displayBrightnessObserver = DisplayBrightnessObserver(this)
+        backgroundProcessTracker  = BackgroundProcessTracker(this)
 
+        TrackingService.start(this)
         DailyFootprintWorker.schedule(this)
     }
 }

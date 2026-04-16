@@ -8,9 +8,9 @@ import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.Data
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.EmissionsCalculator
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.GardenState
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.input.AppUsageInput
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.input.DisplayInput
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.output.EmissionResult
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.service.BackgroundProcessTracker
-import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.service.DisplayBrightnessObserver
 
 /**
  * Demo-mode emissions calculator.
@@ -29,8 +29,11 @@ import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelay
  * This means each button press answers the question:
  * "What did the phone emit since I last pressed this button?"
  *
- * Display and background-process data use the same time window as the network
- * baseline so all three components are measured consistently.
+ * Display is intentionally excluded from the demo calculation: during a live demo
+ * the screen is always on, making the display a constant background noise that
+ * drowns out the app-usage effect the demo is meant to illustrate.
+ * Background processes (GPS/BT) are still included — they are small compared to
+ * network traffic and can genuinely be caused by the apps being demonstrated.
  *
  * Does NOT write to the database — the daily [DailyFootprintWorker] continues
  * to run unaffected in parallel.
@@ -52,17 +55,16 @@ object DemoCalculator {
 
     /**
      * Calculates emissions for the period since the last [resetBaseline] / [calculate] call:
-     *  - Network: total device [TrafficStats] delta (real-time, works on all Android versions)
-     *  - Display: brightness intervals via [DisplayBrightnessObserver.peek]
-     *  - Background: GPS/BT intervals via [BackgroundProcessTracker.peek]
+     *  - Network:     total device [TrafficStats] delta (real-time, works on all Android versions)
+     *  - Display:     excluded — always-on screen during demo would mask the app-usage signal
+     *  - Background:  GPS/BT intervals via [BackgroundProcessTracker.peek]
      *
      * After the calculation a new baseline is stored automatically so the next
      * button press measures a fresh delta.
      */
     suspend fun calculate(context: Context): Pair<EmissionResult, GardenState> {
-        val dfeApp              = context.applicationContext as DFEApplication
-        val brightnessObserver: DisplayBrightnessObserver = dfeApp.displayBrightnessObserver
-        val backgroundTracker:  BackgroundProcessTracker  = dfeApp.backgroundProcessTracker
+        val dfeApp            = context.applicationContext as DFEApplication
+        val backgroundTracker: BackgroundProcessTracker = dfeApp.backgroundProcessTracker
 
         val toMs   = System.currentTimeMillis()
         val fromMs = if (baselineTimestampMs > 0L) baselineTimestampMs
@@ -88,16 +90,14 @@ object DemoCalculator {
         baselineTimestampMs = toMs
         baselineTotalBytes  = currentTotal
 
-        // ── 3. Display brightness (non-destructive peek, same window as network)
-        val displayInput    = brightnessObserver.peek(fromMs, toMs)
-
-        // ── 4. Background processes (non-destructive peek, same window)
+        // ── 3. Background processes (non-destructive peek, same window)
         val backgroundInput = backgroundTracker.peek(fromMs, toMs)
 
-        // ── 5. Emissions + demo garden state ──────────────────────────────────
+        // ── 4. Emissions + demo garden state ──────────────────────────────────
+        // Display is passed as empty — see class KDoc for the reasoning.
         val result = EmissionsCalculator().calculate(
             appUsage   = networkMetrics,
-            display    = displayInput,
+            display    = DisplayInput(intervals = emptyList()),
             background = backgroundInput
         )
         val gardenState = dfeApp.gardenStateCalculator.calculateDemoGardenState(result.ghgTotal)

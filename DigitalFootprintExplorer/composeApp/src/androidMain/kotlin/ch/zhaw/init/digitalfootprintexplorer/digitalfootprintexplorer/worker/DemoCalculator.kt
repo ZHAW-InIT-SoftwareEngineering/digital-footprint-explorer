@@ -43,14 +43,16 @@ object DemoCalculator {
     // Baseline state — reset on demo activation and after each calculation
     private var baselineTimestampMs: Long = 0L
     private var baselineTotalBytes: Long  = 0L
+    private var baselineDfeBytes:   Long  = 0L  // DFE app's own traffic at baseline
 
     /**
-     * Snapshots the current total device byte-count.
+     * Snapshots the current total device byte-count and the DFE app's own byte-count.
      * Call this when the demo toggle is turned ON.
      */
     fun resetBaseline(context: Context) {
         baselineTimestampMs = System.currentTimeMillis()
         baselineTotalBytes  = totalDeviceBytes()
+        baselineDfeBytes    = ownAppBytes(context)
     }
 
     /**
@@ -73,8 +75,13 @@ object DemoCalculator {
         // ── 1. Total-device network delta via TrafficStats ────────────────────
         // Per-UID access is blocked on Android 10+ for foreign UIDs (SELinux);
         // total bytes are still reliable and sufficient for demo purposes.
+        // The DFE app's own traffic is subtracted so it does not inflate the result:
+        // reading our own UID is always permitted, even on Android 10+.
         val currentTotal = totalDeviceBytes()
-        val deltaBytes   = maxOf(0L, currentTotal - baselineTotalBytes)
+        val currentDfe   = ownAppBytes(context)
+        val totalDelta   = maxOf(0L, currentTotal - baselineTotalBytes)
+        val dfeDelta     = maxOf(0L, currentDfe   - baselineDfeBytes)
+        val deltaBytes   = maxOf(0L, totalDelta   - dfeDelta)
         val networkMetrics: List<AppUsageInput> = if (deltaBytes > 0L) listOf(
             AppUsageInput(
                 appName       = "Gerät gesamt",
@@ -89,6 +96,7 @@ object DemoCalculator {
         // ── 2. Reset baseline immediately so the next press measures a fresh delta
         baselineTimestampMs = toMs
         baselineTotalBytes  = currentTotal
+        baselineDfeBytes    = currentDfe
 
         // ── 3. Background processes (non-destructive peek, same window)
         val backgroundInput = backgroundTracker.peek(fromMs, toMs)
@@ -113,6 +121,20 @@ object DemoCalculator {
     private fun totalDeviceBytes(): Long {
         val rx = TrafficStats.getTotalRxBytes()
         val tx = TrafficStats.getTotalTxBytes()
+        val validRx = if (rx == TrafficStats.UNSUPPORTED.toLong()) 0L else maxOf(0L, rx)
+        val validTx = if (tx == TrafficStats.UNSUPPORTED.toLong()) 0L else maxOf(0L, tx)
+        return validRx + validTx
+    }
+
+    /**
+     * Returns the DFE app's own bytes (rx + tx) using the calling process's UID.
+     * Reading one's own UID is always permitted — the Android 10+ SELinux restriction
+     * only applies to foreign UIDs.
+     */
+    private fun ownAppBytes(context: Context): Long {
+        val uid = context.applicationInfo.uid
+        val rx  = TrafficStats.getUidRxBytes(uid)
+        val tx  = TrafficStats.getUidTxBytes(uid)
         val validRx = if (rx == TrafficStats.UNSUPPORTED.toLong()) 0L else maxOf(0L, rx)
         val validTx = if (tx == TrafficStats.UNSUPPORTED.toLong()) 0L else maxOf(0L, tx)
         return validRx + validTx

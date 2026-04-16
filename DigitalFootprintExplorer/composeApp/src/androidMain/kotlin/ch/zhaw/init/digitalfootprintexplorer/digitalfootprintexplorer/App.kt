@@ -76,26 +76,49 @@ fun App() {
         }
 
         // ── Demo mode state ───────────────────────────────────────────────────
-        // All three values are persisted in SharedPreferences so that they survive
-        // activity restarts — e.g. when the user opens the app via a widget click
-        // while demo mode was already active.
+        // All values are persisted in SharedPreferences so they survive activity restarts
+        // (e.g. when the user opens the app via a widget click while demo is active).
         val demoPrefs = remember { context.getSharedPreferences("demo_prefs", Context.MODE_PRIVATE) }
-        var demoActive      by remember { mutableStateOf(demoPrefs.getBoolean("demo_active", false)) }
+
+        // Remember whether demo was already active when this composable first ran.
+        // Used to distinguish "app opened while demo was on" from "user toggled demo on".
+        val wasActiveOnStart = remember { demoPrefs.getBoolean("demo_active", false) }
+        var demoActive      by remember { mutableStateOf(wasActiveOnStart) }
         var demoGardenState by remember { mutableStateOf(demoPrefs.getString("demo_garden_state", null)) }
         var demoSummaryText by remember { mutableStateOf(demoPrefs.getString("demo_summary", null)) }
         var demoRefreshing  by remember { mutableStateOf(false) }
 
-        // When demo is toggled ON:
-        //   - reset the network baseline so the next button press measures a fresh delta
-        //   - keep demoGardenState / demoSummaryText → last result stays visible
-        // When toggled OFF:
-        //   - clear result state so the next activation starts with a clean slate
+        // On first composition, restore the persisted baseline so traffic accumulated
+        // while the app was in the background (between last button press and now)
+        // is not lost when the user opens the app.
+        LaunchedEffect(Unit) {
+            if (wasActiveOnStart) DemoCalculator.restoreBaseline(context)
+        }
+
+        // Reacts to explicit user toggles only (not the initial state from SharedPreferences,
+        // since that is handled by the LaunchedEffect(Unit) above).
+        // demoActive changes AFTER the first composition, so LaunchedEffect(demoActive)
+        // fires exactly once on start (with the initial value) and then on each toggle.
+        // We skip the first firing by checking against wasActiveOnStart:
+        //   - same value as start → no change, already handled above
+        //   - different value     → user toggled
+        var demoInitialized by remember { mutableStateOf(false) }
         LaunchedEffect(demoActive) {
+            if (!demoInitialized) {
+                demoInitialized = true
+                return@LaunchedEffect   // initial fire — already handled by LaunchedEffect(Unit)
+            }
+            // User explicitly toggled demo
             demoPrefs.edit().putBoolean("demo_active", demoActive).apply()
             if (demoActive) {
+                // Toggled ON → fresh start: new baseline, clear old result
                 DemoCalculator.resetBaseline(context)
-                // No widget reset here — the widget already shows the last correct state.
+                demoGardenState = null
+                demoSummaryText = null
+                demoPrefs.edit().remove("demo_garden_state").remove("demo_summary").apply()
             } else {
+                // Toggled OFF → clear everything so the next activation starts clean
+                DemoCalculator.clearBaseline(context)
                 demoGardenState = null
                 demoSummaryText = null
                 demoPrefs.edit().remove("demo_garden_state").remove("demo_summary").apply()

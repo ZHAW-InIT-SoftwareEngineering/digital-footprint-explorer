@@ -30,6 +30,10 @@ import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelay
  * This means each button press answers the question:
  * "What did the phone emit since I last pressed this button?"
  *
+ * **Baseline persistence:** the three baseline values are saved to SharedPreferences
+ * so they survive process restarts (e.g. the app being opened via widget click).
+ * Opening the app does NOT reset the baseline — only toggling demo OFF→ON does.
+ *
  * Display is intentionally excluded from the demo calculation: during a live demo
  * the screen is always on, making the display a constant background noise that
  * drowns out the app-usage effect the demo is meant to illustrate.
@@ -41,19 +45,53 @@ import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelay
  */
 object DemoCalculator {
 
-    // Baseline state — reset on demo activation and after each calculation
+    // In-memory baseline — mirrors what is persisted in SharedPreferences
     private var baselineTimestampMs: Long = 0L
     private var baselineTotalBytes: Long  = 0L
-    private var baselineDfeBytes:   Long  = 0L  // DFE app's own traffic at baseline
+    private var baselineDfeBytes:   Long  = 0L
+
+    // ── Public API ────────────────────────────────────────────────────────────
 
     /**
-     * Snapshots the current total device byte-count and the DFE app's own byte-count.
-     * Call this when the demo toggle is turned ON.
+     * Snapshots the current byte-counts as the new baseline and persists them.
+     * Call this when the user actively toggles demo ON (not on app open).
      */
     fun resetBaseline(context: Context) {
         baselineTimestampMs = System.currentTimeMillis()
         baselineTotalBytes  = totalDeviceBytes()
         baselineDfeBytes    = ownAppBytes(context)
+        saveBaseline(context)
+        Log.d(TAG, "🔄 Baseline gesetzt: ${fmtMs(baselineTimestampMs)}, " +
+                "total=${fmtBytes(baselineTotalBytes)}, dfe=${fmtBytes(baselineDfeBytes)}")
+    }
+
+    /**
+     * Restores the baseline from SharedPreferences without recapturing live counts.
+     * Call this when the app is opened while demo was already active, so that
+     * traffic accumulated while the app was in the background is not lost.
+     */
+    fun restoreBaseline(context: Context) {
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        baselineTimestampMs = prefs.getLong(KEY_BASELINE_TS,    0L)
+        baselineTotalBytes  = prefs.getLong(KEY_BASELINE_TOTAL, 0L)
+        baselineDfeBytes    = prefs.getLong(KEY_BASELINE_DFE,   0L)
+        Log.d(TAG, "♻ Baseline wiederhergestellt: ${fmtMs(baselineTimestampMs)}")
+    }
+
+    /**
+     * Clears the persisted baseline.
+     * Call this when demo is toggled OFF so the next activation starts clean.
+     */
+    fun clearBaseline(context: Context) {
+        baselineTimestampMs = 0L
+        baselineTotalBytes  = 0L
+        baselineDfeBytes    = 0L
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .remove(KEY_BASELINE_TS)
+            .remove(KEY_BASELINE_TOTAL)
+            .remove(KEY_BASELINE_DFE)
+            .apply()
     }
 
     /**
@@ -69,6 +107,8 @@ object DemoCalculator {
         val dfeApp            = context.applicationContext as DFEApplication
         val backgroundTracker: BackgroundProcessTracker = dfeApp.backgroundProcessTracker
 
+        // Guard: if baseline was never set (shouldn't happen, but just in case),
+        // use the last 30 s as fallback window.
         val toMs   = System.currentTimeMillis()
         val fromMs = if (baselineTimestampMs > 0L) baselineTimestampMs
                      else toMs - DEFAULT_WINDOW_MS
@@ -78,10 +118,6 @@ object DemoCalculator {
         Log.d(TAG, "📅 Fenster: ${fmtMs(fromMs)} → ${fmtMs(toMs)} (%.1fs)".format(windowSec))
 
         // ── 1. Total-device network delta via TrafficStats ────────────────────
-        // Per-UID access is blocked on Android 10+ for foreign UIDs (SELinux);
-        // total bytes are still reliable and sufficient for demo purposes.
-        // The DFE app's own traffic is subtracted so it does not inflate the result:
-        // reading our own UID is always permitted, even on Android 10+.
         val currentTotal = totalDeviceBytes()
         val currentDfe   = ownAppBytes(context)
         val totalDelta   = maxOf(0L, currentTotal - baselineTotalBytes)
@@ -91,8 +127,6 @@ object DemoCalculator {
             AppUsageInput(
                 appName       = "Gerät gesamt",
                 appCategory   = AppCategory.MISCELLANEOUS,
-                // TrafficStats does not distinguish WiFi vs. cellular;
-                // attribute all bytes to WiFi (conservative, lower emission factor)
                 wifiBytes     = DataPoint.Measured(deltaBytes.toDouble()),
                 cellularBytes = DataPoint.Unavailable("not tracked in demo mode")
             )
@@ -104,12 +138,13 @@ object DemoCalculator {
         Log.d(TAG, "   · Netto        : ${fmtBytes(deltaBytes)}")
         Log.d(TAG, "   ⚠ Pro-App-Aufschlüsselung nicht verfügbar (Android 10+ SELinux)")
 
-        // ── 2. Reset baseline immediately so the next press measures a fresh delta
+        // ── 2. Reset baseline for the next press and persist ──────────────────
         baselineTimestampMs = toMs
         baselineTotalBytes  = currentTotal
         baselineDfeBytes    = currentDfe
+        saveBaseline(context)
 
-        // ── 3. Background processes (non-destructive peek, same window)
+        // ── 3. Background processes (non-destructive peek, same window) ───────
         val backgroundInput = backgroundTracker.peek(fromMs, toMs)
 
         if (backgroundInput.activeProcesses.isEmpty()) {
@@ -122,7 +157,6 @@ object DemoCalculator {
         }
 
         // ── 4. Emissions + demo garden state ──────────────────────────────────
-        // Display is passed as empty — see class KDoc for the reasoning.
         val result = EmissionsCalculator().calculate(
             appUsage   = networkMetrics,
             display    = DisplayInput(intervals = emptyList()),
@@ -141,10 +175,15 @@ object DemoCalculator {
 
     // ── Private helpers ───────────────────────────────────────────────────────
 
-    /**
-     * Returns total device bytes (rx + tx across all interfaces).
-     * Falls back to 0 if [TrafficStats] is not supported on this device.
-     */
+    private fun saveBaseline(context: Context) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putLong(KEY_BASELINE_TS,    baselineTimestampMs)
+            .putLong(KEY_BASELINE_TOTAL, baselineTotalBytes)
+            .putLong(KEY_BASELINE_DFE,   baselineDfeBytes)
+            .apply()
+    }
+
     private fun totalDeviceBytes(): Long {
         val rx = TrafficStats.getTotalRxBytes()
         val tx = TrafficStats.getTotalTxBytes()
@@ -153,11 +192,6 @@ object DemoCalculator {
         return validRx + validTx
     }
 
-    /**
-     * Returns the DFE app's own bytes (rx + tx) using the calling process's UID.
-     * Reading one's own UID is always permitted — the Android 10+ SELinux restriction
-     * only applies to foreign UIDs.
-     */
     private fun ownAppBytes(context: Context): Long {
         val uid = context.applicationInfo.uid
         val rx  = TrafficStats.getUidRxBytes(uid)
@@ -166,11 +200,6 @@ object DemoCalculator {
         val validTx = if (tx == TrafficStats.UNSUPPORTED.toLong()) 0L else maxOf(0L, tx)
         return validRx + validTx
     }
-
-    private const val DEFAULT_WINDOW_MS = 30_000L  // fallback if baseline was never set
-    private const val TAG = "DFE_Demo"
-
-    // ── Log formatters ────────────────────────────────────────────────────────
 
     private fun fmtBytes(bytes: Long): String = when {
         bytes >= 1_000_000 -> "%.2f MB".format(bytes / 1_000_000.0)
@@ -182,4 +211,11 @@ object DemoCalculator {
         val sdf = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault())
         return sdf.format(java.util.Date(ms))
     }
+
+    private const val DEFAULT_WINDOW_MS   = 30_000L
+    private const val TAG                 = "DFE_Demo"
+    private const val PREFS_NAME          = "demo_calculator_prefs"
+    private const val KEY_BASELINE_TS     = "baseline_ts"
+    private const val KEY_BASELINE_TOTAL  = "baseline_total"
+    private const val KEY_BASELINE_DFE    = "baseline_dfe"
 }

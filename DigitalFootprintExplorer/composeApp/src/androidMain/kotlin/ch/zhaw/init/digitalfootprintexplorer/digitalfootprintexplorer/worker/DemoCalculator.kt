@@ -163,7 +163,7 @@ object DemoCalculator {
             display    = DisplayInput(intervals = emptyList()),
             background = backgroundInput
         )
-        val gardenState = dfeApp.gardenStateCalculator.calculateDemoGardenState(result.ghgTotal)
+        val gardenState = calculateDemoGardenState(result.ghgTotal)
 
         Log.d(TAG, "🔢 Emissionen:")
         Log.d(TAG, "   · App-Nutzung  : ${"%.6f".format(result.ghgAppUsage   * 1000)} gCO₂e")
@@ -202,6 +202,23 @@ object DemoCalculator {
         return validRx + validTx
     }
 
+    /**
+     * Evaluates [kgCO2e] against absolute thresholds calibrated for a short
+     * measurement window instead of comparing against the 7-day baseline used in
+     * production. Does not read from or write to the database.
+     *
+     * Thresholds may need calibration by observing the values printed in the demo
+     * summary on the target device and adjusting accordingly.
+     * Calibrated on: Pixel 8 Pro, Android 14
+     */
+    private fun calculateDemoGardenState(kgCO2e: Double): GardenState = when {
+        kgCO2e < DEMO_THRESHOLD_FLOURISHING -> GardenState.FLOURISHING
+        kgCO2e < DEMO_THRESHOLD_GROWING     -> GardenState.GROWING
+        kgCO2e < DEMO_THRESHOLD_STABLE      -> GardenState.STABLE
+        kgCO2e < DEMO_THRESHOLD_WILTING     -> GardenState.WILTING
+        else                                -> GardenState.WITHERED
+    }
+
     private fun fmtBytes(bytes: Long): String = when {
         bytes >= 1_000_000 -> "%.2f MB".format(bytes / 1_000_000.0)
         bytes >= 1_000     -> "%.1f KB".format(bytes / 1_000.0)
@@ -213,6 +230,14 @@ object DemoCalculator {
         return sdf.format(java.util.Date(ms))
     }
 
-    private const val DEFAULT_WINDOW_MS = 30_000L
-    private const val TAG               = "DFE_Demo"
+    private const val DEFAULT_WINDOW_MS         = 30_000L
+    private const val TAG                       = "DFE_Demo"
+
+    // Demo thresholds [kgCO2e per measurement window].
+    // Calibrate by running the demo and checking the emitted kgCO2e in the summary card.
+    private const val DEMO_THRESHOLD_FLOURISHING = 5e-6   // screen off / near-idle
+    private const val DEMO_THRESHOLD_GROWING     = 2e-5   // screen on, dim, no apps
+    private const val DEMO_THRESHOLD_STABLE      = 3.5e-5 // screen on, light use
+    private const val DEMO_THRESHOLD_WILTING     = 5.5e-5 // active app / AI use
+    // > DEMO_THRESHOLD_WILTING → WITHERED
 }

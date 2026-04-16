@@ -68,30 +68,4 @@ class GardenStateCalculator(private val database: DFEDatabase) {
         }
     }
 
-    /**
-     * Demo-mode variant: evaluates [kgCO2e] against absolute thresholds calibrated for a
-     * 30-second measurement window instead of comparing against a 7-day baseline.
-     *
-     * Does not read from or write to the database.
-     *
-     * Thresholds may need calibration by observing the values printed in the demo summary
-     * on the target device and adjusting accordingly.
-     */
-    fun calculateDemoGardenState(kgCO2e: Double): GardenState = when {
-        kgCO2e < DEMO_THRESHOLD_FLOURISHING -> GardenState.FLOURISHING
-        kgCO2e < DEMO_THRESHOLD_GROWING     -> GardenState.GROWING
-        kgCO2e < DEMO_THRESHOLD_STABLE      -> GardenState.STABLE
-        kgCO2e < DEMO_THRESHOLD_WILTING     -> GardenState.WILTING
-        else                                -> GardenState.WITHERED
-    }
-
-    companion object {
-        // Demo thresholds [kgCO2e per 30-second window].
-        // Calibrate by running the demo and checking the emitted kgCO2e in the summary card.
-        private const val DEMO_THRESHOLD_FLOURISHING = 5e-6   // screen off / near-idle
-        private const val DEMO_THRESHOLD_GROWING     = 2e-5   // screen on, dim, no apps
-        private const val DEMO_THRESHOLD_STABLE      = 3.5e-5 // screen on, light use
-        private const val DEMO_THRESHOLD_WILTING     = 5.5e-5 // active app / AI use
-        // > DEMO_THRESHOLD_WILTING → WITHERED
-    }
 }

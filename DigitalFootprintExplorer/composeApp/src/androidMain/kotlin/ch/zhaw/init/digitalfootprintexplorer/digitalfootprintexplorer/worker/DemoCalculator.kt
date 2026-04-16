@@ -41,7 +41,7 @@ object DemoCalculator {
         val networkMetrics = MetricCollector(
             installedAppProvider   = InstalledAppProvider(),
             networkUsageDataSource = NetworkUsageDataSource(context)
-        ).collectNetworkMetrics(context, fromMs, toMs, subscriberId = null)
+        ).collectNetworkMetrics(context, fromMs, toMs, mobileSubscriberId = null)
 
         // ── Display brightness (non-destructive peek) ─────────────────────────
         val displayInput = app.displayBrightnessObserver.peek(fromMs, toMs)

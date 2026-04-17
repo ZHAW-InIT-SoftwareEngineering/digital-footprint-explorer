@@ -1,31 +1,29 @@
 <resources>
-    <string name="app_name" translatable="false">Digital Footprint Explorer</string>
-
     <!-- Used in WidgetOnboardingSheet.kt-->
     <string name="your_digital_garden">
-        Your Digital garden
+        Dein digitaler Garten
     </string>
     <string name="widgetonboarding_main_text">
-        Track your carbon footprint - right from your home screen.
+        Behalte deinen CO₂-Fussabdruck im Blick - direkt auf dem Homescreen.
     </string>
     <string name="add_widget">
-        Add widget
+        Widget hinzufügen
     </string>
     <string name="later">
-        Later
+        Später
     </string>
 
     <!--Used in UsageStatsPermissionSheet.kt-->
     <string name="app_usage_title">
-        Usage access required
+        Zugriff auf Nutzungsdaten benötigt
     </string>
     <string name="usagestats_main_text">
-        To calculate your digital footprint more accurately, the app needs access to your usage data. Please enable this access in your system settings. Your data is processed locally and not shared with third parties.
+        Um deinen digitalen Fussabdruck genauer zu berechnen, benötigt die App Zugriff auf deine Nutzungsdaten. Bitte aktiviere diesen Zugriff in den Systemeinstellungen. Die Daten werden nur lokal verwendet und nicht an Dritte weitergegeben.
     </string>
     <string name="cancel">
-        Cancel
+        Abbrechen
     </string>
     <string name="settings">
-        Open settings
+        Zu den Einstellungen
     </string>
 </resources>

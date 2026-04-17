@@ -3,13 +3,13 @@
 
     <!-- Used in WidgetOnboardingSheet.kt-->
     <string name="your_digital_garden">
-        Your digital garden
+        Your Digital garden
     </string>
     <string name="main_text">
-        Keep track of your carbon footprint—right on your home screen.
+        Track your carbon footprint - right from your home screen.
     </string>
     <string name="add_widget">
-        Add Widget
+        Add widget
     </string>
     <string name="later">
         Later

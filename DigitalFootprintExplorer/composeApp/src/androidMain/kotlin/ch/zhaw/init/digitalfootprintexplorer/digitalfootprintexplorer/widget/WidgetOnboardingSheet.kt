@@ -23,6 +23,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.R
+import androidx.compose.ui.res.stringResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,13 +54,13 @@ fun WidgetOnboardingSheet(
             )
             Spacer(modifier = Modifier.height(24.dp))
             Text(
-                text = "Dein digitaler Garten",
+                text = stringResource(R.string.your_digital_garden),
                 style = MaterialTheme.typography.headlineSmall,
                 textAlign = TextAlign.Center
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Behalte deinen CO\u2082-Fussabdruck im Blick\u2009\u2013\u2009direkt auf dem Homescreen.",
+                text = stringResource(R.string.main_text),
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -69,14 +70,14 @@ fun WidgetOnboardingSheet(
                 onClick = onPin,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Widget hinzufügen")
+                Text(stringResource(R.string.add_widget))
             }
             Spacer(modifier = Modifier.height(8.dp))
             TextButton(
                 onClick = onDismiss,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Später")
+                Text(stringResource(R.string.later))
             }
         }
     }

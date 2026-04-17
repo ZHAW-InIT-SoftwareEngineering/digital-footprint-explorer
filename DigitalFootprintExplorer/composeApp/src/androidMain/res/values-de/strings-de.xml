@@ -1,17 +1,15 @@
 <resources>
-    <string name="app_name" translatable="false">Digital Footprint Explorer</string>
-
     <!-- Used in WidgetOnboardingSheet.kt-->
     <string name="your_digital_garden">
-        Your digital garden
+        Dein digitaler Garten
     </string>
     <string name="main_text">
-        Keep track of your carbon footprint—right on your home screen.
+        Behalte deinen CO₂-Fussabdruck im Blick - direkt auf dem Homescreen.
     </string>
     <string name="add_widget">
-        Add Widget
+        Widget hinzufügen
     </string>
     <string name="later">
-        Later
+        Später
     </string>
 </resources>

@@ -31,6 +31,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.permission.UsageStatsPermissionSheet
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.permission.hasUsageStatsPermission
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.permission.openUsageStatsSettings
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.ui.theme.DFETheme
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.widget.GardenWidget
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.widget.GardenWidgetReceiver
@@ -50,16 +53,21 @@ fun App() {
     DFETheme {
         val context = LocalContext.current
         val scope   = rememberCoroutineScope()
-        var showOnboarding by remember { mutableStateOf(false) }
+        var showWidgetOnboarding by remember { mutableStateOf(false) }
+        var showPermissionOnboarding by remember { mutableStateOf(false) }
 
         LaunchedEffect(Unit) {
             val installedIds = GlanceAppWidgetManager(context).getGlanceIds(GardenWidget::class.java)
-            showOnboarding = installedIds.isEmpty()
+            showWidgetOnboarding = installedIds.isEmpty()
+
+            if (!hasUsageStatsPermission(context)) {
+                showPermissionOnboarding = true
+            }
         }
 
-        if (showOnboarding) {
+        if (showWidgetOnboarding) {
             WidgetOnboardingSheet(
-                onDismiss = { showOnboarding = false },
+                onDismiss = { showWidgetOnboarding = false },
                 onPin = {
                     scope.launch {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -69,8 +77,18 @@ fun App() {
                                 previewState = DpSize(245.dp, 115.dp)
                             )
                         }
-                        showOnboarding = false
+                        showWidgetOnboarding = false
                     }
+                }
+            )
+        }
+
+        if (showPermissionOnboarding) {
+            UsageStatsPermissionSheet(
+                onDismiss = { showPermissionOnboarding = false },
+                onOpenSettings = {
+                    openUsageStatsSettings(context)
+                    showPermissionOnboarding = false
                 }
             )
         }

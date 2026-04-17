@@ -5,7 +5,7 @@
     <string name="your_digital_garden">
         Your Digital garden
     </string>
-    <string name="main_text">
+    <string name="widgetonboarding_main_text">
         Track your carbon footprint - right from your home screen.
     </string>
     <string name="add_widget">
@@ -13,5 +13,19 @@
     </string>
     <string name="later">
         Later
+    </string>
+
+    <!--Used in UsageStatsPermissionSheet.kt-->
+    <string name="app_usage_title">
+        Usage access required
+    </string>
+    <string name="usagestats_main_text">
+        To calculate your digital footprint more accurately, the app needs access to your usage data. Please enable this access in your system settings. Your data is processed locally and not shared with third parties.
+    </string>
+    <string name="cancel">
+        Cancel
+    </string>
+    <string name="settings">
+        Open settings
     </string>
 </resources>

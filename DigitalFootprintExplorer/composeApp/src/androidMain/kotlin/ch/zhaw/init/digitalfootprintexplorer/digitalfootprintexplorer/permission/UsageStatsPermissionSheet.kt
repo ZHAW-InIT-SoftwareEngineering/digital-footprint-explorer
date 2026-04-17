@@ -5,7 +5,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.R
 import androidx.compose.ui.unit.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -28,7 +30,7 @@ fun UsageStatsPermissionSheet(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "Zugriff auf Nutzungsdaten benötigt",
+                text = stringResource(R.string.app_usage_title),
                 style = MaterialTheme.typography.headlineSmall,
                 textAlign = TextAlign.Center
             )
@@ -36,7 +38,7 @@ fun UsageStatsPermissionSheet(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "Um deinen digitalen Fussabdruck genauer zu berechnen, benötigt die App Zugriff auf deine Nutzungsdaten. Bitte aktiviere diesen Zugriff manuell in den Systemeinstellungen.",
+                text = stringResource(R.string.usagestats_main_text),
                 style = MaterialTheme.typography.bodyMedium,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -48,7 +50,7 @@ fun UsageStatsPermissionSheet(
                 onClick = onOpenSettings,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Zu den Einstellungen")
+                Text(stringResource(R.string.settings))
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -57,7 +59,7 @@ fun UsageStatsPermissionSheet(
                 onClick = onDismiss,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Abbrechen")
+                Text(stringResource(R.string.cancel))
             }
         }
     }

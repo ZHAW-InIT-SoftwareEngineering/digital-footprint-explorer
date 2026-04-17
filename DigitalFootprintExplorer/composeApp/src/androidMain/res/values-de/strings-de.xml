@@ -3,7 +3,7 @@
     <string name="your_digital_garden">
         Dein digitaler Garten
     </string>
-    <string name="main_text">
+    <string name="widgetonboarding_main_text">
         Behalte deinen CO₂-Fussabdruck im Blick - direkt auf dem Homescreen.
     </string>
     <string name="add_widget">
@@ -11,5 +11,19 @@
     </string>
     <string name="later">
         Später
+    </string>
+
+    <!--Used in UsageStatsPermissionSheet.kt-->
+    <string name="app_usage_title">
+        Zugriff auf Nutzungsdaten benötigt
+    </string>
+    <string name="usagestats_main_text">
+        Um deinen digitalen Fussabdruck genauer zu berechnen, benötigt die App Zugriff auf deine Nutzungsdaten. Bitte aktiviere diesen Zugriff in den Systemeinstellungen. Die Daten werden nur lokal verwendet und nicht an Dritte weitergegeben.
+    </string>
+    <string name="cancel">
+        Abbrechen
+    </string>
+    <string name="settings">
+        Zu den Einstellungen
     </string>
 </resources>

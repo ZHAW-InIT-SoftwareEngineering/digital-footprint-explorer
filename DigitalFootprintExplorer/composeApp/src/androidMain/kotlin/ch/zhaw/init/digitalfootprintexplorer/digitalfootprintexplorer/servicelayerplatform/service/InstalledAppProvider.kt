@@ -19,15 +19,15 @@ class InstalledAppProvider(
                 val appInfo = resolveInfo.activityInfo.applicationInfo
                 generateApp(context = context, applicationInfo = appInfo)
             }
-            // Remove duplicates because one UID can have multiple package names,
-            // e.g. com.google.android.youtube and com.google.android.apps.youtube share a UID.
+            /* Remove duplicates because one UID can have multiple package names, */
+            /* e.g. com.google.android.youtube and com.google.android.apps.youtube share a UID. */
             .distinctBy { it.uid }
     }
 
     private fun generateApp(context: Context, applicationInfo: ApplicationInfo): App {
         val foundCategory = compareAppCategoryConfigWithPackageName(packageName = applicationInfo.packageName)
-        // Use PackageManager.getApplicationLabel() to obtain the localised, user-visible app name.
-        // Falls back to the package name if the label cannot be resolved.
+        /* Use PackageManager.getApplicationLabel() to obtain the localised, user-visible app name. */
+        /* Falls back to the package name if the label cannot be resolved. */
         val appName = runCatching {
             context.packageManager.getApplicationLabel(applicationInfo).toString()
         }.getOrDefault(applicationInfo.packageName)

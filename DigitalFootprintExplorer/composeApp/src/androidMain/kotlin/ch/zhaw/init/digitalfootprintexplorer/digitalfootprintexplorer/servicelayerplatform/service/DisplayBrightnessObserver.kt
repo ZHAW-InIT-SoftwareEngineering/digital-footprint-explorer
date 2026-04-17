@@ -34,14 +34,14 @@ class DisplayBrightnessObserver(private val context: Context) {
 
     private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-    // In-memory state of the currently open interval
+    /* In-memory state of the currently open interval */
     private var currentBrightness: Double = 0.0
     private var intervalStartMs: Long = System.currentTimeMillis()
     private var screenOn: Boolean = true
 
     private val contentObserver = object : ContentObserver(Handler(Looper.getMainLooper())) {
         override fun onChange(selfChange: Boolean) {
-            if (!screenOn) return          // ignore changes while screen is off
+            if (!screenOn) return          /* ignore changes while screen is off */
             val now = System.currentTimeMillis()
             flushInterval(now)
             currentBrightness = readCurrentBrightness()
@@ -55,7 +55,7 @@ class DisplayBrightnessObserver(private val context: Context) {
         intervalStartMs = System.currentTimeMillis()
         context.contentResolver.registerContentObserver(
             Settings.System.getUriFor(Settings.System.SCREEN_BRIGHTNESS),
-            /* notifyForDescendants = */ false,
+            false,
             contentObserver
         )
     }
@@ -76,37 +76,10 @@ class DisplayBrightnessObserver(private val context: Context) {
     /** Called by [TrackingService] when it receives [android.content.Intent.ACTION_SCREEN_ON]. */
     fun onScreenOn() {
         val now = System.currentTimeMillis()
-        flushInterval(now)          // flush the 0.0 (screen-off) interval
+        flushInterval(now)          /* flush the 0.0 (screen-off) interval */
         currentBrightness = readCurrentBrightness()
         intervalStartMs = now
         screenOn = true
-    }
-
-    /**
-     * Returns all [BrightnessInterval]s clipped to [fromMs]..[toMs] without resetting
-     * stored state. Used by [DemoCalculator] to read recent data non-destructively.
-     *
-     * Includes both persisted completed intervals and the currently open in-memory
-     * interval so that short windows (e.g. 30 s) return meaningful data even if the
-     * brightness has not changed recently.
-     *
-     * Returns an empty [DisplayInput] (no fallback) when no intervals are found.
-     */
-    fun peek(fromMs: Long, toMs: Long): DisplayInput {
-        val now = System.currentTimeMillis()
-        val persisted = parseAndClip(prefs.getString(KEY_INTERVALS, "") ?: "", fromMs, toMs)
-
-        // Include the currently open interval (not yet flushed to SharedPreferences)
-        val openStart = maxOf(intervalStartMs, fromMs)
-        val openEnd   = minOf(now, toMs)
-        val openInterval = if (openEnd > openStart) {
-            listOf(BrightnessInterval(
-                normalizedBrightness = currentBrightness,
-                durationH = (openEnd - openStart) / MILLIS_PER_HOUR
-            ))
-        } else emptyList()
-
-        return DisplayInput(intervals = persisted + openInterval)
     }
 
     /**
@@ -120,12 +93,12 @@ class DisplayBrightnessObserver(private val context: Context) {
     fun collectAndReset(fromMs: Long, toMs: Long): DisplayInput {
         val now = System.currentTimeMillis()
 
-        // Flush the currently open interval up to the end of the collection window
+        /* Flush the currently open interval up to the end of the collection window */
         val flushEnd = minOf(now, toMs)
         if (flushEnd > intervalStartMs) {
             appendInterval(currentBrightness, intervalStartMs, flushEnd)
         }
-        // Restart the open interval from now (belongs to the next day)
+        /* Restart the open interval from now (belongs to the next day) */
         intervalStartMs = now
 
         val raw = prefs.getString(KEY_INTERVALS, "") ?: ""
@@ -138,8 +111,6 @@ class DisplayBrightnessObserver(private val context: Context) {
             }
         )
     }
-
-    // ── Private helpers ──────────────────────────────────────────────────────
 
     /** Writes the current open interval [intervalStartMs, endMs) to SharedPreferences. */
     private fun flushInterval(endMs: Long) {

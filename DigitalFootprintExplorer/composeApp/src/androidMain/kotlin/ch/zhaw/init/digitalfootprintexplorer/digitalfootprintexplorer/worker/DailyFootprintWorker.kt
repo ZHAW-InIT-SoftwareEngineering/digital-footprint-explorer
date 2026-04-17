@@ -46,11 +46,10 @@ class DailyFootprintWorker(
         Log.d(TAG, "▶ Worker started")
         val app = appContext.applicationContext as DFEApplication
 
-        // ── Calendar-day boundaries: yesterday 00:00 → today 00:00 ───────────
+        /* Calendar-day boundaries: yesterday 00:00 → today 00:00 */
         val (startTime, endTime) = yesterdayBoundaries()
         Log.d(TAG, "📅 Calculating emissions for window [$startTime, $endTime]")
 
-        // ── 1. Network metrics ────────────────────────────────────────────────
         val subscriberId   = readSubscriberId()
         val networkMetrics = MetricCollector(
             installedAppProvider   = InstalledAppProvider(),
@@ -65,15 +64,12 @@ class DailyFootprintWorker(
             Log.d(TAG, "   · ${app.appName} [${app.appCategory}] wifi=${app.wifiBytes} cell=${app.cellularBytes}")
         }
 
-        // ── 2. Display brightness ─────────────────────────────────────────────
         val displayInput = app.displayBrightnessObserver.collectAndReset(startTime, endTime)
         logDisplay(displayInput)
 
-        // ── 3. Background processes ───────────────────────────────────────────
         val backgroundInput = app.backgroundProcessTracker.collectAndReset(startTime, endTime)
         logBackground(backgroundInput)
 
-        // ── 4. Emissions calculation ──────────────────────────────────────────
         val emissionResult = EmissionsCalculator().calculate(
             appUsage   = networkMetrics,
             display    = displayInput,
@@ -81,7 +77,7 @@ class DailyFootprintWorker(
         )
         logEmissions(emissionResult)
 
-        // ── 5. Garden state ───────────────────────────────────────────────────
+        /* Garden state */
         val now         = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
         val gardenState = app.gardenStateCalculator.calculateGardenState(emissionResult.ghgTotal)
         app.gardenStateCalculator.recordDailyFootprint(
@@ -109,8 +105,6 @@ class DailyFootprintWorker(
         )
         return Result.success(workDataOf(KEY_DEBUG_SUMMARY to summary))
     }
-
-    // ── Logging helpers ───────────────────────────────────────────────────────
 
     private fun logDisplay(display: DisplayInput) {
         val avgBrightness = if (display.intervals.isEmpty()) 0.0
@@ -206,7 +200,7 @@ class DailyFootprintWorker(
         fun schedule(context: Context) {
             val request = PeriodicWorkRequestBuilder<DailyFootprintWorker>(
                 24, TimeUnit.HOURS,
-                2,  TimeUnit.HOURS   // flex interval: run in the last 2 h of each 24 h period
+                2,  TimeUnit.HOURS   /* flex interval: run in the last 2 h of each 24 h period */
             ).build()
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
                 WORK_NAME,

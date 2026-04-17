@@ -2,7 +2,6 @@ package ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.demo
 
 import android.content.Context
 import android.net.TrafficStats
-import android.util.Log
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.DFEApplication
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.AppCategory
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.DataPoint
@@ -12,9 +11,6 @@ import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.inpu
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.input.DisplayInput
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.output.EmissionResult
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.service.BackgroundProcessTracker
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 /**
  * Demo-mode emissions calculator.
@@ -62,8 +58,6 @@ object DemoCalculator {
             .putLong(DemoPreferences.KEY_BASELINE_TOTAL, total)
             .putLong(DemoPreferences.KEY_BASELINE_DFE,   dfe)
             .apply()
-        Log.d(TAG, "🔄 Baseline gesetzt: ${fmtMs(ts)}, " +
-                "total=${fmtBytes(total)}, dfe=${fmtBytes(dfe)}")
     }
 
     /**
@@ -97,16 +91,9 @@ object DemoCalculator {
         val baselineTotal = prefs.getLong(DemoPreferences.KEY_BASELINE_TOTAL, 0L)
         val baselineDfe   = prefs.getLong(DemoPreferences.KEY_BASELINE_DFE,   0L)
 
-        // Guard: if baseline was never set (shouldn't happen, but just in case),
-        // use the last 30 s as fallback window.
         val toMs   = System.currentTimeMillis()
-        val fromMs = if (baselineTs > 0L) baselineTs else toMs - DEFAULT_WINDOW_MS
+        val fromMs = if (baselineTs > 0L) baselineTs else toMs - 30_000L
 
-        val windowSec = (toMs - fromMs) / 1_000.0
-        Log.d(TAG, "▶ Demo-Berechnung gestartet")
-        Log.d(TAG, "📅 Fenster: ${fmtMs(fromMs)} → ${fmtMs(toMs)} (%.1fs)".format(windowSec))
-
-        // ── 1. Total-device network delta via TrafficStats ────────────────────
         val currentTotal = totalDeviceBytes()
         val currentDfe   = ownAppBytes(context)
         val totalDelta   = maxOf(0L, currentTotal - baselineTotal)
@@ -114,51 +101,27 @@ object DemoCalculator {
         val deltaBytes   = maxOf(0L, totalDelta   - dfeDelta)
         val networkMetrics: List<AppUsageInput> = if (deltaBytes > 0L) listOf(
             AppUsageInput(
-                appName       = "Gerät gesamt",
+                appName       = "Device total",
                 appCategory   = AppCategory.MISCELLANEOUS,
                 wifiBytes     = DataPoint.Measured(deltaBytes.toDouble()),
                 cellularBytes = DataPoint.Unavailable("not tracked in demo mode")
             )
         ) else emptyList()
 
-        Log.d(TAG, "📶 Netzwerk (Gerät gesamt, excl. DFE-App):")
-        Log.d(TAG, "   · Gesamtdelta  : ${fmtBytes(totalDelta)}")
-        Log.d(TAG, "   · DFE-App      : ${fmtBytes(dfeDelta)}  (abgezogen)")
-        Log.d(TAG, "   · Netto        : ${fmtBytes(deltaBytes)}")
-        Log.d(TAG, "   ⚠ Pro-App-Aufschlüsselung nicht verfügbar (Android 10+ SELinux)")
-
-        // ── 2. Persist new baseline for the next press ────────────────────────
         prefs.edit()
             .putLong(DemoPreferences.KEY_BASELINE_TS,    toMs)
             .putLong(DemoPreferences.KEY_BASELINE_TOTAL, currentTotal)
             .putLong(DemoPreferences.KEY_BASELINE_DFE,   currentDfe)
             .apply()
 
-        // ── 3. Background processes (non-destructive peek, same window) ───────
         val backgroundInput = backgroundTracker.peek(fromMs, toMs)
 
-        if (backgroundInput.activeProcesses.isEmpty()) {
-            Log.d(TAG, "📍 Hintergrundprozesse: keine aktiv")
-        } else {
-            Log.d(TAG, "📍 Hintergrundprozesse:")
-            backgroundInput.activeProcesses.forEach { usage ->
-                Log.d(TAG, "   · ${usage.process.name}: %.4fh".format(usage.durationH))
-            }
-        }
-
-        // ── 4. Emissions + demo garden state ──────────────────────────────────
         val result = EmissionsCalculator().calculate(
             appUsage   = networkMetrics,
             display    = DisplayInput(intervals = emptyList()),
             background = backgroundInput
         )
         val gardenState = calculateDemoGardenState(result.ghgTotal)
-
-        Log.d(TAG, "🔢 Emissionen:")
-        Log.d(TAG, "   · App-Nutzung  : ${"%.6f".format(result.ghgAppUsage   * 1000)} gCO₂e")
-        Log.d(TAG, "   · Hintergrund  : ${"%.6f".format(result.ghgBackground * 1000)} gCO₂e")
-        Log.d(TAG, "   · TOTAL        : ${"%.6f".format(result.ghgTotal      * 1000)} gCO₂e")
-        Log.d(TAG, "🌱 Gartenzustand → $gardenState")
 
         return result to gardenState
     }
@@ -183,39 +146,13 @@ object DemoCalculator {
     /**
      * Evaluates [kgCO2e] against absolute thresholds calibrated for a short
      * measurement window instead of comparing against the 7-day baseline used in
-     * production. Does not read from or write to the database.
-     *
-     * Thresholds may need calibration by observing the values printed in the demo
-     * summary on the target device and adjusting accordingly.
-     * Calibrated on: Pixel 8 Pro, Android 14
+     * production.
      */
     private fun calculateDemoGardenState(kgCO2e: Double): GardenState = when {
-        kgCO2e < DEMO_THRESHOLD_FLOURISHING -> GardenState.FLOURISHING
-        kgCO2e < DEMO_THRESHOLD_GROWING     -> GardenState.GROWING
-        kgCO2e < DEMO_THRESHOLD_STABLE      -> GardenState.STABLE
-        kgCO2e < DEMO_THRESHOLD_WILTING     -> GardenState.WILTING
-        else                                -> GardenState.WITHERED
+        kgCO2e < 5e-6   -> GardenState.FLOURISHING
+        kgCO2e < 2e-5   -> GardenState.GROWING
+        kgCO2e < 3.5e-5 -> GardenState.STABLE
+        kgCO2e < 5.5e-5 -> GardenState.WILTING
+        else            -> GardenState.WITHERED
     }
-
-    private fun fmtBytes(bytes: Long): String = when {
-        bytes >= 1_000_000 -> "%.2f MB".format(bytes / 1_000_000.0)
-        bytes >= 1_000     -> "%.1f KB".format(bytes / 1_000.0)
-        else               -> "$bytes B"
-    }
-
-    private fun fmtMs(ms: Long): String {
-        val sdf = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
-        return sdf.format(Date(ms))
-    }
-
-    private const val DEFAULT_WINDOW_MS          = 30_000L
-    private const val TAG                        = "DFE_Demo"
-
-    // Demo thresholds [kgCO2e per measurement window].
-    // Calibrate by running the demo and checking the emitted kgCO2e in the summary card.
-    private const val DEMO_THRESHOLD_FLOURISHING = 5e-6   // screen off / near-idle
-    private const val DEMO_THRESHOLD_GROWING     = 2e-5   // screen on, dim, no apps
-    private const val DEMO_THRESHOLD_STABLE      = 3.5e-5 // screen on, light use
-    private const val DEMO_THRESHOLD_WILTING     = 5.5e-5 // active app / AI use
-    // > DEMO_THRESHOLD_WILTING → WITHERED
 }

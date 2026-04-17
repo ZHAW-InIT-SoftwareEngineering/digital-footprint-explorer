@@ -21,8 +21,6 @@ class DemoRepository(private val appContext: Context) {
     private val prefs: SharedPreferences =
         appContext.getSharedPreferences(DemoPreferences.PREFS_STATE_FILE, Context.MODE_PRIVATE)
 
-    // ── Read-only state (loaded once on construction) ─────────────────────────
-
     /** True if demo was already active when this repository was created (e.g. after app restart). */
     val wasActiveOnStart: Boolean = prefs.getBoolean(DemoPreferences.KEY_ACTIVE, false)
 
@@ -31,8 +29,6 @@ class DemoRepository(private val appContext: Context) {
 
     /** Last persisted summary text, or null if no result has been calculated yet. */
     fun loadSummary(): String? = prefs.getString(DemoPreferences.KEY_SUMMARY, null)
-
-    // ── Actions ───────────────────────────────────────────────────────────────
 
     /**
      * Activates demo mode: takes a fresh traffic baseline and clears any previous result.
@@ -77,8 +73,6 @@ class DemoRepository(private val appContext: Context) {
             .apply()
         return result to gardenState
     }
-
-    // ── Helpers ───────────────────────────────────────────────────────────────
 
     /**
      * Builds the monospace summary string shown below the refresh button.

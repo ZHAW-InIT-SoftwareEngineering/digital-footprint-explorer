@@ -14,12 +14,12 @@ internal object DemoPreferences {
     /** SharedPreferences file that holds the traffic baseline snapshot. */
     const val PREFS_CALCULATOR_FILE = "demo_calculator_prefs"
 
-    // ── UI state keys (in PREFS_STATE_FILE) ──────────────────────────────────
+    /** ── UI state keys (in PREFS_STATE_FILE) */
     const val KEY_ACTIVE            = "demo_active"
     const val KEY_GARDEN_STATE      = "demo_garden_state"
     const val KEY_SUMMARY           = "demo_summary"
 
-    // ── Baseline keys (in PREFS_CALCULATOR_FILE) ─────────────────────────────
+    /** ── Baseline keys (in PREFS_CALCULATOR_FILE) */
     const val KEY_BASELINE_TS       = "baseline_ts"
     const val KEY_BASELINE_TOTAL    = "baseline_total"
     const val KEY_BASELINE_DFE      = "baseline_dfe"

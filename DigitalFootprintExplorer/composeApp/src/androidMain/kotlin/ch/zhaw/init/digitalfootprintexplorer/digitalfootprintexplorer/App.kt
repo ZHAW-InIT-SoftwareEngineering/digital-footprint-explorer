@@ -91,15 +91,9 @@ fun App() {
             )
         }
 
-        /**
-         * Demo mode state
-         *
-         * DemoRepository owns all SharedPreferences access and DemoCalculator calls.
-         * State is persisted so it survives activity restarts (e.g. widget click → app open).
-         */
+        /** Demo mode state */
         val repo            = remember { DemoRepository(context) }
         var demoActive      by remember { mutableStateOf(repo.wasActiveOnStart) }
-        var demoGardenState by remember { mutableStateOf(repo.loadGardenState()) }
         var demoSummaryText by remember { mutableStateOf(repo.loadSummary()) }
         var demoRefreshing  by remember { mutableStateOf(false) }
 
@@ -132,17 +126,11 @@ fun App() {
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text("Demo-Modus", style = MaterialTheme.typography.titleMedium)
-                        Text(
-                            if (demoActive) "Aktiv — Baseline gesetzt"
-                            else            "Demo-Modus inaktiv",
-                            style = MaterialTheme.typography.bodySmall
-                        )
                     }
                     Switch(
                         checked = demoActive,
                         onCheckedChange = { enabled ->
                             demoActive = enabled
-                            demoGardenState = null
                             demoSummaryText = null
                             if (enabled) repo.activate() else repo.deactivate()
                         }
@@ -150,14 +138,6 @@ fun App() {
                 }
 
                 if (demoActive) {
-                    demoGardenState?.let { state ->
-                        Text(
-                            text     = "🌱 Gartenzustand: $state",
-                            modifier = Modifier.padding(start = 16.dp, bottom = 8.dp),
-                            style    = MaterialTheme.typography.bodyMedium
-                        )
-                    }
-
                     Button(
                         modifier = Modifier.padding(start = 16.dp, bottom = 8.dp),
                         enabled  = !demoRefreshing,
@@ -166,7 +146,6 @@ fun App() {
                                 demoRefreshing = true
                                 try {
                                     val (result, state) = repo.refresh()
-                                    demoGardenState = state.name
                                     demoSummaryText = repo.buildSummary(result, state.name)
                                 } catch (e: CancellationException) {
                                     throw e

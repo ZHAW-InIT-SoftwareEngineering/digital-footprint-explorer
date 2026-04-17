@@ -24,7 +24,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -72,9 +71,8 @@ fun App() {
                     scope.launch {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                             GlanceAppWidgetManager(context).requestPinGlanceAppWidget(
-                                receiver     = GardenWidgetReceiver::class.java,
-                                preview      = GardenWidget(),
-                                previewState = DpSize(245.dp, 115.dp)
+                                receiver = GardenWidgetReceiver::class.java,
+                                preview  = GardenWidget()
                             )
                         }
                         showWidgetOnboarding = false

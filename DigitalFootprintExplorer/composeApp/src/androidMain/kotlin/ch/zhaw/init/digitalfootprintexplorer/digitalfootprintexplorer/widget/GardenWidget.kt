@@ -46,8 +46,8 @@ class GardenWidget : GlanceAppWidget() {
             // currentState() reads from Glance's DataStore reactively.
             // It is re-evaluated on every recomposition triggered by updateAppWidgetState.
             val prefs     = currentState<Preferences>()
-            val stateName = prefs[KEY_STATE] ?: GardenState.STABLE.name
-            val state     = runCatching { GardenState.valueOf(stateName) }.getOrDefault(GardenState.STABLE)
+            val stateName = prefs[KEY_STATE] ?: GardenState.FLOURISHING.name
+            val state     = runCatching { GardenState.valueOf(stateName) }.getOrDefault(GardenState.FLOURISHING)
             GardenContent(state)
         }
     }

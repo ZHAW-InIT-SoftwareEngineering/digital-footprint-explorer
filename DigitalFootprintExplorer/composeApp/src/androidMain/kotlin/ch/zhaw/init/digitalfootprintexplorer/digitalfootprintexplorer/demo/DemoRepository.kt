@@ -1,4 +1,4 @@
-package ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.worker
+package ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.demo
 
 import android.content.Context
 import android.content.SharedPreferences

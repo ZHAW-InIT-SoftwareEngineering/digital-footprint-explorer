@@ -1,4 +1,4 @@
-package ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.worker
+package ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.demo
 
 /**
  * Central definitions for all SharedPreferences file names and keys used by the demo mode.

@@ -1,4 +1,4 @@
-package ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.worker
+package ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.demo
 
 import android.content.Context
 import android.net.TrafficStats
@@ -12,6 +12,9 @@ import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.inpu
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.input.DisplayInput
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.output.EmissionResult
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.service.BackgroundProcessTracker
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /**
  * Demo-mode emissions calculator.
@@ -42,12 +45,8 @@ import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelay
  * Background processes (GPS/BT) are still included — they are small compared to
  * network traffic and can genuinely be caused by the apps being demonstrated.
  *
- * Does NOT write to the database — the daily [DailyFootprintWorker] continues
- * to run unaffected in parallel.
  */
 object DemoCalculator {
-
-    // ── Public API ────────────────────────────────────────────────────────────
 
     /**
      * Snapshots the current byte-counts as the new baseline and persists them.
@@ -164,8 +163,6 @@ object DemoCalculator {
         return result to gardenState
     }
 
-    // ── Private helpers ───────────────────────────────────────────────────────
-
     private fun totalDeviceBytes(): Long {
         val rx = TrafficStats.getTotalRxBytes()
         val tx = TrafficStats.getTotalTxBytes()
@@ -207,8 +204,8 @@ object DemoCalculator {
     }
 
     private fun fmtMs(ms: Long): String {
-        val sdf = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault())
-        return sdf.format(java.util.Date(ms))
+        val sdf = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+        return sdf.format(Date(ms))
     }
 
     private const val DEFAULT_WINDOW_MS          = 30_000L

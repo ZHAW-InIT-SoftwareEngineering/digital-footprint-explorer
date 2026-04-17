@@ -38,7 +38,7 @@ import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.widget.Gar
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.widget.GardenWidgetReceiver
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.widget.WidgetOnboardingSheet
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.worker.DailyFootprintWorker
-import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.worker.DemoRepository
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.demo.DemoRepository
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.worker.KEY_DEBUG_SUMMARY
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.worker.TAG_DEBUG_RUN
 import kotlinx.coroutines.CancellationException
@@ -91,16 +91,19 @@ fun App() {
             )
         }
 
-        // ── Demo mode state ───────────────────────────────────────────────────
-        // DemoRepository owns all SharedPreferences access and DemoCalculator calls.
-        // State is persisted so it survives activity restarts (e.g. widget click → app open).
+        /**
+         * Demo mode state
+         *
+         * DemoRepository owns all SharedPreferences access and DemoCalculator calls.
+         * State is persisted so it survives activity restarts (e.g. widget click → app open).
+         */
         val repo            = remember { DemoRepository(context) }
         var demoActive      by remember { mutableStateOf(repo.wasActiveOnStart) }
         var demoGardenState by remember { mutableStateOf(repo.loadGardenState()) }
         var demoSummaryText by remember { mutableStateOf(repo.loadSummary()) }
         var demoRefreshing  by remember { mutableStateOf(false) }
 
-        // ── Daily debug job state ─────────────────────────────────────────────
+        /** Daily debug job state */
         var currentJobId by remember { mutableStateOf<UUID?>(null) }
         val currentWorkInfo by remember(currentJobId) {
             currentJobId?.let { id ->
@@ -116,14 +119,11 @@ fun App() {
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-
-            // ── Demo mode card ────────────────────────────────────────────────
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 12.dp)
             ) {
-                // Toggle row
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -150,7 +150,6 @@ fun App() {
                 }
 
                 if (demoActive) {
-                    // Garden state label
                     demoGardenState?.let { state ->
                         Text(
                             text     = "🌱 Gartenzustand: $state",
@@ -159,7 +158,6 @@ fun App() {
                         )
                     }
 
-                    // Refresh button
                     Button(
                         modifier = Modifier.padding(start = 16.dp, bottom = 8.dp),
                         enabled  = !demoRefreshing,
@@ -190,7 +188,6 @@ fun App() {
                         Text("Gartenzustand aktualisieren")
                     }
 
-                    // Result summary (persisted — visible even after app restart)
                     demoSummaryText?.let { summary ->
                         Text(
                             text       = summary,
@@ -202,7 +199,6 @@ fun App() {
                 }
             }
 
-            // ── Daily worker debug button ─────────────────────────────────────
             Button(
                 modifier = Modifier.padding(top = 8.dp),
                 colors   = ButtonDefaults.buttonColors(

@@ -36,7 +36,7 @@ object ModelConstants {
      *
      * Maximum display power at brightness=1.0 \[W]
      */
-    const val P_DISPLAY_MAX_WATT = 30.4
+    const val P_DISPLAY_MAX_WATT = 0.4
 
     /**
      * Background processes \[W]

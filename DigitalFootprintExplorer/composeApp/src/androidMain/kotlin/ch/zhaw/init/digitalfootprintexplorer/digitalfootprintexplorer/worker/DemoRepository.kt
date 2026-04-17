@@ -16,10 +16,10 @@ import kotlinx.coroutines.CancellationException
  * Intended to be created once per [androidx.compose.runtime.Composable] lifetime via
  * `remember { DemoRepository(context) }`.
  */
-class DemoRepository(private val context: Context) {
+class DemoRepository(private val appContext: Context) {
 
     private val prefs: SharedPreferences =
-        context.getSharedPreferences(DemoPreferences.PREFS_STATE_FILE, Context.MODE_PRIVATE)
+        appContext.getSharedPreferences(DemoPreferences.PREFS_STATE_FILE, Context.MODE_PRIVATE)
 
     // ── Read-only state (loaded once on construction) ─────────────────────────
 
@@ -39,7 +39,7 @@ class DemoRepository(private val context: Context) {
      * Call when the user toggles demo ON.
      */
     fun activate() {
-        DemoCalculator.resetBaseline(context)
+        DemoCalculator.resetBaseline(appContext)
         prefs.edit()
             .putBoolean(DemoPreferences.KEY_ACTIVE, true)
             .remove(DemoPreferences.KEY_GARDEN_STATE)
@@ -52,7 +52,7 @@ class DemoRepository(private val context: Context) {
      * Call when the user toggles demo OFF.
      */
     fun deactivate() {
-        DemoCalculator.clearBaseline(context)
+        DemoCalculator.clearBaseline(appContext)
         prefs.edit()
             .putBoolean(DemoPreferences.KEY_ACTIVE, false)
             .remove(DemoPreferences.KEY_GARDEN_STATE)
@@ -69,13 +69,13 @@ class DemoRepository(private val context: Context) {
      * @throws Exception for any other calculation failure (caller should handle/log).
      */
     suspend fun refresh(): Pair<EmissionResult, GardenState> {
-        val (result, state) = DemoCalculator.calculate(context)
-        GardenWidget.updateState(context, state)
+        val (result, gardenState) = DemoCalculator.calculate(appContext)
+        GardenWidget.updateState(appContext, gardenState)
         prefs.edit()
-            .putString(DemoPreferences.KEY_GARDEN_STATE, state.name)
-            .putString(DemoPreferences.KEY_SUMMARY, buildSummary(result, state.name))
+            .putString(DemoPreferences.KEY_GARDEN_STATE, gardenState.name)
+            .putString(DemoPreferences.KEY_SUMMARY, buildSummary(result, gardenState.name))
             .apply()
-        return result to state
+        return result to gardenState
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

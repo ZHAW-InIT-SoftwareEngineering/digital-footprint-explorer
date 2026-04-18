@@ -8,21 +8,30 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.glance.appwidget.GlanceAppWidgetManager
@@ -46,6 +55,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import java.util.UUID
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 @Preview
 fun App() {
@@ -105,109 +115,136 @@ fun App() {
             } ?: flowOf(null)
         }.collectAsStateWithLifecycle(null)
 
-        Column(
-            modifier = Modifier
-                .background(MaterialTheme.colorScheme.background)
-                .safeContentPadding()
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState()),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("Demo-Modus", style = MaterialTheme.typography.titleMedium)
-                    }
-                    Switch(
-                        checked = demoActive,
-                        onCheckedChange = { enabled ->
-                            demoActive = enabled
-                            demoSummaryText = null
-                            if (enabled) repo.activate() else repo.deactivate()
-                        }
+        var selectedTab by remember { mutableIntStateOf(0) }
+
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Digital Footprint Explorer") }
+                )
+            },
+            bottomBar = {
+                NavigationBar {
+                    NavigationBarItem(
+                        selected = selectedTab == 0,
+                        onClick = { selectedTab = 0 },
+                        icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
+                        label = { Text(stringResource(R.string.home)) }
                     )
                 }
+            }
+        ) { innerPadding ->
+            when (selectedTab) {
+                0 -> {
+                    Column(
+                        modifier = Modifier
+                            .background(MaterialTheme.colorScheme.background)
+                            .padding(innerPadding)
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState()),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp, vertical = 12.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text("Demo-Modus", style = MaterialTheme.typography.titleMedium)
+                                }
+                                Switch(
+                                    checked = demoActive,
+                                    onCheckedChange = { enabled ->
+                                        demoActive = enabled
+                                        demoSummaryText = null
+                                        if (enabled) repo.activate() else repo.deactivate()
+                                    }
+                                )
+                            }
 
-                if (demoActive) {
-                    Button(
-                        modifier = Modifier.padding(start = 16.dp, bottom = 8.dp),
-                        enabled  = !demoRefreshing,
-                        onClick  = {
-                            scope.launch {
-                                demoRefreshing = true
-                                try {
-                                    val (result, state) = repo.refresh()
-                                    demoSummaryText = repo.buildSummary(result, state.name)
-                                } catch (e: CancellationException) {
-                                    throw e
-                                } catch (e: Exception) {
-                                    Log.e("DFE_Demo", "Refresh failed", e)
-                                } finally {
-                                    demoRefreshing = false
+                            if (demoActive) {
+                                Button(
+                                    modifier = Modifier.padding(start = 16.dp, bottom = 8.dp),
+                                    enabled = !demoRefreshing,
+                                    onClick = {
+                                        scope.launch {
+                                            demoRefreshing = true
+                                            try {
+                                                val (result, state) = repo.refresh()
+                                                demoSummaryText = repo.buildSummary(result, state.name)
+                                            } catch (e: CancellationException) {
+                                                throw e
+                                            } catch (e: Exception) {
+                                                Log.e("DFE_Demo", "Refresh failed", e)
+                                            } finally {
+                                                demoRefreshing = false
+                                            }
+                                        }
+                                    }
+                                ) {
+                                    if (demoRefreshing) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.padding(end = 8.dp),
+                                            strokeWidth = 2.dp,
+                                            color = MaterialTheme.colorScheme.onPrimary
+                                        )
+                                    }
+                                    Text("Gartenzustand aktualisieren")
+                                }
+
+                                demoSummaryText?.let { summary ->
+                                    Text(
+                                        text = summary,
+                                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+                                    )
                                 }
                             }
                         }
-                    ) {
-                        if (demoRefreshing) {
-                            CircularProgressIndicator(
-                                modifier    = Modifier.padding(end = 8.dp),
-                                strokeWidth = 2.dp,
-                                color       = MaterialTheme.colorScheme.onPrimary
-                            )
+
+                        Button(
+                            modifier = Modifier.padding(top = 8.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.secondary
+                            ),
+                            onClick = {
+                                val request = OneTimeWorkRequestBuilder<DailyFootprintWorker>()
+                                    .addTag(TAG_DEBUG_RUN)
+                                    .build()
+                                WorkManager.getInstance(context).enqueue(request)
+                                currentJobId = request.id
+                            }
+                        ) {
+                            Text("[DEBUG] footprint vergangener Tag")
                         }
-                        Text("Gartenzustand aktualisieren")
+
+                        when (currentWorkInfo?.state) {
+                            WorkInfo.State.RUNNING,
+                            WorkInfo.State.ENQUEUED -> {
+                                CircularProgressIndicator(modifier = Modifier.padding(16.dp))
+                                Text("Worker running…", style = MaterialTheme.typography.bodySmall)
+                            }
+
+                            WorkInfo.State.SUCCEEDED -> {
+                                val summary = currentWorkInfo?.outputData?.getString(KEY_DEBUG_SUMMARY)
+                                if (summary != null) DebugResultCard(summary)
+                            }
+
+                            WorkInfo.State.FAILED -> {
+                                DebugResultCard("❌ Worker failed — check Logcat tag: DFE_Worker")
+                            }
+
+                            else -> {}
+                        }
                     }
-
-                    demoSummaryText?.let { summary ->
-                        Text(
-                            text       = summary,
-                            modifier   = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
-                            style      = MaterialTheme.typography.bodySmall,
-                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
-                        )
-                    }
                 }
-            }
-
-            Button(
-                modifier = Modifier.padding(top = 8.dp),
-                colors   = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.secondary
-                ),
-                onClick = {
-                    val request = OneTimeWorkRequestBuilder<DailyFootprintWorker>()
-                        .addTag(TAG_DEBUG_RUN)
-                        .build()
-                    WorkManager.getInstance(context).enqueue(request)
-                    currentJobId = request.id
-                }
-            ) {
-                Text("[DEBUG] footprint vergangener Tag")
-            }
-
-            when (currentWorkInfo?.state) {
-                WorkInfo.State.RUNNING,
-                WorkInfo.State.ENQUEUED -> {
-                    CircularProgressIndicator(modifier = Modifier.padding(16.dp))
-                    Text("Worker running…", style = MaterialTheme.typography.bodySmall)
-                }
-                WorkInfo.State.SUCCEEDED -> {
-                    val summary = currentWorkInfo?.outputData?.getString(KEY_DEBUG_SUMMARY)
-                    if (summary != null) DebugResultCard(summary)
-                }
-                WorkInfo.State.FAILED -> {
-                    DebugResultCard("❌ Worker failed — check Logcat tag: DFE_Worker")
-                }
-                else -> {}
             }
         }
     }

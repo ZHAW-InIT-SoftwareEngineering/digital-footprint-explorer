@@ -1,6 +1,11 @@
 <resources>
     <string name="app_name" translatable="false">Digital Footprint Explorer</string>
 
+    <!--Used in App.kt-->
+    <string name="home">
+        Home
+    </string>
+
     <!-- Used in WidgetOnboardingSheet.kt-->
     <string name="your_digital_garden">
         Your Digital garden

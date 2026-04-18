@@ -47,7 +47,6 @@ object ModelConstants {
     val P_BACKGROUND_BY_PROCESS: Map<BackgroundProcess, Double> = mapOf(
         BackgroundProcess.GPS       to 0.2,
         BackgroundProcess.BLUETOOTH to 0.05
-
     )
 
     /**

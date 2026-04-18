@@ -1,24 +1,35 @@
 package ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer
 
 import android.os.Build
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.Image
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeContentPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.glance.appwidget.GlanceAppWidgetManager
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkInfo
+import androidx.work.WorkManager
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.permission.UsageStatsPermissionSheet
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.permission.hasUsageStatsPermission
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.permission.openUsageStatsSettings
@@ -26,10 +37,14 @@ import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.ui.theme.D
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.widget.GardenWidget
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.widget.GardenWidgetReceiver
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.widget.WidgetOnboardingSheet
-import digitalfootprintexplorer.composeapp.generated.resources.Res
-import digitalfootprintexplorer.composeapp.generated.resources.compose_multiplatform
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.worker.DailyFootprintWorker
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.demo.DemoRepository
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.worker.KEY_DEBUG_SUMMARY
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.worker.TAG_DEBUG_RUN
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
-import org.jetbrains.compose.resources.painterResource
+import java.util.UUID
 
 @Composable
 @Preview
@@ -38,7 +53,6 @@ fun App() {
         val context = LocalContext.current
         val scope   = rememberCoroutineScope()
         var showWidgetOnboarding by remember { mutableStateOf(false) }
-        var showContent by remember { mutableStateOf(false) }
         var showPermissionOnboarding by remember { mutableStateOf(false) }
 
         LaunchedEffect(Unit) {
@@ -57,9 +71,8 @@ fun App() {
                     scope.launch {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                             GlanceAppWidgetManager(context).requestPinGlanceAppWidget(
-                                receiver     = GardenWidgetReceiver::class.java,
-                                preview      = GardenWidget(),
-                                previewState = DpSize(245.dp, 115.dp)
+                                receiver = GardenWidgetReceiver::class.java,
+                                preview  = GardenWidget()
                             )
                         }
                         showWidgetOnboarding = false
@@ -78,26 +91,143 @@ fun App() {
             )
         }
 
+        /** Demo mode state */
+        val repo            = remember { DemoRepository(context) }
+        var demoActive      by remember { mutableStateOf(repo.wasActiveOnStart) }
+        var demoSummaryText by remember { mutableStateOf(repo.loadSummary()) }
+        var demoRefreshing  by remember { mutableStateOf(false) }
+
+        /** Daily debug job state */
+        var currentJobId by remember { mutableStateOf<UUID?>(null) }
+        val currentWorkInfo by remember(currentJobId) {
+            currentJobId?.let { id ->
+                WorkManager.getInstance(context).getWorkInfoByIdFlow(id)
+            } ?: flowOf(null)
+        }.collectAsStateWithLifecycle(null)
+
         Column(
             modifier = Modifier
                 .background(MaterialTheme.colorScheme.background)
                 .safeContentPadding()
-                .fillMaxSize(),
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Button(onClick = { showContent = !showContent }) {
-                Text("Click me!")
-            }
-            AnimatedVisibility(showContent) {
-                val greeting = remember { Greeting().greet() }
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Image(painterResource(Res.drawable.compose_multiplatform), null)
-                    Text("Compose: $greeting")
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text("Demo-Modus", style = MaterialTheme.typography.titleMedium)
+                    }
+                    Switch(
+                        checked = demoActive,
+                        onCheckedChange = { enabled ->
+                            demoActive = enabled
+                            demoSummaryText = null
+                            if (enabled) repo.activate() else repo.deactivate()
+                        }
+                    )
+                }
+
+                if (demoActive) {
+                    Button(
+                        modifier = Modifier.padding(start = 16.dp, bottom = 8.dp),
+                        enabled  = !demoRefreshing,
+                        onClick  = {
+                            scope.launch {
+                                demoRefreshing = true
+                                try {
+                                    val (result, state) = repo.refresh()
+                                    demoSummaryText = repo.buildSummary(result, state.name)
+                                } catch (e: CancellationException) {
+                                    throw e
+                                } catch (e: Exception) {
+                                    Log.e("DFE_Demo", "Refresh failed", e)
+                                } finally {
+                                    demoRefreshing = false
+                                }
+                            }
+                        }
+                    ) {
+                        if (demoRefreshing) {
+                            CircularProgressIndicator(
+                                modifier    = Modifier.padding(end = 8.dp),
+                                strokeWidth = 2.dp,
+                                color       = MaterialTheme.colorScheme.onPrimary
+                            )
+                        }
+                        Text("Gartenzustand aktualisieren")
+                    }
+
+                    demoSummaryText?.let { summary ->
+                        Text(
+                            text       = summary,
+                            modifier   = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
+                            style      = MaterialTheme.typography.bodySmall,
+                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+                        )
+                    }
                 }
             }
+
+            Button(
+                modifier = Modifier.padding(top = 8.dp),
+                colors   = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.secondary
+                ),
+                onClick = {
+                    val request = OneTimeWorkRequestBuilder<DailyFootprintWorker>()
+                        .addTag(TAG_DEBUG_RUN)
+                        .build()
+                    WorkManager.getInstance(context).enqueue(request)
+                    currentJobId = request.id
+                }
+            ) {
+                Text("[DEBUG] footprint vergangener Tag")
+            }
+
+            when (currentWorkInfo?.state) {
+                WorkInfo.State.RUNNING,
+                WorkInfo.State.ENQUEUED -> {
+                    CircularProgressIndicator(modifier = Modifier.padding(16.dp))
+                    Text("Worker running…", style = MaterialTheme.typography.bodySmall)
+                }
+                WorkInfo.State.SUCCEEDED -> {
+                    val summary = currentWorkInfo?.outputData?.getString(KEY_DEBUG_SUMMARY)
+                    if (summary != null) DebugResultCard(summary)
+                }
+                WorkInfo.State.FAILED -> {
+                    DebugResultCard("❌ Worker failed — check Logcat tag: DFE_Worker")
+                }
+                else -> {}
+            }
         }
+    }
+}
+
+@Composable
+private fun DebugResultCard(text: String) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Text(
+            text       = text,
+            modifier   = Modifier.padding(12.dp),
+            style      = MaterialTheme.typography.bodySmall,
+            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+        )
     }
 }

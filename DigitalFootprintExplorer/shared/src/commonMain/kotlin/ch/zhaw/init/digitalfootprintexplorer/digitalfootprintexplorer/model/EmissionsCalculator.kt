@@ -52,7 +52,7 @@ class EmissionsCalculator(
                     category = category,
                     ghgDevice = calculateDevice(category, totalTimeH),
                     ghgNetwork = calculateNetwork(totalWifiGB, totalCellularGB),
-                    ghgBackend = calculateBackend(category, totalWifiGB + totalCellularGB, totalTimeH)
+                    ghgBackend = calculateBackend(totalWifiGB + totalCellularGB)
                 )
             }
     }
@@ -79,43 +79,12 @@ class EmissionsCalculator(
     }
 
     /**
-     * GHG_backend,k = E_backend,k * EF_global
+     * GHG_backend,k = totalDataGB * I_backend * EF_global
      *
-     * Proxy varies by category (TODO: values pending literature review).
-     * Currently 0.0 for all categories – structure is implemented.
+     * Single GB proxy applied uniformly across all categories.
      */
-    private fun calculateBackend(category: AppCategory, totalDataGB: Double, timeH: Double): Double {
-        val eBackendKwh = when (category) {
-            AppCategory.VIDEO_STREAMING,
-            AppCategory.AUDIO_STREAMING,
-            AppCategory.SOCIAL_MEDIA,
-            AppCategory.VIDEO_CALL,
-            AppCategory.MISCELLANEOUS -> {
-                /* Proxy: kWh/GB */
-                totalDataGB * (ModelConstants.BACKEND_INTENSITY_GB[category] ?: 0.0)
-            }
-            AppCategory.MESSAGING -> {
-                /* Proxy: kWh/message (TODO: estimate message count from data volume) */
-                ModelConstants.BACKEND_INTENSITY_PER_MESSAGE_MESSAGING
-            }
-            AppCategory.E_MAIL -> {
-                /* Proxy: kWh/message (TODO) */
-                ModelConstants.BACKEND_INTENSITY_PER_MESSAGE_EMAIL
-            }
-            AppCategory.ARTIFICIAL_INTELLIGENCE -> {
-                /* Proxy: kWh/query (TODO: ~50–80 KB/query → count estimable from data volume) */
-                ModelConstants.BACKEND_INTENSITY_PER_QUERY_AI
-            }
-            AppCategory.GAMING -> {
-                /* Proxy: kWh/h */
-                timeH * ModelConstants.BACKEND_INTENSITY_PER_HOUR_GAMING
-            }
-            AppCategory.NAVIGATION -> {
-                /* Proxy: not yet defined */
-                0.0
-            }
-        }
-        return eBackendKwh * ModelConstants.EF_GLOBAL
+    private fun calculateBackend(totalDataGB: Double): Double {
+        return totalDataGB * ModelConstants.BACKEND_INTENSITY_GB * ModelConstants.EF_GLOBAL
     }
 
     /**

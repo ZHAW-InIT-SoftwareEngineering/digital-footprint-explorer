@@ -49,21 +49,6 @@ object ModelConstants {
         BackgroundProcess.BLUETOOTH to 0.05
     )
 
-    /**
-     * Backend energy intensities
-     *
-     * TODO: fill in literature values after research.
-     * TODO: assign Navigation to a proxy
-     */
-    val BACKEND_INTENSITY_GB: Map<AppCategory, Double> = mapOf(
-        AppCategory.VIDEO_STREAMING  to 0.0,
-        AppCategory.AUDIO_STREAMING  to 0.0,
-        AppCategory.SOCIAL_MEDIA     to 0.0,
-        AppCategory.VIDEO_CALL       to 0.0,
-        AppCategory.MISCELLANEOUS    to 0.0
-    )
-    const val BACKEND_INTENSITY_PER_MESSAGE_MESSAGING = 0.0
-    const val BACKEND_INTENSITY_PER_MESSAGE_EMAIL = 0.0
-    const val BACKEND_INTENSITY_PER_QUERY_AI = 0.0
-    const val BACKEND_INTENSITY_PER_HOUR_GAMING = 0.0
+    /** Backend energy intensity [kWh/GB] — single GB proxy applied uniformly across all categories. */
+    const val BACKEND_INTENSITY_GB = 0.055
 }

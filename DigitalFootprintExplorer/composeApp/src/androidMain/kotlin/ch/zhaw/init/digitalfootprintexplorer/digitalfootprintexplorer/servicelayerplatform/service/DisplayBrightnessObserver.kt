@@ -9,6 +9,7 @@ import android.provider.Settings
 import java.util.Locale
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.input.BrightnessInterval
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.input.DisplayInput
+import androidx.core.content.edit
 
 /**
  * Observes [Settings.System.SCREEN_BRIGHTNESS] changes and Screen On/Off events,
@@ -102,7 +103,7 @@ class DisplayBrightnessObserver(private val context: Context) {
         intervalStartMs = now
 
         val raw = prefs.getString(KEY_INTERVALS, "") ?: ""
-        prefs.edit().remove(KEY_INTERVALS).apply()
+        prefs.edit { remove(KEY_INTERVALS) }
 
         val intervals = parseAndClip(raw, fromMs, toMs)
         return DisplayInput(
@@ -128,7 +129,7 @@ class DisplayBrightnessObserver(private val context: Context) {
         val existing = prefs.getString(KEY_INTERVALS, "") ?: ""
         val entry    = String.format(Locale.ROOT, "%.10f:%d:%d", brightness, startMs, endMs)
         val updated  = if (existing.isEmpty()) entry else "$existing,$entry"
-        prefs.edit().putString(KEY_INTERVALS, updated).apply()
+        prefs.edit { putString(KEY_INTERVALS, updated) }
     }
 
     /**

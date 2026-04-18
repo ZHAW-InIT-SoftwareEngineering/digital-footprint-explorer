@@ -2,6 +2,7 @@ package ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.demo
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.core.content.edit
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.GardenState
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.output.EmissionResult
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.widget.GardenWidget
@@ -36,11 +37,11 @@ class DemoRepository(private val appContext: Context) {
      */
     fun activate() {
         DemoCalculator.resetBaseline(appContext)
-        prefs.edit()
-            .putBoolean(DemoPreferences.KEY_ACTIVE, true)
-            .remove(DemoPreferences.KEY_GARDEN_STATE)
-            .remove(DemoPreferences.KEY_SUMMARY)
-            .apply()
+        prefs.edit {
+            putBoolean(DemoPreferences.KEY_ACTIVE, true)
+            remove(DemoPreferences.KEY_GARDEN_STATE)
+            remove(DemoPreferences.KEY_SUMMARY)
+        }
     }
 
     /**
@@ -49,11 +50,11 @@ class DemoRepository(private val appContext: Context) {
      */
     fun deactivate() {
         DemoCalculator.clearBaseline(appContext)
-        prefs.edit()
-            .putBoolean(DemoPreferences.KEY_ACTIVE, false)
-            .remove(DemoPreferences.KEY_GARDEN_STATE)
-            .remove(DemoPreferences.KEY_SUMMARY)
-            .apply()
+        prefs.edit {
+            putBoolean(DemoPreferences.KEY_ACTIVE, false)
+            remove(DemoPreferences.KEY_GARDEN_STATE)
+            remove(DemoPreferences.KEY_SUMMARY)
+        }
     }
 
     /**
@@ -67,10 +68,10 @@ class DemoRepository(private val appContext: Context) {
     suspend fun refresh(): Pair<EmissionResult, GardenState> {
         val (result, gardenState) = DemoCalculator.calculate(appContext)
         GardenWidget.updateState(appContext, gardenState)
-        prefs.edit()
-            .putString(DemoPreferences.KEY_GARDEN_STATE, gardenState.name)
-            .putString(DemoPreferences.KEY_SUMMARY, buildSummary(result, gardenState.name))
-            .apply()
+        prefs.edit {
+            putString(DemoPreferences.KEY_GARDEN_STATE, gardenState.name)
+            putString(DemoPreferences.KEY_SUMMARY, buildSummary(result, gardenState.name))
+        }
         return result to gardenState
     }
 

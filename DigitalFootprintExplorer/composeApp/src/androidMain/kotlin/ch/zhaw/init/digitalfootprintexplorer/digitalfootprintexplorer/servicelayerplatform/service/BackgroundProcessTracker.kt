@@ -11,6 +11,7 @@ import android.os.Build
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.BackgroundProcess
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.ProcessUsage
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.input.BackgroundInput
+import androidx.core.content.edit
 
 /**
  * Tracks GPS and Bluetooth active-time by listening to system broadcast events.
@@ -114,10 +115,10 @@ class BackgroundProcessTracker(private val context: Context) {
             val totalH  = (totalMs / MILLIS_PER_HOUR).toFloat()
 
             /* Clear completed intervals; keep active state; restart start-timestamp */
-            prefs.edit()
-                .remove(intervalsKey(process))
-                .putLong(startKey(process), now)
-                .apply()
+            prefs.edit {
+                remove(intervalsKey(process))
+                putLong(startKey(process), now)
+            }
 
             if (totalH > 0f) ProcessUsage(process = process, durationH = totalH) else null
         }
@@ -127,27 +128,28 @@ class BackgroundProcessTracker(private val context: Context) {
     /** Seeds initial state on first ever registration without double-counting. */
     private fun initState(process: BackgroundProcess, isActive: Boolean) {
         if (!prefs.contains(activeKey(process))) {
-            prefs.edit()
-                .putBoolean(activeKey(process), isActive)
-                .putLong(startKey(process), System.currentTimeMillis())
-                .apply()
+            prefs.edit {
+                putBoolean(activeKey(process), isActive)
+                putLong(startKey(process), System.currentTimeMillis())
+            }
         }
     }
 
     private fun updateState(process: BackgroundProcess, isNowActive: Boolean) {
         val now      = System.currentTimeMillis()
         val wasActive = prefs.getBoolean(activeKey(process), false)
-        val editor   = prefs.edit().putBoolean(activeKey(process), isNowActive)
+        prefs.edit {
+            putBoolean(activeKey(process), isNowActive)
 
-        if (wasActive && !isNowActive) {
-            /* Process just turned off → close the interval */
-            val start = prefs.getLong(startKey(process), now)
-            appendInterval(process, start, now)
-        } else if (!wasActive && isNowActive) {
-            /* Process just turned on → record start timestamp */
-            editor.putLong(startKey(process), now)
+            if (wasActive && !isNowActive) {
+                /* Process just turned off → close the interval */
+                val start = prefs.getLong(startKey(process), now)
+                appendInterval(process, start, now)
+            } else if (!wasActive && isNowActive) {
+                /* Process just turned on → record start timestamp */
+                putLong(startKey(process), now)
+            }
         }
-        editor.apply()
     }
 
     /** Appends one entry in the format "startMs:endMs" to SharedPreferences. */
@@ -155,7 +157,7 @@ class BackgroundProcessTracker(private val context: Context) {
         val existing = prefs.getString(intervalsKey(process), "") ?: ""
         val entry    = "$startMs:$endMs"
         val updated  = if (existing.isEmpty()) entry else "$existing,$entry"
-        prefs.edit().putString(intervalsKey(process), updated).apply()
+        prefs.edit { putString(intervalsKey(process), updated) }
     }
 
     /**

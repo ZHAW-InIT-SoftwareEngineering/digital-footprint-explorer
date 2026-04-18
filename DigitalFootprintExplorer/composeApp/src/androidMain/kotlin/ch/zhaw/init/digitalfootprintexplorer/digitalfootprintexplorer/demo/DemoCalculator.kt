@@ -2,6 +2,7 @@ package ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.demo
 
 import android.content.Context
 import android.net.TrafficStats
+import androidx.core.content.edit
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.DFEApplication
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.AppCategory
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.DataPoint
@@ -53,11 +54,11 @@ object DemoCalculator {
         val total = totalDeviceBytes()
         val dfe   = ownAppBytes(context)
         context.getSharedPreferences(DemoPreferences.PREFS_CALCULATOR_FILE, Context.MODE_PRIVATE)
-            .edit()
-            .putLong(DemoPreferences.KEY_BASELINE_TS,    ts)
-            .putLong(DemoPreferences.KEY_BASELINE_TOTAL, total)
-            .putLong(DemoPreferences.KEY_BASELINE_DFE,   dfe)
-            .apply()
+            .edit {
+                putLong(DemoPreferences.KEY_BASELINE_TS, ts)
+                putLong(DemoPreferences.KEY_BASELINE_TOTAL, total)
+                putLong(DemoPreferences.KEY_BASELINE_DFE, dfe)
+            }
     }
 
     /**
@@ -66,11 +67,11 @@ object DemoCalculator {
      */
     fun clearBaseline(context: Context) {
         context.getSharedPreferences(DemoPreferences.PREFS_CALCULATOR_FILE, Context.MODE_PRIVATE)
-            .edit()
-            .remove(DemoPreferences.KEY_BASELINE_TS)
-            .remove(DemoPreferences.KEY_BASELINE_TOTAL)
-            .remove(DemoPreferences.KEY_BASELINE_DFE)
-            .apply()
+            .edit {
+                remove(DemoPreferences.KEY_BASELINE_TS)
+                remove(DemoPreferences.KEY_BASELINE_TOTAL)
+                remove(DemoPreferences.KEY_BASELINE_DFE)
+            }
     }
 
     /**
@@ -108,12 +109,11 @@ object DemoCalculator {
             )
         ) else emptyList()
 
-        prefs.edit()
-            .putLong(DemoPreferences.KEY_BASELINE_TS,    toMs)
-            .putLong(DemoPreferences.KEY_BASELINE_TOTAL, currentTotal)
-            .putLong(DemoPreferences.KEY_BASELINE_DFE,   currentDfe)
-            .apply()
-
+        prefs.edit {
+            putLong(DemoPreferences.KEY_BASELINE_TS, toMs)
+            putLong(DemoPreferences.KEY_BASELINE_TOTAL, currentTotal)
+            putLong(DemoPreferences.KEY_BASELINE_DFE, currentDfe)
+        }
         val backgroundInput = backgroundTracker.peek(fromMs, toMs)
 
         val result = EmissionsCalculator().calculate(

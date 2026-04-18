@@ -5,6 +5,9 @@
     <string name="home">
         Home
     </string>
+    <string name="statistics">
+        Statistics
+    </string>
 
     <!-- Used in WidgetOnboardingSheet.kt-->
     <string name="your_digital_garden">

@@ -11,8 +11,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoGraph
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -128,8 +128,14 @@ fun App() {
                     NavigationBarItem(
                         selected = selectedTab == 0,
                         onClick = { selectedTab = 0 },
-                        icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
+                        icon = { Icon(Icons.Default.Home, contentDescription = stringResource(R.string.home)) },
                         label = { Text(stringResource(R.string.home)) }
+                    )
+                    NavigationBarItem(
+                        selected = selectedTab == 1,
+                        onClick = { selectedTab = 1},
+                        icon = { Icon(Icons.Default.AutoGraph, contentDescription = stringResource(R.string.statistics)) },
+                        label = { Text(stringResource(R.string.statistics))}
                     )
                 }
             }
@@ -243,6 +249,18 @@ fun App() {
 
                             else -> {}
                         }
+                    }
+                }
+                1 -> {
+                    Column(
+                        modifier = Modifier
+                            .background(MaterialTheme.colorScheme.background)
+                            .padding(innerPadding)
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState()),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Text("Statistics", style = MaterialTheme.typography.titleMedium)
                     }
                 }
             }

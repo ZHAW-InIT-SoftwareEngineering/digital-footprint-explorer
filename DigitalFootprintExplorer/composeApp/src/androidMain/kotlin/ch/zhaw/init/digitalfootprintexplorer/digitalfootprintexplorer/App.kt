@@ -30,6 +30,9 @@ import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.permission
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.permission.hasUsageStatsPermission
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.permission.openUsageStatsSettings
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.ui.theme.DFETheme
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.ui.theme.pieChartDisplayColor
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.ui.theme.pieChartAppUsageColor
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.ui.theme.pieChartBackgroundColor
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.widget.GardenWidget
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.widget.GardenWidgetReceiver
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.widget.WidgetOnboardingSheet
@@ -52,11 +55,6 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import java.util.UUID
-import kotlin.math.roundToInt
-
-private val AppUsageColor = Color(0xFF6200EE)
-private val DisplayColor = Color(0xFF03DAC6)
-private val BackgroundColor = Color(0xFFBB86FC)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -327,19 +325,19 @@ fun App() {
                                             label = stringResource(R.string.app_usage),
                                             valueGrams = appUsage * 1000,
                                             percentage = if (total > 0) (appUsage / total) * 100 else 0.0,
-                                            color = AppUsageColor
+                                            color = pieChartAppUsageColor
                                         )
                                         EmissionRow(
                                             label = "Display",
                                             valueGrams = display * 1000,
                                             percentage = if (total > 0) (display / total) * 100 else 0.0,
-                                            color = DisplayColor
+                                            color = pieChartDisplayColor
                                         )
                                         EmissionRow(
                                             label = stringResource(R.string.background),
                                             valueGrams = background * 1000,
                                             percentage = if (total > 0) (background / total) * 100 else 0.0,
-                                            color = BackgroundColor
+                                            color = pieChartBackgroundColor
                                         )
 
                                         HorizontalDivider(
@@ -401,15 +399,15 @@ private fun EmissionPieChart(
         sliceProvider = PieChart.SliceProvider.series(
             listOf(
                 PieChart.Slice(
-                    fill = Fill(AppUsageColor),
+                    fill = Fill(pieChartAppUsageColor),
                     label = PieChart.SliceLabel.Inside(labelComponent)
                 ),
                 PieChart.Slice(
-                    fill = Fill(DisplayColor),
+                    fill = Fill(pieChartDisplayColor),
                     label = PieChart.SliceLabel.Inside(labelComponent)
                 ),
                 PieChart.Slice(
-                    fill = Fill(BackgroundColor),
+                    fill = Fill(pieChartBackgroundColor),
                     label = PieChart.SliceLabel.Inside(labelComponent)
                 )
             )

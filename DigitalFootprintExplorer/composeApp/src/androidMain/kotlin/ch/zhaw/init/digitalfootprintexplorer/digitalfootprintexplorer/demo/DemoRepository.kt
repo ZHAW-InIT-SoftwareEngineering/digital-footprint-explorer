@@ -3,6 +3,7 @@ package ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.demo
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.core.content.edit
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.DFEApplication
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.GardenState
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.output.EmissionResult
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.widget.GardenWidget
@@ -42,16 +43,20 @@ class DemoRepository(private val appContext: Context) {
     }
 
     /**
-     * Deactivates demo mode: clears the baseline and all persisted results.
+     * Deactivates demo mode: clears the baseline and all persisted results, then restores
+     * the widget to the last garden state recorded by the real daily worker (if available).
      * Call when the user toggles demo OFF.
      */
-    fun deactivate() {
+    suspend fun deactivate() {
         DemoCalculator.clearBaseline(appContext)
         prefs.edit {
             putBoolean(DemoPreferences.KEY_ACTIVE, false)
             remove(DemoPreferences.KEY_GARDEN_STATE)
             remove(DemoPreferences.KEY_SUMMARY)
         }
+        val app = appContext.applicationContext as DFEApplication
+        val realState = app.gardenStateCalculator.getLatestGardenState()
+        if (realState != null) GardenWidget.updateState(appContext, realState)
     }
 
     /**

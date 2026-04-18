@@ -132,7 +132,11 @@ fun App() {
                         onCheckedChange = { enabled ->
                             demoActive = enabled
                             demoSummaryText = null
-                            if (enabled) repo.activate() else repo.deactivate()
+                            if (enabled) {
+                                repo.activate()
+                            } else {
+                                scope.launch { repo.deactivate() }
+                            }
                         }
                     )
                 }

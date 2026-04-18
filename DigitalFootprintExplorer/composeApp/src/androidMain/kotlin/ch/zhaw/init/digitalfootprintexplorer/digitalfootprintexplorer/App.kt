@@ -418,7 +418,7 @@ private fun EmissionPieChart(
             if (total <= 0f) {
                 ""
             } else {
-                "${((value / total) * 100f).roundToInt()}%"
+                "${"%.1f".format((value / total) * 100f)}%"
             }
         }
     )

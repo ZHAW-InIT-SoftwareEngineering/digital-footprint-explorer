@@ -1,18 +1,23 @@
 CREATE TABLE DailyFootprintEntry (
-    date          TEXT NOT NULL PRIMARY KEY,
-    kgCO2e        REAL NOT NULL,
-    ghgAppUsage   REAL NOT NULL DEFAULT 0,
-    ghgDisplay    REAL NOT NULL DEFAULT 0,
-    ghgBackground REAL NOT NULL DEFAULT 0,
-    measuredAt    TEXT NOT NULL DEFAULT ''
+    date            TEXT NOT NULL PRIMARY KEY,
+    kgCO2e          REAL NOT NULL,
+    ghgAppUsage     REAL NOT NULL DEFAULT 0,
+    ghgDisplay      REAL NOT NULL DEFAULT 0,
+    ghgBackground   REAL NOT NULL DEFAULT 0,
+    measuredAt      TEXT NOT NULL DEFAULT '',
+    gardenState     TEXT NOT NULL DEFAULT 'STABLE',
+    baselineKgCO2e  REAL NOT NULL DEFAULT 0
 );
 
 selectAll:
 SELECT * FROM DailyFootprintEntry ORDER BY date ASC;
 
+selectLatest:
+SELECT * FROM DailyFootprintEntry ORDER BY date DESC LIMIT 1;
+
 insert:
-INSERT OR REPLACE INTO DailyFootprintEntry(date, kgCO2e, ghgAppUsage, ghgDisplay, ghgBackground, measuredAt)
-VALUES (?, ?, ?, ?, ?, ?);
+INSERT OR REPLACE INTO DailyFootprintEntry(date, kgCO2e, ghgAppUsage, ghgDisplay, ghgBackground, measuredAt, gardenState, baselineKgCO2e)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?);
 
 deleteOldest:
 DELETE FROM DailyFootprintEntry

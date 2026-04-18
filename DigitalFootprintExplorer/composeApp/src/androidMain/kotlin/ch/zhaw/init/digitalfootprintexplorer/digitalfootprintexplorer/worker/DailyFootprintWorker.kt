@@ -78,17 +78,19 @@ class DailyFootprintWorker(
         logEmissions(emissionResult)
 
         /* Garden state */
-        val now         = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
-        val gardenState = app.gardenStateCalculator.calculateGardenState(emissionResult.ghgTotal)
+        val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+        val (gardenState, baseline) = app.gardenStateCalculator.calculateGardenState(emissionResult.ghgTotal)
         app.gardenStateCalculator.recordDailyFootprint(
-            date          = now.date,
-            kgCO2e        = emissionResult.ghgTotal,
-            ghgAppUsage   = emissionResult.ghgAppUsage,
-            ghgDisplay    = emissionResult.ghgDisplay,
-            ghgBackground = emissionResult.ghgBackground,
-            measuredAt    = now.toString()
+            date           = now.date,
+            kgCO2e         = emissionResult.ghgTotal,
+            ghgAppUsage    = emissionResult.ghgAppUsage,
+            ghgDisplay     = emissionResult.ghgDisplay,
+            ghgBackground  = emissionResult.ghgBackground,
+            measuredAt     = now.toString(),
+            gardenState    = gardenState,
+            baselineKgCO2e = baseline
         )
-        Log.d(TAG, "🌱 GardenState → $gardenState (${f(emissionResult.ghgTotal * 1000)} gCO₂e today, measured at ${now})")
+        Log.d(TAG, "🌱 GardenState → $gardenState (${f(emissionResult.ghgTotal * 1000)} gCO₂e today, baseline ${f(baseline * 1000)} gCO₂e, measured at $now)")
 
         GardenWidget.updateState(appContext, gardenState)
         Log.d(TAG, "✅ Worker finished — widget updated")

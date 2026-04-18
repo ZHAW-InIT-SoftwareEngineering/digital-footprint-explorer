@@ -25,9 +25,6 @@ class DemoRepository(private val appContext: Context) {
     /** True if demo was already active when this repository was created (e.g. after app restart). */
     val wasActiveOnStart: Boolean = prefs.getBoolean(DemoPreferences.KEY_ACTIVE, false)
 
-    /** Last persisted garden state name, or null if no result has been calculated yet. */
-    fun loadGardenState(): String? = prefs.getString(DemoPreferences.KEY_GARDEN_STATE, null)
-
     /** Last persisted summary text, or null if no result has been calculated yet. */
     fun loadSummary(): String? = prefs.getString(DemoPreferences.KEY_SUMMARY, null)
 

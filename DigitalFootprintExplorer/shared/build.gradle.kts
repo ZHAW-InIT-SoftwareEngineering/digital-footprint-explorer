@@ -44,7 +44,6 @@ sqldelight {
     databases {
         create("DFEDatabase") {
             packageName.set("ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.database")
-            schemaVersion = 2
         }
     }
 }

@@ -10,7 +10,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.work.WorkInfo
@@ -21,6 +20,9 @@ import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.worker.KEY
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.ui.component.EmissionPieChart
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.ui.component.EmissionRow
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.R
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.ui.theme.pieChartAppUsageColor
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.ui.theme.pieChartBackgroundColor
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.ui.theme.pieChartDisplayColor
 
 @Composable
 fun StatisticsScreen(
@@ -84,21 +86,21 @@ fun StatisticsScreen(
                             label = stringResource(R.string.app_usage),
                             valueGrams = appUsage * 1000,
                             percentage = if (total > 0) (appUsage / total) else 0.0,
-                            color = Color(0xFF6200EE)
+                            color = pieChartAppUsageColor
                         )
 
                         EmissionRow(
                             label = "Display",
                             valueGrams = display * 1000,
                             percentage = if (total > 0) (display / total) else 0.0,
-                            color = Color(0xFF03DAC6)
+                            color = pieChartDisplayColor
                         )
 
                         EmissionRow(
                             label = stringResource(R.string.background),
                             valueGrams = background * 1000,
                             percentage = if (total > 0) (background / total) else 0.0,
-                            color = Color(0xFFBB86FC)
+                            color = pieChartBackgroundColor
                         )
 
                         HorizontalDivider(

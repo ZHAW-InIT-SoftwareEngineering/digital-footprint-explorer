@@ -20,7 +20,9 @@ import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelay
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.service.NetworkUsageDataSource
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.widget.GardenWidget
 import kotlinx.datetime.Clock
+import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.minus
 import kotlinx.datetime.toLocalDateTime
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
@@ -43,12 +45,15 @@ class DailyFootprintWorker(
     }
 
     private suspend fun doWorkInternal(): Result {
-        Log.d(TAG, "▶ Worker started")
+        val workerStartedAt = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault())
+            .format(java.util.Date())
+        Log.d(TAG, "▶ Worker started at $workerStartedAt")
         val app = appContext.applicationContext as DFEApplication
 
         /* Calendar-day boundaries: yesterday 00:00 → today 00:00 */
         val (startTime, endTime) = yesterdayBoundaries()
-        Log.d(TAG, "📅 Calculating emissions for window [$startTime, $endTime]")
+        val fmt = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault())
+        Log.d(TAG, "📅 Calculating emissions for window [${fmt.format(java.util.Date(startTime))} → ${fmt.format(java.util.Date(endTime))}]")
 
         val subscriberId   = readSubscriberId()
         val networkMetrics = MetricCollector(
@@ -79,9 +84,10 @@ class DailyFootprintWorker(
 
         /* Garden state */
         val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+        val yesterday = now.date.minus(DatePeriod(days = 1))
         val (gardenState, baseline) = app.gardenStateCalculator.calculateGardenState(emissionResult.ghgTotal)
         app.gardenStateCalculator.recordDailyFootprint(
-            date           = now.date,
+            date           = yesterday,
             kgCO2e         = emissionResult.ghgTotal,
             ghgAppUsage    = emissionResult.ghgAppUsage,
             ghgDisplay     = emissionResult.ghgDisplay,
@@ -103,7 +109,8 @@ class DailyFootprintWorker(
             displayInput = displayInput,
             background   = backgroundInput,
             result       = emissionResult,
-            state        = gardenState.name
+            state        = gardenState.name,
+            baseline     = baseline
         )
         return Result.success(workDataOf(KEY_DEBUG_SUMMARY to summary))
     }
@@ -146,7 +153,8 @@ class DailyFootprintWorker(
         displayInput: DisplayInput,
         background: BackgroundInput,
         result: EmissionResult,
-        state: String
+        state: String,
+        baseline: Double
     ): String {
         val avgBrightness = if (displayInput.intervals.isEmpty()) 0.0
             else displayInput.intervals.sumOf { it.normalizedBrightness * it.durationH } /
@@ -160,7 +168,7 @@ class DailyFootprintWorker(
 📍 Background: $bgSummary
 🔢 CO₂e: app=${f(result.ghgAppUsage*1000)}g  display=${f(result.ghgDisplay*1000)}g  bg=${f(result.ghgBackground*1000)}g
    TOTAL: ${f(result.ghgTotal*1000)} gCO₂e
-🌱 GardenState: $state
+🌱 GardenState: $state  (baseline ${f(baseline*1000)} gCO₂e)
         """.trimIndent()
     }
 

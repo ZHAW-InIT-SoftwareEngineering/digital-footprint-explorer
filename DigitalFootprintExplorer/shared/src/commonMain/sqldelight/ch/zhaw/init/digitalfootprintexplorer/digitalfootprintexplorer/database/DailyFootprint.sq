@@ -16,7 +16,7 @@ selectLatest:
 SELECT * FROM DailyFootprintEntry ORDER BY date DESC LIMIT 1;
 
 insert:
-INSERT OR REPLACE INTO DailyFootprintEntry(date, kgCO2e, ghgAppUsage, ghgDisplay, ghgBackground, measuredAt, gardenState, baselineKgCO2e)
+INSERT OR IGNORE INTO DailyFootprintEntry(date, kgCO2e, ghgAppUsage, ghgDisplay, ghgBackground, measuredAt, gardenState, baselineKgCO2e)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?);
 
 deleteOldest:

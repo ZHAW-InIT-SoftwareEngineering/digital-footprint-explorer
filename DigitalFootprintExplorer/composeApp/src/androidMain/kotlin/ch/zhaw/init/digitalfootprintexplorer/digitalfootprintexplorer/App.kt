@@ -55,6 +55,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import java.util.UUID
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -416,7 +417,7 @@ private fun EmissionPieChart(
             if (total <= 0f) {
                 ""
             } else {
-                "${"%.1f".format((value / total) * 100f)}%"
+                "${((value / total) * 100f).roundToInt()}%"
             }
         }
     )

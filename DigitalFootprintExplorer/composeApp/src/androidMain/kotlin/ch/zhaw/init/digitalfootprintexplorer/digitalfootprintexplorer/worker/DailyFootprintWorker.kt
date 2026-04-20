@@ -204,14 +204,26 @@ class DailyFootprintWorker(
     }
 
     companion object {
-        const val TAG       = "DFE_Worker"
+        const val TAG = "DFE_Worker"
         private const val WORK_NAME = "daily_footprint"
 
         fun schedule(context: Context) {
+            val now = Calendar.getInstance()
+            val next5am = Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, 5)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+                if (!after(now)) add(Calendar.DAY_OF_YEAR, 1)
+            }
+            val initialDelayMs = next5am.timeInMillis - now.timeInMillis
+
             val request = PeriodicWorkRequestBuilder<DailyFootprintWorker>(
                 24, TimeUnit.HOURS,
-                2,  TimeUnit.HOURS   /* flex interval: run in the last 2 h of each 24 h period */
-            ).build()
+                2,  TimeUnit.HOURS
+            )
+                .setInitialDelay(initialDelayMs, TimeUnit.MILLISECONDS)
+                .build()
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
                 WORK_NAME,
                 ExistingPeriodicWorkPolicy.KEEP,

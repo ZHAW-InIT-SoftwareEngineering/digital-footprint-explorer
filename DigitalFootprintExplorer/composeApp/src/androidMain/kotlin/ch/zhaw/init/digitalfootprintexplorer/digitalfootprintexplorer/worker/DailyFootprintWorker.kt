@@ -87,14 +87,15 @@ class DailyFootprintWorker(
         val yesterday = now.date.minus(DatePeriod(days = 1))
         val (gardenState, baseline) = app.gardenStateCalculator.calculateGardenState(emissionResult.ghgTotal)
         app.gardenStateCalculator.recordDailyFootprint(
-            date           = yesterday,
-            kgCO2e         = emissionResult.ghgTotal,
-            ghgAppUsage    = emissionResult.ghgAppUsage,
-            ghgDisplay     = emissionResult.ghgDisplay,
-            ghgBackground  = emissionResult.ghgBackground,
-            measuredAt     = now.toString(),
-            gardenState    = gardenState,
-            baselineKgCO2e = baseline
+            date              = yesterday,
+            kgCO2e            = emissionResult.ghgTotal,
+            ghgAppUsage       = emissionResult.ghgAppUsage,
+            ghgDisplay        = emissionResult.ghgDisplay,
+            ghgBackground     = emissionResult.ghgBackground,
+            measuredAt        = now.toString(),
+            gardenState       = gardenState,
+            baselineKgCO2e    = baseline,
+            categoryBreakdown = emissionResult.categoryBreakdown
         )
         Log.d(TAG, "🌱 GardenState → $gardenState (${f(emissionResult.ghgTotal * 1000)} gCO₂e today, baseline ${f(baseline * 1000)} gCO₂e, measured at $now)")
 

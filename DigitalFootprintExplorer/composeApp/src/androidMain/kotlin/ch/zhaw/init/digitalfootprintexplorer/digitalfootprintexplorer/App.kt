@@ -1,5 +1,6 @@
 package ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer
 
+import android.content.Context
 import android.os.Build
 import android.util.Log
 import androidx.compose.foundation.background
@@ -56,17 +57,23 @@ fun App() {
         var showPermissionOnboarding by remember { mutableStateOf(false) }
 
         LaunchedEffect(Unit) {
-            val installedIds = GlanceAppWidgetManager(context).getGlanceIds(GardenWidget::class.java)
-            showWidgetOnboarding = installedIds.isEmpty()
+            val prefs = context.getSharedPreferences("dfe_onboarding", Context.MODE_PRIVATE)
+            val widgetOnboardingDone = prefs.getBoolean("widget_onboarding_done", false)
+            showWidgetOnboarding = !widgetOnboardingDone
 
             if (!hasUsageStatsPermission(context)) {
                 showPermissionOnboarding = true
             }
         }
 
-        if (showWidgetOnboarding) {
+        if (showWidgetOnboarding && !showPermissionOnboarding) {
+            val markOnboardingDone = {
+                context.getSharedPreferences("dfe_onboarding", Context.MODE_PRIVATE)
+                    .edit().putBoolean("widget_onboarding_done", true).apply()
+                showWidgetOnboarding = false
+            }
             WidgetOnboardingSheet(
-                onDismiss = { showWidgetOnboarding = false },
+                onDismiss = { markOnboardingDone() },
                 onPin = {
                     scope.launch {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -75,7 +82,7 @@ fun App() {
                                 preview  = GardenWidget()
                             )
                         }
-                        showWidgetOnboarding = false
+                        markOnboardingDone()
                     }
                 }
             )

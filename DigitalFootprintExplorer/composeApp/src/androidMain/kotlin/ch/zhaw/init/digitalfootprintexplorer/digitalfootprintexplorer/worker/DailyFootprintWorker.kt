@@ -30,6 +30,11 @@ import java.util.concurrent.TimeUnit
 const val KEY_DEBUG_SUMMARY = "debug_summary"
 const val TAG_DEBUG_RUN     = "debug_footprint_run"
 
+const val KEY_GHG_APP_USAGE   = "ghg_app_usage"
+const val KEY_GHG_DISPLAY     = "ghg_display"
+const val KEY_GHG_BACKGROUND  = "ghg_background"
+const val KEY_GHG_TOTAL       = "ghg_total"
+
 class DailyFootprintWorker(
     private val appContext: Context,
     params: WorkerParameters
@@ -113,7 +118,13 @@ class DailyFootprintWorker(
             state        = gardenState.name,
             baseline     = baseline
         )
-        return Result.success(workDataOf(KEY_DEBUG_SUMMARY to summary))
+        return Result.success(workDataOf(
+            KEY_DEBUG_SUMMARY to summary,
+            KEY_GHG_APP_USAGE to emissionResult.ghgAppUsage,
+            KEY_GHG_DISPLAY to emissionResult.ghgDisplay,
+            KEY_GHG_BACKGROUND to emissionResult.ghgBackground,
+            KEY_GHG_TOTAL to emissionResult.ghgTotal
+        ))
     }
 
     private fun logDisplay(display: DisplayInput) {

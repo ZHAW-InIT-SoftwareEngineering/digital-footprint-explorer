@@ -1,5 +1,6 @@
 [versions]
 agp = "8.11.2"
+composeM3 = "3.1.0"
 sqldelight = "2.0.2"
 kotlinxDatetime = "0.6.0"
 android-compileSdk = "36"
@@ -18,8 +19,11 @@ material3 = "1.10.0-alpha05"
 glance = "1.1.1"
 workManager = "2.10.1"
 compose-googleFonts = "1.8.0"
+materialIconsExtended = "1.7.3"
 
 [libraries]
+compose = { module = "com.patrykandpatrick.vico:compose", version.ref = "composeM3" }
+compose-m3 = { module = "com.patrykandpatrick.vico:compose-m3", version.ref = "composeM3" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlin-testJunit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
 junit = { module = "junit:junit", version.ref = "junit" }
@@ -45,6 +49,7 @@ sqldelight-runtime = { module = "app.cash.sqldelight:runtime", version.ref = "sq
 sqldelight-androidDriver = { module = "app.cash.sqldelight:android-driver", version.ref = "sqldelight" }
 sqldelight-nativeDriver = { module = "app.cash.sqldelight:native-driver", version.ref = "sqldelight" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinxDatetime" }
+material-icons-extended = { module = "org.jetbrains.compose.material:material-icons-extended", version.ref = "materialIconsExtended" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

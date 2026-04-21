@@ -1,6 +1,23 @@
 <resources>
     <string name="app_name" translatable="false">Digital Footprint Explorer</string>
 
+    <!--Used in App.kt-->
+    <string name="home">
+        Home
+    </string>
+    <string name="statistics">
+        Statistics
+    </string>
+    <string name="no_emissions">
+        No emissions data recorded for yesterday.
+    </string>
+    <string name="app_usage">
+        App usage
+    </string>
+    <string name="background">
+        Background
+    </string>
+
     <!-- Used in WidgetOnboardingSheet.kt-->
     <string name="your_digital_garden">
         Your Digital garden

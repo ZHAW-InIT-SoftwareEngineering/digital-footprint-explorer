@@ -1,0 +1,23 @@
+CREATE TABLE DailyEmission (
+    date           TEXT NOT NULL PRIMARY KEY,
+    total_kg       REAL NOT NULL,
+    app_usage_kg   REAL NOT NULL DEFAULT 0,
+    display_kg     REAL NOT NULL DEFAULT 0,
+    background_kg  REAL NOT NULL DEFAULT 0,
+    calculated_at  TEXT NOT NULL DEFAULT '',
+    garden_state   TEXT NOT NULL DEFAULT 'STABLE',
+    baseline_kg    REAL NOT NULL DEFAULT 0
+);
+
+CREATE TABLE DailyEmissionCategory (
+    date      TEXT NOT NULL REFERENCES DailyEmission(date) ON DELETE CASCADE,
+    category  TEXT NOT NULL,
+    total_kg  REAL NOT NULL,
+    PRIMARY KEY (date, category)
+);
+
+INSERT OR IGNORE INTO DailyEmission (date, total_kg, app_usage_kg, display_kg, background_kg, calculated_at, garden_state, baseline_kg)
+SELECT date, kgCO2e, ghgAppUsage, ghgDisplay, ghgBackground, measuredAt, gardenState, baselineKgCO2e
+FROM DailyFootprintEntry;
+
+DROP TABLE DailyFootprintEntry;

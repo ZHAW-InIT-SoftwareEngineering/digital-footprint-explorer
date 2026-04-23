@@ -37,7 +37,7 @@
         Usage access required
     </string>
     <string name="usagestats_main_text">
-        To calculate your digital footprint more accurately, the app needs access to your usage data. Please enable this access in your system settings. Your data is processed locally and not shared with third parties.
+        To calculate your digital footprint, the app requires access to your usage data. Without this permission, the app cannot be used. Please enable access in the system settings. All data is processed locally and is not shared with third parties.
     </string>
     <string name="cancel">
         Cancel

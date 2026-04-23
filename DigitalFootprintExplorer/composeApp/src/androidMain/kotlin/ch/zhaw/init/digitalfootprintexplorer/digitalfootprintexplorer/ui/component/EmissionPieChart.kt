@@ -17,7 +17,6 @@ import com.patrykandpatrick.vico.compose.pie.data.PieChartModelProducer
 import com.patrykandpatrick.vico.compose.pie.data.PieValueFormatter
 import com.patrykandpatrick.vico.compose.pie.data.pieSeries
 import com.patrykandpatrick.vico.compose.pie.rememberPieChart
-import kotlin.math.roundToInt
 
 @Composable
 fun EmissionPieChart(
@@ -26,7 +25,6 @@ fun EmissionPieChart(
     background: Double,
     modifier: Modifier = Modifier
 ) {
-    val total = (appUsage + display + background).toFloat()
     val modelProducer = remember { PieChartModelProducer() }
 
     LaunchedEffect(appUsage, display, background) {
@@ -64,12 +62,8 @@ fun EmissionPieChart(
                 )
             )
         ),
-        valueFormatter = PieValueFormatter { _, value, _ ->
-            if (total <= 0f) {
-                ""
-            } else {
-                "${((value / total) * 100f).roundToInt()}%"
-            }
+        valueFormatter = PieValueFormatter { _, _, _ ->
+            ""
         }
     )
 

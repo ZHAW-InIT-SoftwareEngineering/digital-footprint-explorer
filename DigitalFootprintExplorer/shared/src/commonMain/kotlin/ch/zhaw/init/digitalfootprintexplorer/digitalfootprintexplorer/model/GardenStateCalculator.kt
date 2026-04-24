@@ -82,6 +82,21 @@ class GardenStateCalculator(private val database: DFEDatabase) {
         return latest?.garden_state?.let { runCatching { GardenState.valueOf(it) }.getOrNull() }
     }
 
+    /**
+     * Returns the latest recorded footprint entry, or null if no history exists.
+     */
+    fun getLatestEntry(): DailyFootprintEntry? {
+        val latest = database.dailyFootprintQueries.selectLatest().executeAsOneOrNull() ?: return null
+        return DailyFootprintEntry(
+            date = LocalDate.parse(latest.date),
+            kgCO2e = latest.total_kg,
+            ghgAppUsage = latest.app_usage_kg,
+            ghgDisplay = latest.display_kg,
+            ghgBackground = latest.background_kg,
+            measuredAt = latest.calculated_at
+        )
+    }
+
     private fun fromDeviation(today: Double, baseline: Double): GardenState {
         val percentage = (today - baseline) / baseline
         return when {

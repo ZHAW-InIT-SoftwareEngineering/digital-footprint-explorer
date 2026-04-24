@@ -60,14 +60,16 @@ class NetworkUsageDataSourceTest {
 
     private val generateApps = listOf(
         App(
-            uid = 1233,
-            name = "Youtube",
-            category = AppCategory.VIDEO_STREAMING
+            uid         = 1233,
+            name        = "Youtube",
+            packageName = "com.google.android.youtube",
+            category    = AppCategory.VIDEO_STREAMING
         ),
         App(
-            uid = 1234,
-            name = "Instagram",
-            category = AppCategory.SOCIAL_MEDIA
+            uid         = 1234,
+            name        = "Instagram",
+            packageName = "com.instagram.android",
+            category    = AppCategory.SOCIAL_MEDIA
         )
     )
 

@@ -1,5 +1,6 @@
 package ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.worker
 
+import android.app.usage.UsageStatsManager
 import android.content.Context
 import android.telephony.TelephonyManager
 import android.util.Log
@@ -60,10 +61,12 @@ class DailyFootprintWorker(
         val fmt = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault())
         Log.d(TAG, "📅 Calculating emissions for window [${fmt.format(java.util.Date(startTime))} → ${fmt.format(java.util.Date(endTime))}]")
 
-        val subscriberId   = readSubscriberId()
-        val networkMetrics = MetricCollector(
+        val subscriberId      = readSubscriberId()
+        val usageStatsManager = appContext.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
+        val networkMetrics    = MetricCollector(
             installedAppProvider   = InstalledAppProvider(),
-            networkUsageDataSource = NetworkUsageDataSource(appContext)
+            networkUsageDataSource = NetworkUsageDataSource(appContext),
+            usageStatsManager      = usageStatsManager
         ).collectNetworkMetrics(appContext, startTime, endTime, subscriberId)
 
         val measuredApps  = networkMetrics.count { it.wifiBytes is DataPoint.Measured || it.cellularBytes is DataPoint.Measured }

@@ -42,7 +42,8 @@ class EmissionsCalculatorTest {
         val expectedDevice = ModelConstants.P_DEVICE_BY_CATEGORY[AppCategory.VIDEO_STREAMING]!! *
             timeH / 1000.0 / ModelConstants.CHARGING_EFFICIENCY * ModelConstants.EF_SWISS
         val expectedNetwork = wifiGB * ModelConstants.NETWORK_INTENSITY_WIFI * ModelConstants.EF_GLOBAL
-        assertEquals(expectedDevice + expectedNetwork, result.ghgAppUsage, absoluteTolerance = 1e-9)
+        val expectedBackend = wifiGB * ModelConstants.BACKEND_INTENSITY_GB * ModelConstants.EF_GLOBAL
+        assertEquals(expectedDevice + expectedNetwork + expectedBackend, result.ghgAppUsage, absoluteTolerance = 1e-9)
     }
 
     @Test

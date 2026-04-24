@@ -32,7 +32,7 @@
         Later
     </string>
 
-    <!--Used in UsageStatsPermissionSheet.kt-->
+    <!--Used in UsageStatsPermissionRequiredScreen.kt-->
     <string name="app_usage_title">
         Usage access required
     </string>
@@ -44,5 +44,10 @@
     </string>
     <string name="settings">
         Open settings
+    </string>
+
+    <!-- Used in StatisticsScreen.kt-->
+    <string name="no_statistics">
+        No data available yet.\nThe analysis runs automatically every night.
     </string>
 </resources>

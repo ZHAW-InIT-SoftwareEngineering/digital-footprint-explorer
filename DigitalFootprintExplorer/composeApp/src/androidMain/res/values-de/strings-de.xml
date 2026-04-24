@@ -30,7 +30,7 @@
         Später
     </string>
 
-    <!--Used in UsageStatsPermissionSheet.kt-->
+    <!--Used in UsageStatsPermissionRequiredScreen.kt-->
     <string name="app_usage_title">
         Zugriff auf Nutzungsdaten benötigt
     </string>
@@ -42,5 +42,10 @@
     </string>
     <string name="settings">
         Zu den Einstellungen
+    </string>
+
+    <!-- Used in StatisticsScreen.kt-->
+    <string name="no_statistics">
+        Noch keine Daten vorhanden.\nDie Auswertung erfolgt automatisch jede Nacht.
     </string>
 </resources>

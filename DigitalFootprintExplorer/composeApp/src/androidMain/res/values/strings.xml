@@ -1,7 +1,5 @@
 <resources>
     <string name="app_name" translatable="false">Digital Footprint Explorer</string>
-
-    <!--Used in App.kt-->
     <string name="home">
         Home
     </string>
@@ -11,8 +9,6 @@
     <string name="no_emissions">
         No emissions data recorded for yesterday.
     </string>
-
-    <!-- Used in WidgetOnboardingSheet.kt-->
     <string name="your_digital_garden">
         Your Digital garden
     </string>
@@ -25,8 +21,6 @@
     <string name="later">
         Later
     </string>
-
-    <!--Used in UsageStatsPermissionRequiredScreen.kt-->
     <string name="app_usage_title">
         Usage access required
     </string>
@@ -39,8 +33,6 @@
     <string name="settings">
         Open settings
     </string>
-
-    <!-- Used in StatisticsScreen.kt-->
     <string name="statistics_screen_title">
         Your usage yesterday
     </string>
@@ -53,4 +45,10 @@
     <string name="background">
         Background
     </string>
+    <string name="garden_state_flourishing">Flourishing</string>
+    <string name="garden_state_growing">Growing</string>
+    <string name="garden_state_stable">Stable</string>
+    <string name="garden_state_wilting">Wilting</string>
+    <string name="garden_state_withered">Withered</string>
+    <string name="garden_state_unknown">No evaluation yet. Your garden will grow overnight.</string>
 </resources>

@@ -1,5 +1,4 @@
 <resources>
-    <!--Used in App.kt-->
     <string name="home">
         Startseite
     </string>
@@ -9,8 +8,6 @@
     <string name="no_emissions">
         Keine Emissionsdaten für gestern gespeichert.
     </string>
-
-    <!-- Used in WidgetOnboardingSheet.kt-->
     <string name="your_digital_garden">
         Dein digitaler Garten
     </string>
@@ -23,8 +20,6 @@
     <string name="later">
         Später
     </string>
-
-    <!--Used in UsageStatsPermissionRequiredScreen.kt-->
     <string name="app_usage_title">
         Zugriff auf Nutzungsdaten benötigt
     </string>
@@ -37,8 +32,6 @@
     <string name="settings">
         Zu den Einstellungen
     </string>
-
-    <!-- Used in StatisticsScreen.kt-->
     <string name="statistics_screen_title">
         Dein gestriger Verbrauch
     </string>
@@ -51,4 +44,10 @@
     <string name="background">
         Hintergrund
     </string>
+    <string name="garden_state_flourishing">Blühend</string>
+    <string name="garden_state_growing">Wachsend</string>
+    <string name="garden_state_stable">Stabil</string>
+    <string name="garden_state_wilting">Welkend</string>
+    <string name="garden_state_withered">Verdorrt</string>
+    <string name="garden_state_unknown">Noch keine Auswertung. Dein Garten wächst über Nacht.</string>
 </resources>

@@ -42,6 +42,11 @@ fun StatisticsScreen(
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        Text(
+            text = stringResource(R.string.statistics_screen_title),
+            style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier.padding(16.dp)
+        )
 
         if (latestEntry != null) {
             val entry = latestEntry!!

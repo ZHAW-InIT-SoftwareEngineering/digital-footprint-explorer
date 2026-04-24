@@ -11,12 +11,6 @@
     <string name="no_emissions">
         No emissions data recorded for yesterday.
     </string>
-    <string name="app_usage">
-        App usage
-    </string>
-    <string name="background">
-        Background
-    </string>
 
     <!-- Used in WidgetOnboardingSheet.kt-->
     <string name="your_digital_garden">
@@ -47,7 +41,16 @@
     </string>
 
     <!-- Used in StatisticsScreen.kt-->
+    <string name="statistics_screen_title">
+        Your usage yesterday
+    </string>
     <string name="no_statistics">
         No data available yet.\nThe analysis runs automatically every night.
+    </string>
+    <string name="app_usage">
+        App usage
+    </string>
+    <string name="background">
+        Background
     </string>
 </resources>

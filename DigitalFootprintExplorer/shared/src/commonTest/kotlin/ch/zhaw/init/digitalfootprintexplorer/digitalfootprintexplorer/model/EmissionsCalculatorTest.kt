@@ -92,6 +92,38 @@ class EmissionsCalculatorTest {
         assertEquals(expectedTotal, result.ghgTotal, absoluteTolerance = 1e-10)
     }
 
+    @Test
+    fun `app with foreground time but no network data yields positive device emissions`() {
+        val metric = AppUsageInput(
+            appName             = "Calculator",
+            appCategory         = AppCategory.MISCELLANEOUS,
+            totalForegroundTime = 30, /* 30 minutes */
+            wifiBytes           = 0L.dp(),
+            cellularBytes       = 0L.dp()
+        )
+        val result = calculator.calculate(listOf(metric), emptyDisplay, emptyBackground)
+
+        val category = result.categoryBreakdown.first { it.category == AppCategory.MISCELLANEOUS }
+        assertTrue(result.ghgAppUsage > 0.0)
+        assertTrue(category.ghgDevice > 0.0)
+        assertEquals(0.0, category.ghgNetwork)
+        assertEquals(0.0, category.ghgBackend)
+    }
+
+    @Test
+    fun `app with no foreground time and no network data yields zero app emissions`() {
+        val metric = AppUsageInput(
+            appName             = "SilentApp",
+            appCategory         = AppCategory.MISCELLANEOUS,
+            totalForegroundTime = 0,
+            wifiBytes           = 0L.dp(),
+            cellularBytes       = 0L.dp()
+        )
+        val result = calculator.calculate(listOf(metric), emptyDisplay, emptyBackground)
+
+        assertEquals(0.0, result.ghgAppUsage)
+    }
+
     /* Helper functions for the cellular test */
     private fun EmissionResult.ghgNetwork(metric: AppUsageInput): Double =
         categoryBreakdown.firstOrNull { it.category == metric.appCategory }?.ghgNetwork ?: 0.0

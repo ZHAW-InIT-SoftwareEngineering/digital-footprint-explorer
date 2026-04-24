@@ -35,7 +35,7 @@
         Zugriff auf Nutzungsdaten benötigt
     </string>
     <string name="usagestats_main_text">
-        Um deinen digitalen Fussabdruck genauer zu berechnen, benötigt die App Zugriff auf deine Nutzungsdaten. Bitte aktiviere diesen Zugriff in den Systemeinstellungen. Die Daten werden nur lokal verwendet und nicht an Dritte weitergegeben.
+        Um deinen digitalen Fussabdruck berechnen zu können, benötigt die App Zugriff auf deine Nutzungsdaten. Ohne diese Berechtigung ist die Nutzung der App nicht möglich. Bitte aktiviere den Zugriff in den Systemeinstellungen. Die Daten werden ausschliesslich lokal verarbeitet und nicht an Dritte weitergegeben.
     </string>
     <string name="cancel">
         Abbrechen

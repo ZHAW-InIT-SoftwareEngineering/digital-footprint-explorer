@@ -74,7 +74,17 @@ class DailyFootprintWorker(
         val totalCellMB   = networkMetrics.sumOf { it.cellularBytes.valueOrDefault() } / 1_000_000.0
         Log.d(TAG, "📶 Network: ${networkMetrics.size} apps scanned, $measuredApps with data | WiFi ${f(totalWifiMB)} MB | Cellular ${f(totalCellMB)} MB")
         networkMetrics.forEach { app ->
-            Log.d(TAG, "   · ${app.appName} [${app.appCategory}] wifi=${app.wifiBytes} cell=${app.cellularBytes}")
+            val wifiBytes  = app.wifiBytes.valueOrDefault()
+            val cellBytes  = app.cellularBytes.valueOrDefault()
+            val foregroundSec = app.totalForegroundTime
+            val foregroundStr = when {
+                foregroundSec >= 3600 -> "${foregroundSec / 3600}h ${(foregroundSec % 3600) / 60}min"
+                foregroundSec >= 60   -> "${foregroundSec / 60}min ${foregroundSec % 60}s"
+                foregroundSec >  0    -> "${foregroundSec}s"
+                else                  -> "-"
+            }
+            Log.d(TAG, "   · ${app.appName} [${app.appCategory}] " +
+                "wifi=${bytes(wifiBytes)} cell=${bytes(cellBytes)} total=${bytes(wifiBytes + cellBytes)} | time=$foregroundStr")
         }
 
         val displayInput = app.displayBrightnessObserver.collectAndReset(startTime, endTime)
@@ -193,6 +203,14 @@ class DailyFootprintWorker(
         v < 0.01 -> "%.5f".format(v)
         v < 1.0  -> "%.4f".format(v)
         else     -> "%.2f".format(v)
+    }
+
+    /** Formats a byte count as KB / MB / GB depending on magnitude. */
+    private fun bytes(b: Double) = when {
+        b >= 1_000_000_000.0 -> "${"%.2f".format(b / 1_000_000_000.0)} GB"
+        b >= 1_000_000.0     -> "${"%.2f".format(b / 1_000_000.0)} MB"
+        b >= 1_000.0         -> "${"%.1f".format(b / 1_000.0)} KB"
+        else                 -> "${b.toLong()} B"
     }
 
     @Suppress("DEPRECATION", "MissingPermission")

@@ -56,10 +56,9 @@ class MetricCollector(
                     wifiBytes           = wifiBytes,
                     cellularBytes       = cellularBytes,
                     appCategory         = app.category,
-                    totalForegroundTime = ((foregroundMap[app.packageName] ?: 0L) / 60_000L).toInt()
+                    totalForegroundTime = ((foregroundMap[app.packageName] ?: 0L) / 1_000L).toInt()
                 )
             }
-
         }.awaitAll()
     }
 

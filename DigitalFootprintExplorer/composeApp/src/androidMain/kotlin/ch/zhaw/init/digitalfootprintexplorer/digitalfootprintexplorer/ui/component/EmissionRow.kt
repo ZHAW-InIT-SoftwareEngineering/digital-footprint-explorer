@@ -41,7 +41,7 @@ fun EmissionRow(
             modifier = Modifier.weight(1f)
         )
         Text(
-            "${"%.2f".format(valueGrams)}g (${"%.2f".format(percentage * 100)}%)",
+            "${"%.2f".format(valueGrams)} gCO₂e (${"%.2f".format(percentage * 100)}%)",
             style = MaterialTheme.typography.bodyMedium
         )
     }

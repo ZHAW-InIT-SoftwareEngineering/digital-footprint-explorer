@@ -18,6 +18,7 @@ import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.outp
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.service.InstalledAppProvider
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.service.MetricCollector
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.service.NetworkUsageDataSource
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.util.WORKER_NAME
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.widget.GardenWidget
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DatePeriod
@@ -28,12 +29,6 @@ import java.util.Calendar
 import java.util.concurrent.TimeUnit
 
 const val KEY_DEBUG_SUMMARY = "debug_summary"
-const val TAG_DEBUG_RUN     = "debug_footprint_run"
-
-const val KEY_GHG_APP_USAGE   = "ghg_app_usage"
-const val KEY_GHG_DISPLAY     = "ghg_display"
-const val KEY_GHG_BACKGROUND  = "ghg_background"
-const val KEY_GHG_TOTAL       = "ghg_total"
 
 class DailyFootprintWorker(
     private val appContext: Context,
@@ -107,24 +102,7 @@ class DailyFootprintWorker(
         GardenWidget.updateState(appContext, gardenState)
         Log.d(TAG, "✅ Worker finished — widget updated")
 
-        val summary = buildSummary(
-            appsScanned  = networkMetrics.size,
-            measuredApps = measuredApps,
-            wifiMB       = totalWifiMB,
-            cellMB       = totalCellMB,
-            displayInput = displayInput,
-            background   = backgroundInput,
-            result       = emissionResult,
-            state        = gardenState.name,
-            baseline     = baseline
-        )
-        return Result.success(workDataOf(
-            KEY_DEBUG_SUMMARY to summary,
-            KEY_GHG_APP_USAGE to emissionResult.ghgAppUsage,
-            KEY_GHG_DISPLAY to emissionResult.ghgDisplay,
-            KEY_GHG_BACKGROUND to emissionResult.ghgBackground,
-            KEY_GHG_TOTAL to emissionResult.ghgTotal
-        ))
+        return Result.success()
     }
 
     private fun logDisplay(display: DisplayInput) {
@@ -157,31 +135,6 @@ class DailyFootprintWorker(
         result.categoryBreakdown.forEach { c ->
             Log.d(TAG, "   · [${c.category}] device=${f(c.ghgDevice*1000)}g net=${f(c.ghgNetwork*1000)}g backend=${f(c.ghgBackend*1000)}g")
         }
-    }
-
-    private fun buildSummary(
-        appsScanned: Int, measuredApps: Int,
-        wifiMB: Double, cellMB: Double,
-        displayInput: DisplayInput,
-        background: BackgroundInput,
-        result: EmissionResult,
-        state: String,
-        baseline: Double
-    ): String {
-        val avgBrightness = if (displayInput.intervals.isEmpty()) 0.0
-            else displayInput.intervals.sumOf { it.normalizedBrightness * it.durationH } /
-                 displayInput.intervals.sumOf { it.durationH }
-        val bgSummary = background.activeProcesses.joinToString { "${it.process}=${f(it.durationH.toDouble())}h" }
-            .ifEmpty { "none" }
-        return """
-📶 Network: $appsScanned apps ($measuredApps with data)
-   WiFi ${f(wifiMB)} MB  |  Cellular ${f(cellMB)} MB
-💡 Display: ${displayInput.intervals.size} intervals, avg ${f(avgBrightness*100)}% brightness
-📍 Background: $bgSummary
-🔢 CO₂e: app=${f(result.ghgAppUsage*1000)}g  display=${f(result.ghgDisplay*1000)}g  bg=${f(result.ghgBackground*1000)}g
-   TOTAL: ${f(result.ghgTotal*1000)} gCO₂e
-🌱 GardenState: $state  (baseline ${f(baseline*1000)} gCO₂e)
-        """.trimIndent()
     }
 
     /** Formats with enough precision to show small values (e.g. 0.0024g instead of 0.00g). */
@@ -217,7 +170,6 @@ class DailyFootprintWorker(
 
     companion object {
         const val TAG = "DFE_Worker"
-        private const val WORK_NAME = "daily_footprint"
 
         fun schedule(context: Context) {
             val now = Calendar.getInstance()
@@ -237,8 +189,8 @@ class DailyFootprintWorker(
                 .setInitialDelay(initialDelayMs, TimeUnit.MILLISECONDS)
                 .build()
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-                WORK_NAME,
-                ExistingPeriodicWorkPolicy.KEEP,
+                WORKER_NAME,
+                ExistingPeriodicWorkPolicy.REPLACE,
                 request
             )
         }

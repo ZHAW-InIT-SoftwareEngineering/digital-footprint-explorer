@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoGraph
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material3.*
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.GardenState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -19,10 +20,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.glance.appwidget.GlanceAppWidgetManager
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.work.OneTimeWorkRequestBuilder
-import androidx.work.WorkInfo
-import androidx.work.WorkManager
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.demo.DemoRepository
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.permission.hasUsageStatsPermission
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.permission.openUsageStatsSettings
@@ -31,17 +28,15 @@ import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.ui.theme.D
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.widget.GardenWidget
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.widget.GardenWidgetReceiver
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.widget.WidgetOnboardingSheet
-import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.worker.DailyFootprintWorker
-import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.worker.KEY_DEBUG_SUMMARY
-import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.worker.TAG_DEBUG_RUN
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
-import java.util.UUID
 import androidx.core.content.edit
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.demo.DemoPreferences.KEY_GARDEN_STATE
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.demo.DemoPreferences.PREFS_STATE_FILE
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.ui.component.GardenStateCard
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.ui.screen.UsageStatsPermissionRequiredScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -122,13 +117,6 @@ fun App() {
             var demoSummaryText by remember { mutableStateOf(repo.loadSummary()) }
             var demoRefreshing by remember { mutableStateOf(false) }
 
-            var currentJobId by remember { mutableStateOf<UUID?>(null) }
-            val currentWorkInfo by remember(currentJobId) {
-                currentJobId?.let { id ->
-                    WorkManager.getInstance(context).getWorkInfoByIdFlow(id)
-                } ?: flowOf(null)
-            }.collectAsStateWithLifecycle(null)
-
             var selectedTab by remember { mutableIntStateOf(0) }
 
             Scaffold(
@@ -174,6 +162,17 @@ fun App() {
                                 .verticalScroll(rememberScrollState()),
                             horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
+                            val gardenState by produceState<GardenState?>(initialValue = null, demoActive, demoRefreshing) {
+                                value = if (demoActive) {
+                                    val prefs = context.getSharedPreferences(PREFS_STATE_FILE, Context.MODE_PRIVATE)
+                                    val stateStr = prefs.getString(KEY_GARDEN_STATE, null)
+                                    stateStr?.let { runCatching { GardenState.valueOf(it) }.getOrNull() }
+                                } else {
+                                    val app = context.applicationContext as DFEApplication
+                                    app.gardenStateCalculator.getLatestGardenState()
+                                }
+                            }
+
                             Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -246,47 +245,12 @@ fun App() {
                                     }
                                 }
                             }
-
-                            Button(
-                                modifier = Modifier.padding(top = 8.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.secondary
-                                ),
-                                onClick = {
-                                    val request = OneTimeWorkRequestBuilder<DailyFootprintWorker>()
-                                        .addTag(TAG_DEBUG_RUN)
-                                        .build()
-                                    WorkManager.getInstance(context).enqueue(request)
-                                    currentJobId = request.id
-                                }
-                            ) {
-                                Text("[DEBUG] footprint vergangener Tag")
-                            }
-
-                            when (currentWorkInfo?.state) {
-                                WorkInfo.State.RUNNING,
-                                WorkInfo.State.ENQUEUED -> {
-                                    CircularProgressIndicator(modifier = Modifier.padding(16.dp))
-                                    Text("Worker running…", style = MaterialTheme.typography.bodySmall)
-                                }
-
-                                WorkInfo.State.SUCCEEDED -> {
-                                    val summary = currentWorkInfo?.outputData?.getString(KEY_DEBUG_SUMMARY)
-                                    if (summary != null) DebugResultCard(summary)
-                                }
-
-                                WorkInfo.State.FAILED -> {
-                                    DebugResultCard("❌ Worker failed — check Logcat tag: DFE_Worker")
-                                }
-
-                                else -> Unit
-                            }
+                            GardenStateCard(gardenState)
                         }
                     }
 
                     1 -> {
                         StatisticsScreen(
-                            workInfo = currentWorkInfo,
                             innerPadding = innerPadding
                         )
                     }
@@ -296,21 +260,3 @@ fun App() {
     }
 }
 
-@Composable
-private fun DebugResultCard(text: String) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
-    ) {
-        Text(
-            text = text,
-            modifier = Modifier.padding(12.dp),
-            style = MaterialTheme.typography.bodySmall,
-            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
-        )
-    }
-}

@@ -113,7 +113,7 @@ fun StatisticsScreen(
                     )
 
                     Text(
-                        "Total: ${"%.2f".format(total * 1000)}g",
+                        "Total: ${"%.2f".format(total * 1000)} g CO₂e",
                         style = MaterialTheme.typography.bodyLarge
                     )
                 }

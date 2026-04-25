@@ -8,5 +8,6 @@ import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.AppC
 data class App(
     val uid: Int,
     val name: String,
+    val packageName: String,
     val category: AppCategory
 )

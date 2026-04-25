@@ -33,9 +33,10 @@ class InstalledAppProvider(
         }.getOrDefault(applicationInfo.packageName)
 
         return App(
-            uid      = applicationInfo.uid,
-            name     = appName,
-            category = if (foundCategory != AppCategory.MISCELLANEOUS) foundCategory else selectAppCategory(applicationInfo)
+            uid         = applicationInfo.uid,
+            name        = appName,
+            packageName = applicationInfo.packageName,
+            category    = if (foundCategory != AppCategory.MISCELLANEOUS) foundCategory else selectAppCategory(applicationInfo)
         )
     }
 

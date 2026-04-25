@@ -44,7 +44,7 @@ class EmissionsCalculator(
         return metrics
             .groupBy { it.appCategory }
             .map { (category, entries) ->
-                val totalTimeH = entries.sumOf { it.totalForegroundTime } / 60.0
+                val totalTimeH = entries.sumOf { it.totalForegroundTime } / 3600.0
                 val totalWifiGB = entries.fold(0.0) { acc, m -> acc + m.wifiBytes.valueOrDefault() } / 1_000_000_000.0
                 val totalCellularGB = entries.fold(0.0) { acc, m -> acc + m.cellularBytes.valueOrDefault() } / 1_000_000_000.0
 

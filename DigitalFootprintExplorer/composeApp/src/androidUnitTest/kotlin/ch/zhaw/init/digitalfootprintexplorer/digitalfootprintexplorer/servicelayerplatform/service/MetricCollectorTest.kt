@@ -1,10 +1,7 @@
 package ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.service
 
-import android.app.AppOpsManager
 import android.app.usage.UsageStatsManager
 import android.content.Context
-import android.os.Process
-import android.util.Log
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.AppCategory
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.DataPoint
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.NetworkType
@@ -12,7 +9,6 @@ import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelay
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.mockkStatic
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertThrows
@@ -27,7 +23,6 @@ class MetricCollectorTest {
     private val installedAppProvider = mockk<InstalledAppProvider>()
     private val networkUsageDataSource = mockk<NetworkUsageDataSource>()
     private val usageStatsManager = mockk<UsageStatsManager>()
-    private val appOpsManager = mockk<AppOpsManager>()
     private val context = mockk<Context>()
 
     @Test
@@ -132,15 +127,7 @@ class MetricCollectorTest {
         appTwoWifiBytes: Long = 50000L,
         appTwoCellularBytes: Long = 120000L
     ) {
-        mockkStatic(Process::class)
-        every { Process.myUid() } returns 1000
-        mockkStatic(Log::class)
-        every { Log.d(any(), any()) } returns 0
-        every { Log.w(any(), any<String>()) } returns 0
         every { installedAppProvider.getInstalledLauncherApps(context) } returns generateApps
-        every { context.getSystemService(Context.APP_OPS_SERVICE) } returns appOpsManager
-        every { context.packageName } returns "ch.zhaw.test"
-        every { appOpsManager.unsafeCheckOpNoThrow(any(), any(), any()) } returns AppOpsManager.MODE_ALLOWED
         every { usageStatsManager.queryUsageStats(any(), any(), any()) } returns emptyList()
         coEvery {
             networkUsageDataSource.getUsageBytes(

@@ -1,5 +1,6 @@
 package ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.service
 
+import android.app.usage.UsageStatsManager
 import android.content.Context
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.AppCategory
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.DataPoint
@@ -21,6 +22,7 @@ class MetricCollectorTest {
 
     private val installedAppProvider = mockk<InstalledAppProvider>()
     private val networkUsageDataSource = mockk<NetworkUsageDataSource>()
+    private val usageStatsManager = mockk<UsageStatsManager>()
     private val context = mockk<Context>()
 
     @Test
@@ -29,7 +31,7 @@ class MetricCollectorTest {
             appTwoCellularBytes = 0L,
             appOneCellularBytes = 0L
         )
-        val metricCollector = MetricCollector(installedAppProvider, networkUsageDataSource)
+        val metricCollector = MetricCollector(installedAppProvider, networkUsageDataSource, usageStatsManager)
         val metrics = metricCollector.collectNetworkMetrics(
             context = context,
             startTime = 1682222222,
@@ -56,7 +58,7 @@ class MetricCollectorTest {
             appTwoWifiBytes = 0L,
             appOneWifiBytes = 0L
         )
-        val metricCollector = MetricCollector(installedAppProvider, networkUsageDataSource)
+        val metricCollector = MetricCollector(installedAppProvider, networkUsageDataSource, usageStatsManager)
         val metrics = metricCollector.collectNetworkMetrics(
             context = context,
             startTime = 1682222222,
@@ -80,7 +82,7 @@ class MetricCollectorTest {
     @Test
     fun testCollectNetworkMetricsForBoth() = runTest {
         setUpMocks()
-        val metricCollector = MetricCollector(installedAppProvider, networkUsageDataSource)
+        val metricCollector = MetricCollector(installedAppProvider, networkUsageDataSource, usageStatsManager)
         val metrics = metricCollector.collectNetworkMetrics(
             context = context,
             startTime = 1682222222,
@@ -104,7 +106,7 @@ class MetricCollectorTest {
     @Test
     fun testStartTimeIsBeforeEndTime() = runTest {
         setUpMocks()
-        val metricCollector = MetricCollector(installedAppProvider, networkUsageDataSource)
+        val metricCollector = MetricCollector(installedAppProvider, networkUsageDataSource, usageStatsManager)
         assertThrows(IllegalArgumentException::class.java) {
             runBlocking {
                 metricCollector.collectNetworkMetrics(
@@ -126,6 +128,7 @@ class MetricCollectorTest {
         appTwoCellularBytes: Long = 120000L
     ) {
         every { installedAppProvider.getInstalledLauncherApps(context) } returns generateApps
+        every { usageStatsManager.queryUsageStats(any(), any(), any()) } returns emptyList()
         coEvery {
             networkUsageDataSource.getUsageBytes(
                 networkType = NetworkType.WIFI,
@@ -170,14 +173,16 @@ class MetricCollectorTest {
 
     private val generateApps = listOf(
         App(
-            uid = youtubeUid,
-            name = "Youtube",
-            category = AppCategory.VIDEO_STREAMING
+            uid         = youtubeUid,
+            name        = "Youtube",
+            packageName = "com.google.android.youtube",
+            category    = AppCategory.VIDEO_STREAMING
         ),
         App(
-            uid = instagramUid,
-            name = "Instagram",
-            category = AppCategory.SOCIAL_MEDIA
+            uid         = instagramUid,
+            name        = "Instagram",
+            packageName = "com.instagram.android",
+            category    = AppCategory.SOCIAL_MEDIA
         )
     )
 }

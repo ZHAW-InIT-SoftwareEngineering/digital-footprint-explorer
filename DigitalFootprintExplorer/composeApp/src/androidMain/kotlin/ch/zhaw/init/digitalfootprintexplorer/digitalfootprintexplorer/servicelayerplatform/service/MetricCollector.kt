@@ -1,5 +1,6 @@
 package ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.service
 
+import android.app.usage.UsageStatsManager
 import android.content.Context
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.input.AppUsageInput
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.DataPoint
@@ -11,7 +12,8 @@ import kotlinx.coroutines.coroutineScope
 
 class MetricCollector(
     private val installedAppProvider: InstalledAppProvider,
-    private val networkUsageDataSource: NetworkUsageDataSource
+    private val networkUsageDataSource: NetworkUsageDataSource,
+    private val usageStatsManager: UsageStatsManager
 ) {
 
     suspend fun collectNetworkMetrics(
@@ -24,6 +26,10 @@ class MetricCollector(
 
         val apps = installedAppProvider.getInstalledLauncherApps(context)
         val dispatcher = Dispatchers.IO.limitedParallelism(3)
+
+        val foregroundMap: Map<String, Long> = usageStatsManager
+            .queryUsageStats(UsageStatsManager.INTERVAL_DAILY, startTime, endTime)
+            .associate { it.packageName to it.totalTimeInForeground }
 
         apps.map { app ->
             async(dispatcher) {
@@ -46,15 +52,13 @@ class MetricCollector(
                     ?: DataPoint.Unavailable("permission denied")
 
                 AppUsageInput(
-                    appName = app.name,
-                    wifiBytes = wifiBytes,
-                    cellularBytes = cellularBytes,
-                    appCategory = app.category,
-                    //todo calculate total foreground time
-                    totalForegroundTime = 0
+                    appName             = app.name,
+                    wifiBytes           = wifiBytes,
+                    cellularBytes       = cellularBytes,
+                    appCategory         = app.category,
+                    totalForegroundTime = ((foregroundMap[app.packageName] ?: 0L) / 1_000L).toInt()
                 )
             }
-
         }.awaitAll()
     }
 

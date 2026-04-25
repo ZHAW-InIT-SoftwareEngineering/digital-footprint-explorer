@@ -42,7 +42,8 @@ class EmissionsCalculatorTest {
         val expectedDevice = ModelConstants.P_DEVICE_BY_CATEGORY[AppCategory.VIDEO_STREAMING]!! *
             timeH / 1000.0 / ModelConstants.CHARGING_EFFICIENCY * ModelConstants.EF_SWISS
         val expectedNetwork = wifiGB * ModelConstants.NETWORK_INTENSITY_WIFI * ModelConstants.EF_GLOBAL
-        assertEquals(expectedDevice + expectedNetwork, result.ghgAppUsage, absoluteTolerance = 1e-9)
+        val expectedBackend = wifiGB * ModelConstants.BACKEND_INTENSITY_GB * ModelConstants.EF_GLOBAL
+        assertEquals(expectedDevice + expectedNetwork + expectedBackend, result.ghgAppUsage, absoluteTolerance = 1e-9)
     }
 
     @Test
@@ -90,6 +91,38 @@ class EmissionsCalculatorTest {
         val result = calculator.calculate(listOf(metric), display, background)
         val expectedTotal = result.ghgAppUsage + result.ghgDisplay + result.ghgBackground
         assertEquals(expectedTotal, result.ghgTotal, absoluteTolerance = 1e-10)
+    }
+
+    @Test
+    fun `app with foreground time but no network data yields positive device emissions`() {
+        val metric = AppUsageInput(
+            appName             = "Calculator",
+            appCategory         = AppCategory.MISCELLANEOUS,
+            totalForegroundTime = 30, /* 30 minutes */
+            wifiBytes           = 0L.dp(),
+            cellularBytes       = 0L.dp()
+        )
+        val result = calculator.calculate(listOf(metric), emptyDisplay, emptyBackground)
+
+        val category = result.categoryBreakdown.first { it.category == AppCategory.MISCELLANEOUS }
+        assertTrue(result.ghgAppUsage > 0.0)
+        assertTrue(category.ghgDevice > 0.0)
+        assertEquals(0.0, category.ghgNetwork)
+        assertEquals(0.0, category.ghgBackend)
+    }
+
+    @Test
+    fun `app with no foreground time and no network data yields zero app emissions`() {
+        val metric = AppUsageInput(
+            appName             = "SilentApp",
+            appCategory         = AppCategory.MISCELLANEOUS,
+            totalForegroundTime = 0,
+            wifiBytes           = 0L.dp(),
+            cellularBytes       = 0L.dp()
+        )
+        val result = calculator.calculate(listOf(metric), emptyDisplay, emptyBackground)
+
+        assertEquals(0.0, result.ghgAppUsage)
     }
 
     /* Helper functions for the cellular test */

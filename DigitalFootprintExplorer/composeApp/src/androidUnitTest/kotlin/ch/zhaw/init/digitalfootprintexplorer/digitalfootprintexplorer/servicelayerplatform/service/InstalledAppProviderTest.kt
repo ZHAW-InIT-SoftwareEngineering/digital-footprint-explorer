@@ -17,7 +17,11 @@ import kotlin.test.assertTrue
 
 class InstalledAppProviderTest {
 
-    private val packageManager = mockk<PackageManager>()
+    private val packageManager = mockk<PackageManager> {
+        every { getApplicationLabel(any()) } answers {
+            (firstArg<ApplicationInfo>()).nonLocalizedLabel
+        }
+    }
     private val context = mockk<Context> {
         every { packageManager } returns this@InstalledAppProviderTest.packageManager
     }

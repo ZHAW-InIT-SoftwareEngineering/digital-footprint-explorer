@@ -1,5 +1,6 @@
 package ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.service
 
+import android.app.usage.UsageStats
 import android.app.usage.UsageStatsManager
 import android.content.Context
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.AppCategory
@@ -104,6 +105,47 @@ class MetricCollectorTest {
     }
 
     @Test
+    fun testForegroundTimeWithSingleEntryPerPackage() = runTest {
+        val stats = listOf(
+            mockUsageStats("com.google.android.youtube", 1_200_000L), // 20 min
+            mockUsageStats("com.instagram.android",     1_800_000L)   // 30 min
+        )
+        setUpMocks(usageStats = stats)
+        val metricCollector = MetricCollector(installedAppProvider, networkUsageDataSource, usageStatsManager)
+        val metrics = metricCollector.collectNetworkMetrics(
+            context = context,
+            startTime = 1682222222,
+            endTime = 1682222222,
+            mobileSubscriberId = null
+        )
+
+        val youtube   = metrics.first { it.appName == "Youtube" }
+        val instagram = metrics.first { it.appName == "Instagram" }
+        assertEquals(1200, youtube.totalForegroundTime)   // 1_200_000 ms / 1_000 = 1200 s
+        assertEquals(1800, instagram.totalForegroundTime) // 1_800_000 ms / 1_000 = 1800 s
+    }
+
+    @Test
+    fun testForegroundTimeWithMultipleEntriesPerPackageSumsCorrectly() = runTest {
+        val stats = listOf(
+            mockUsageStats("com.instagram.android", 600_000L),   // bucket 1: 10 min
+            mockUsageStats("com.instagram.android", 1_200_000L), // bucket 2: 20 min → total 30 min
+            mockUsageStats("com.google.android.youtube", 900_000L)
+        )
+        setUpMocks(usageStats = stats)
+        val metricCollector = MetricCollector(installedAppProvider, networkUsageDataSource, usageStatsManager)
+        val metrics = metricCollector.collectNetworkMetrics(
+            context = context,
+            startTime = 1682222222,
+            endTime = 1682222222,
+            mobileSubscriberId = null
+        )
+
+        val instagram = metrics.first { it.appName == "Instagram" }
+        assertEquals(1800, instagram.totalForegroundTime) // (600_000 + 1_200_000) / 1_000 = 1800 s
+    }
+
+    @Test
     fun testStartTimeIsBeforeEndTime() = runTest {
         setUpMocks()
         val metricCollector = MetricCollector(installedAppProvider, networkUsageDataSource, usageStatsManager)
@@ -119,16 +161,23 @@ class MetricCollectorTest {
         }
     }
 
+    private fun mockUsageStats(packageName: String, foregroundTimeMs: Long): UsageStats =
+        mockk<UsageStats>().also {
+            every { it.packageName } returns packageName
+            every { it.totalTimeInForeground } returns foregroundTimeMs
+        }
+
     private fun setUpMocks(
         appOneUid: Int = 1233,
         appTwoUid: Int = 1234,
         appOneWifiBytes: Long = 1000000L,
         appOneCellularBytes: Long = 1000000L,
         appTwoWifiBytes: Long = 50000L,
-        appTwoCellularBytes: Long = 120000L
+        appTwoCellularBytes: Long = 120000L,
+        usageStats: List<UsageStats> = emptyList()
     ) {
         every { installedAppProvider.getInstalledLauncherApps(context) } returns generateApps
-        every { usageStatsManager.queryUsageStats(any(), any(), any()) } returns emptyList()
+        every { usageStatsManager.queryUsageStats(any(), any(), any()) } returns usageStats
         coEvery {
             networkUsageDataSource.getUsageBytes(
                 networkType = NetworkType.WIFI,

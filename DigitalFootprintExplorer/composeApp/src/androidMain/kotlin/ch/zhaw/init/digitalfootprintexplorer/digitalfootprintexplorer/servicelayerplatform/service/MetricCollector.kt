@@ -29,7 +29,8 @@ class MetricCollector(
 
         val foregroundMap: Map<String, Long> = usageStatsManager
             .queryUsageStats(UsageStatsManager.INTERVAL_DAILY, startTime, endTime)
-            .associate { it.packageName to it.totalTimeInForeground }
+            .groupBy { it.packageName }
+            .mapValues { (_, stats) -> stats.sumOf { it.totalTimeInForeground } }
 
         apps.map { app ->
             async(dispatcher) {

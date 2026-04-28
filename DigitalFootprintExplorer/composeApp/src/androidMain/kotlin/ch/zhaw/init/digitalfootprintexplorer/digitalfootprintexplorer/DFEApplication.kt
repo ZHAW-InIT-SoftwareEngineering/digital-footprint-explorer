@@ -41,6 +41,6 @@ class DFEApplication : Application() {
         backgroundProcessTracker  = BackgroundProcessTracker(this)
 
         TrackingService.start(this)
-        DailyFootprintWorker.schedule(this)
+        DailyFootprintWorker.scheduleNext(this)
     }
 }

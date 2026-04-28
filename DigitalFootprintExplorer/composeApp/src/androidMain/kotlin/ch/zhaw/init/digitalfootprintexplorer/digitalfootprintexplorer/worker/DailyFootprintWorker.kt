@@ -5,8 +5,8 @@ import android.content.Context
 import android.telephony.TelephonyManager
 import android.util.Log
 import androidx.work.CoroutineWorker
-import androidx.work.ExistingPeriodicWorkPolicy
-import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
@@ -115,6 +115,9 @@ class DailyFootprintWorker(
         GardenWidget.updateState(appContext, gardenState)
         Log.d(TAG, "✅ Worker finished — widget updated")
 
+        //reschedule the next worker
+        scheduleNext(appContext)
+
         return Result.success()
     }
 
@@ -192,26 +195,29 @@ class DailyFootprintWorker(
     companion object {
         const val TAG = "DFE_Worker"
 
-        fun schedule(context: Context) {
+        fun scheduleNext(context: Context) {
             val now = Calendar.getInstance()
+
             val next5am = Calendar.getInstance().apply {
                 set(Calendar.HOUR_OF_DAY, 5)
                 set(Calendar.MINUTE, 0)
                 set(Calendar.SECOND, 0)
                 set(Calendar.MILLISECOND, 0)
-                if (!after(now)) add(Calendar.DAY_OF_YEAR, 1)
-            }
-            val initialDelayMs = next5am.timeInMillis - now.timeInMillis
 
-            val request = PeriodicWorkRequestBuilder<DailyFootprintWorker>(
-                24, TimeUnit.HOURS,
-                2,  TimeUnit.HOURS
-            )
-                .setInitialDelay(initialDelayMs, TimeUnit.MILLISECONDS)
+                if (!after(now)) {
+                    add(Calendar.DAY_OF_YEAR, 1)
+                }
+            }
+
+            val delayMs = next5am.timeInMillis - now.timeInMillis
+
+            val request = OneTimeWorkRequestBuilder<DailyFootprintWorker>()
+                .setInitialDelay(delayMs, TimeUnit.MILLISECONDS)
                 .build()
-            WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+
+            WorkManager.getInstance(context).enqueueUniqueWork(
                 WORKER_NAME,
-                ExistingPeriodicWorkPolicy.REPLACE,
+                ExistingWorkPolicy.KEEP,
                 request
             )
         }

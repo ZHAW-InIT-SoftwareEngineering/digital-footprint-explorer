@@ -15,7 +15,7 @@ class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
             TrackingService.start(context)
-            DailyFootprintWorker.schedule(context)
+            DailyFootprintWorker.scheduleNext(context)
         }
     }
 }

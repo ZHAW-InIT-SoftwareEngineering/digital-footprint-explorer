@@ -216,7 +216,7 @@ class DailyFootprintWorker(
                 delayMs = TimeUnit.DAYS.toMillis(1)
             }
 
-            Log.d(TAG, "📅 Rescheduling worker: delay=${delayMs}ms until 3 AM next time")
+            Log.d(TAG, "Rescheduling worker: delay=${delayMs}ms until 3 AM next time")
 
             val request = OneTimeWorkRequestBuilder<DailyFootprintWorker>()
                 .setInitialDelay(delayMs, TimeUnit.MILLISECONDS)

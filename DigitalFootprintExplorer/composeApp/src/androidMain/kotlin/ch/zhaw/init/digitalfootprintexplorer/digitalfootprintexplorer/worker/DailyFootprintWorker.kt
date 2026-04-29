@@ -217,7 +217,7 @@ class DailyFootprintWorker(
 
             WorkManager.getInstance(context).enqueueUniqueWork(
                 WORKER_NAME,
-                ExistingWorkPolicy.KEEP,
+                ExistingWorkPolicy.REPLACE,
                 request
             )
         }

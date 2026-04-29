@@ -199,7 +199,8 @@ class DailyFootprintWorker(
             val now = Calendar.getInstance()
 
             val next5am = Calendar.getInstance().apply {
-                set(Calendar.HOUR_OF_DAY, 5)
+                timeInMillis = now.timeInMillis
+                set(Calendar.HOUR_OF_DAY, 3)
                 set(Calendar.MINUTE, 0)
                 set(Calendar.SECOND, 0)
                 set(Calendar.MILLISECOND, 0)
@@ -209,7 +210,13 @@ class DailyFootprintWorker(
                 }
             }
 
-            val delayMs = next5am.timeInMillis - now.timeInMillis
+            var delayMs = next5am.timeInMillis - now.timeInMillis
+
+            if (delayMs <= 0) {
+                delayMs = TimeUnit.DAYS.toMillis(1)
+            }
+
+            Log.d(TAG, "📅 Rescheduling worker: delay=${delayMs}ms until 3 AM next time")
 
             val request = OneTimeWorkRequestBuilder<DailyFootprintWorker>()
                 .setInitialDelay(delayMs, TimeUnit.MILLISECONDS)
@@ -217,7 +224,7 @@ class DailyFootprintWorker(
 
             WorkManager.getInstance(context).enqueueUniqueWork(
                 WORKER_NAME,
-                ExistingWorkPolicy.REPLACE,
+                ExistingWorkPolicy.KEEP,
                 request
             )
         }

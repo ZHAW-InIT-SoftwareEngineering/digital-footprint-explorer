@@ -127,11 +127,11 @@ class DailyFootprintWorker(
         Log.d(TAG, "✅ Worker finished — widget updated")
 
         val textForNotification = when(gardenState) {
-            GardenState.FLOURISHING -> R.string.notification_state_flourishing.toString()
-            GardenState.GROWING    -> R.string.notification_state_growing.toString()
-            GardenState.STABLE    -> R.string.notification_state_stable.toString()
-            GardenState.WILTING    -> R.string.notification_state_wilting.toString()
-            GardenState.WITHERED   -> R.string.notification_state_withered.toString()
+            GardenState.FLOURISHING -> appContext.getString(R.string.notification_state_flourishing)
+            GardenState.GROWING    -> appContext.getString(R.string.notification_state_growing)
+            GardenState.STABLE    -> appContext.getString(R.string.notification_state_stable)
+            GardenState.WILTING    -> appContext.getString(R.string.notification_state_wilting)
+            GardenState.WITHERED   -> appContext.getString(R.string.notification_state_withered)
         }
 
         showDailyFootprintNotification(textForNotification)
@@ -238,7 +238,7 @@ class DailyFootprintWorker(
             manager.createNotificationChannel(channel)
         }
         val notification = NotificationCompat.Builder(appContext, channelId)
-            .setContentTitle(R.string.notification_title.toString())
+            .setContentTitle(appContext.getString(R.string.notification_title))
             .setContentText(text)
             .setSmallIcon(R.drawable.garden_widget_preview)
             .build()
@@ -250,27 +250,9 @@ class DailyFootprintWorker(
         const val TAG = "DFE_Worker"
 
         fun scheduleNext(context: Context) {
-            val now = Calendar.getInstance()
+            val delayMs = TimeUnit.MINUTES.toMillis(5)
 
-            val next5am = Calendar.getInstance().apply {
-                timeInMillis = now.timeInMillis
-                set(Calendar.HOUR_OF_DAY, 3)
-                set(Calendar.MINUTE, 0)
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
-
-                if (!after(now)) {
-                    add(Calendar.DAY_OF_YEAR, 1)
-                }
-            }
-
-            var delayMs = next5am.timeInMillis - now.timeInMillis
-
-            if (delayMs <= 0) {
-                delayMs = TimeUnit.DAYS.toMillis(1)
-            }
-
-            Log.d(TAG, "Rescheduling worker: delay=${delayMs}ms until 3 AM next time")
+            Log.d(TAG, "Rescheduling worker: delay=${delayMs}ms")
 
             val request = OneTimeWorkRequestBuilder<DailyFootprintWorker>()
                 .setInitialDelay(delayMs, TimeUnit.MILLISECONDS)
@@ -278,7 +260,7 @@ class DailyFootprintWorker(
 
             WorkManager.getInstance(context).enqueueUniqueWork(
                 WORKER_NAME,
-                ExistingWorkPolicy.KEEP,
+                ExistingWorkPolicy.REPLACE, // important for debugging
                 request
             )
         }

@@ -50,4 +50,10 @@
     <string name="garden_state_wilting">Welkend</string>
     <string name="garden_state_withered">Verdorrt</string>
     <string name="garden_state_unknown">Noch keine Auswertung. Dein Garten wächst über Nacht.</string>
+    <string name="notification_title">Tägliche Verbrauchsbenachrichtigung</string>
+    <string name="notification_state_flourishing">Dein Garten blüht auf</string>
+    <string name="notification_state_growing">Dein Garten wächst</string>
+    <string name="notification_state_stable">Dein Garten ist stabil</string>
+    <string name="notification_state_wilting">Dein Garten beginnt zu welken</string>
+    <string name="notification_state_withered">Dein Garten ist vertrocknet</string>
 </resources>

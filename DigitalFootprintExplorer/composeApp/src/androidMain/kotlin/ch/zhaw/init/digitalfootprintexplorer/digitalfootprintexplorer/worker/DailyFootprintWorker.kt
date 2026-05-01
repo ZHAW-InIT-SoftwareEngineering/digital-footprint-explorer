@@ -1,9 +1,18 @@
 package ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.worker
 
+import android.Manifest
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.usage.UsageStatsManager
 import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
 import android.telephony.TelephonyManager
 import android.util.Log
+import androidx.annotation.RequiresPermission
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
@@ -13,12 +22,14 @@ import androidx.work.workDataOf
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.DFEApplication
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.DataPoint
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.EmissionsCalculator
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.GardenState
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.input.BackgroundInput
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.input.DisplayInput
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.output.EmissionResult
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.service.InstalledAppProvider
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.service.MetricCollector
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.service.NetworkUsageDataSource
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.R
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.util.WORKER_NAME
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.widget.GardenWidget
 import kotlinx.datetime.Clock
@@ -115,6 +126,16 @@ class DailyFootprintWorker(
         GardenWidget.updateState(appContext, gardenState)
         Log.d(TAG, "✅ Worker finished — widget updated")
 
+        val textForNotification = when(gardenState) {
+            GardenState.FLOURISHING -> R.string.notification_state_flourishing.toString()
+            GardenState.GROWING    -> R.string.notification_state_growing.toString()
+            GardenState.STABLE    -> R.string.notification_state_stable.toString()
+            GardenState.WILTING    -> R.string.notification_state_wilting.toString()
+            GardenState.WITHERED   -> R.string.notification_state_withered.toString()
+        }
+
+        showDailyFootprintNotification(textForNotification)
+
         //reschedule the next worker
         scheduleNext(appContext)
 
@@ -190,6 +211,39 @@ class DailyFootprintWorker(
         }.timeInMillis
         val yesterdayMidnight = todayMidnight - TimeUnit.DAYS.toMillis(1)
         return yesterdayMidnight to todayMidnight
+    }
+
+    private fun showDailyFootprintNotification(text: String) {
+        // Starting with Android 13 (Tiramisu), apps need the POST_NOTIFICATIONS permission to send notifications.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val permissionGranted = ContextCompat.checkSelfPermission(
+                appContext,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+
+            if (!permissionGranted) {
+                Log.d(TAG, "Notification permission not granted")
+                return
+            }
+        }
+        val channelId = "daily_footprint"
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                channelId,
+                "Daily Footprint",
+                NotificationManager.IMPORTANCE_DEFAULT
+            )
+            val manager = appContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            manager.createNotificationChannel(channel)
+        }
+        val notification = NotificationCompat.Builder(appContext, channelId)
+            .setContentTitle(R.string.notification_title.toString())
+            .setContentText(text)
+            .setSmallIcon(R.drawable.garden_widget_preview)
+            .build()
+
+        NotificationManagerCompat.from(appContext).notify(1001, notification)
     }
 
     companion object {

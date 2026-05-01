@@ -250,9 +250,27 @@ class DailyFootprintWorker(
         const val TAG = "DFE_Worker"
 
         fun scheduleNext(context: Context) {
-            val delayMs = TimeUnit.MINUTES.toMillis(5)
+            val now = Calendar.getInstance()
 
-            Log.d(TAG, "Rescheduling worker: delay=${delayMs}ms")
+            val next5am = Calendar.getInstance().apply {
+                timeInMillis = now.timeInMillis
+                set(Calendar.HOUR_OF_DAY, 3)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+
+                if (!after(now)) {
+                    add(Calendar.DAY_OF_YEAR, 1)
+                }
+            }
+
+            var delayMs = next5am.timeInMillis - now.timeInMillis
+
+            if (delayMs <= 0) {
+                delayMs = TimeUnit.DAYS.toMillis(1)
+            }
+
+            Log.d(TAG, "Rescheduling worker: delay=${delayMs}ms until 3 AM next time")
 
             val request = OneTimeWorkRequestBuilder<DailyFootprintWorker>()
                 .setInitialDelay(delayMs, TimeUnit.MILLISECONDS)
@@ -260,7 +278,7 @@ class DailyFootprintWorker(
 
             WorkManager.getInstance(context).enqueueUniqueWork(
                 WORKER_NAME,
-                ExistingWorkPolicy.REPLACE, // important for debugging
+                ExistingWorkPolicy.KEEP,
                 request
             )
         }

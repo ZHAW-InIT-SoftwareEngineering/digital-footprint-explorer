@@ -63,7 +63,7 @@ class GardenStateCalculator(private val database: DFEDatabase) {
      */
     fun calculateGardenState(todayFootprint: Double): Pair<GardenState, Double> {
         val count = database.dailyFootprintQueries.count().executeAsOne()
-        if (count == 0L) return GardenState.FLOURISHING to 0.0
+        if (count == 0L) return GardenState.STABLE to 0.0
         val entries = if (count >= 7L) {
             database.dailyFootprintQueries.selectLatest7().executeAsList()
         } else {

@@ -251,7 +251,7 @@ class DailyFootprintWorker(
         fun scheduleNext(context: Context) {
             val now = Calendar.getInstance()
 
-            val next5am = Calendar.getInstance().apply {
+            val next3am = Calendar.getInstance().apply {
                 timeInMillis = now.timeInMillis
                 set(Calendar.HOUR_OF_DAY, 3)
                 set(Calendar.MINUTE, 0)
@@ -263,7 +263,7 @@ class DailyFootprintWorker(
                 }
             }
 
-            var delayMs = next5am.timeInMillis - now.timeInMillis
+            var delayMs = next3am.timeInMillis - now.timeInMillis
 
             if (delayMs <= 0) {
                 delayMs = TimeUnit.DAYS.toMillis(1)

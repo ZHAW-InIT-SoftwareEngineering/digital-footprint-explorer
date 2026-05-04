@@ -29,7 +29,7 @@ import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelay
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.service.MetricCollector
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.service.NetworkUsageDataSource
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.R
-import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.util.WORKER_NAME
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.util.NEW_WORKER_NAME
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.widget.GardenWidget
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DatePeriod
@@ -265,8 +265,11 @@ class DailyFootprintWorker(
 
             var delayMs = next3am.timeInMillis - now.timeInMillis
 
-            if (delayMs <= 0) {
-                delayMs = TimeUnit.DAYS.toMillis(1)
+            // Sanity check: the delay should be between 0 and 24h, but in case of any clock issues we clamp it to 25h to avoid scheduling a worker far in the future or with a negative delay.
+            val maxDelayMs = TimeUnit.HOURS.toMillis(25)
+            if (delayMs !in 1..maxDelayMs) {
+                Log.w(TAG, "Computed delay $delayMs ms looks wrong — clamping to 24h")
+                delayMs = TimeUnit.HOURS.toMillis(24)
             }
 
             Log.d(TAG, "Rescheduling worker: delay=${delayMs}ms until 3 AM next time")
@@ -276,7 +279,7 @@ class DailyFootprintWorker(
                 .build()
 
             WorkManager.getInstance(context).enqueueUniqueWork(
-                WORKER_NAME,
+                NEW_WORKER_NAME,
                 ExistingWorkPolicy.KEEP,
                 request
             )

@@ -38,15 +38,10 @@ object ModelConstants {
      */
     const val P_DISPLAY_MAX_WATT = 0.4
 
-    /**
-     * Background processes \[W]
-     *
-     * TODO: fill in literature values after research.
-     * TODO: other processes
-     */
+    /** Background processes \[W] */
     val P_BACKGROUND_BY_PROCESS: Map<BackgroundProcess, Double> = mapOf(
-        BackgroundProcess.GPS       to 0.2,
-        BackgroundProcess.BLUETOOTH to 0.05
+        BackgroundProcess.GPS       to 0.3,
+        BackgroundProcess.BLUETOOTH to 0.04
     )
 
     /** Backend energy intensity [kWh/GB] — single GB proxy applied uniformly across all categories. */

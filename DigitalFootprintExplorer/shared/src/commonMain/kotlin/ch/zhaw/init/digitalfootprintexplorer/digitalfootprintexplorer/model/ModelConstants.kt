@@ -23,7 +23,7 @@ object ModelConstants {
         AppCategory.AUDIO_STREAMING      to 0.5,
         AppCategory.SOCIAL_MEDIA         to 1.7,
         AppCategory.MESSAGING            to 0.6,
-        AppCategory.ARTIFICIAL_INTELLIGENCE to 0.5,
+        AppCategory.ARTIFICIAL_INTELLIGENCE to 5.0,
         AppCategory.E_MAIL               to 0.5,
         AppCategory.VIDEO_CALL           to 4.0,
         AppCategory.GAMING               to 1.3,

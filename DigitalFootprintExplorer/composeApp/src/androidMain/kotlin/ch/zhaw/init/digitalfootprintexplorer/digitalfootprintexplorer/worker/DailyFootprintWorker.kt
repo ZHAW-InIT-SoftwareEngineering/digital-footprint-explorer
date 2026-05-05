@@ -3,8 +3,10 @@ package ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.worker
 import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.usage.UsageStatsManager
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.telephony.TelephonyManager
@@ -19,6 +21,7 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.DFEApplication
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.MainActivity
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.DataPoint
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.EmissionsCalculator
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.GardenState
@@ -236,10 +239,23 @@ class DailyFootprintWorker(
             val manager = appContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             manager.createNotificationChannel(channel)
         }
+
+        val intent = Intent(appContext, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        val pendingIntent: PendingIntent = PendingIntent.getActivity(
+            appContext,
+            0,
+            intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
         val notification = NotificationCompat.Builder(appContext, channelId)
             .setContentTitle(appContext.getString(R.string.notification_title))
             .setContentText(text)
             .setSmallIcon(R.drawable.garden_widget_preview)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
             .build()
 
         NotificationManagerCompat.from(appContext).notify(1001, notification)

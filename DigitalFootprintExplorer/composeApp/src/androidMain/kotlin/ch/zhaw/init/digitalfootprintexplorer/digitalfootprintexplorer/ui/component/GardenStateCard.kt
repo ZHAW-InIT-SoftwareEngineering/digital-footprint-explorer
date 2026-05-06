@@ -44,22 +44,22 @@ fun GardenStateCard(state: GardenState?) {
 
     Card(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-        )
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        ),
+        shape = MaterialTheme.shapes.medium
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Box(
                 modifier = Modifier
                     .size(200.dp)
-                    .padding(bottom = 16.dp),
+                    .padding(bottom = 20.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Image(
@@ -75,14 +75,14 @@ fun GardenStateCard(state: GardenState?) {
                 text = statusText,
                 style = MaterialTheme.typography.headlineSmall,
                 textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.outline
             )
 
             if (state != null) {
                 Text(
                     text = stringResource(R.string.your_digital_garden),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    color = MaterialTheme.colorScheme.outline,
                     modifier = Modifier.padding(top = 4.dp)
                 )
             }

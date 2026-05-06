@@ -59,4 +59,10 @@
     <string name="notification_state_withered">Your garden has withered</string>
     <string name="notification_foreground_service_title">DFE is active</string>
     <string name="notification_foreground_service_description">Display brightness and background processes are tracked for your daily footprint.</string>
+    <string name="info_tab_label">Info</string>
+    <string name="info_app_version_label">App Version</string>
+    <string name="info_disclaimer_label">Disclaimer</string>
+    <string name="info_disclaimer_description">View disclaimer</string>
+    <string name="info_zhaw_logo_description">ZHAW Logo</string>
+    <string name="info_zhaw_project_description">This app was developed as part of a bachelors thesis at ZHAW.</string>
 </resources>

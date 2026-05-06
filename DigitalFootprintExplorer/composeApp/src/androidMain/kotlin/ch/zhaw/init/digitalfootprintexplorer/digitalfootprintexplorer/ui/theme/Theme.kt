@@ -254,6 +254,7 @@ fun DFETheme(
   MaterialTheme(
     colorScheme = darkScheme,
     typography = AppTypography,
+    shapes = AppShapes,
     content = content
   )
 }

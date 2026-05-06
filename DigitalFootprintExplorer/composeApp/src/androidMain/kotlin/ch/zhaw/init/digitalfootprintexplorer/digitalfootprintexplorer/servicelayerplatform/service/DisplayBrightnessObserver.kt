@@ -93,24 +93,62 @@ class DisplayBrightnessObserver(private val context: Context) {
      */
     fun collectAndReset(fromMs: Long, toMs: Long): DisplayInput {
         val now = System.currentTimeMillis()
+        val originalStartMs = intervalStartMs
 
-        /* Flush the currently open interval up to the end of the collection window */
+        /* Flush the currently open interval only up to the end of the collection window */
         val flushEnd = minOf(now, toMs)
-        if (flushEnd > intervalStartMs) {
-            appendInterval(currentBrightness, intervalStartMs, flushEnd)
+        if (flushEnd > originalStartMs) {
+            appendInterval(currentBrightness, originalStartMs, flushEnd)
         }
-        /* Restart the open interval from now (belongs to the next day) */
-        intervalStartMs = now
 
         val raw = prefs.getString(KEY_INTERVALS, "") ?: ""
-        prefs.edit { remove(KEY_INTERVALS) }
-
         val intervals = parseAndClip(raw, fromMs, toMs)
+        val remainingRaw = keepIntervalsAfter(raw, toMs)
+
+        prefs.edit {
+            if (remainingRaw.isBlank()) {
+                remove(KEY_INTERVALS)
+            } else {
+                putString(KEY_INTERVALS, remainingRaw)
+            }
+        }
+
+        /*
+         * If the currently open interval started before the collection window ended,
+         * continue it from toMs.
+         *
+         * If it started after toMs, keep its original start timestamp so already tracked
+         * data from the new day is not overwritten.
+         */
+        intervalStartMs = when {
+            now <= toMs -> now
+            originalStartMs < toMs -> toMs
+            else -> originalStartMs
+        }
+
         return DisplayInput(
             intervals = intervals.ifEmpty {
                 listOf(BrightnessInterval(normalizedBrightness = DEFAULT_BRIGHTNESS, durationH = 24.0))
             }
         )
+    }
+
+    private fun keepIntervalsAfter(raw: String, boundaryMs: Long): String {
+        if (raw.isBlank()) return ""
+
+        return raw.split(",").mapNotNull { entry ->
+            val parts = entry.split(":")
+            if (parts.size != 3) return@mapNotNull null
+
+            val b = parts[0].toDoubleOrNull() ?: return@mapNotNull null
+            val s = parts[1].toLongOrNull() ?: return@mapNotNull null
+            val e = parts[2].toLongOrNull() ?: return@mapNotNull null
+
+            if (e <= boundaryMs) return@mapNotNull null
+
+            val clippedStart = maxOf(s, boundaryMs)
+            String.format(Locale.ROOT, "%.10f:%d:%d", b, clippedStart, e)
+        }.joinToString(",")
     }
 
     /** Writes the current open interval [intervalStartMs, endMs) to SharedPreferences. */

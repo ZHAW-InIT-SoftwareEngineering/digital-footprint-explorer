@@ -110,19 +110,48 @@ class BackgroundProcessTracker(private val context: Context) {
                 if (flushEnd > startMs) appendInterval(process, startMs, flushEnd)
             }
 
-            val raw    = prefs.getString(intervalsKey(process), "") ?: ""
+            val raw = prefs.getString(intervalsKey(process), "") ?: ""
             val totalMs = parseAndClip(raw, fromMs, toMs).sum()
-            val totalH  = (totalMs / MILLIS_PER_HOUR).toFloat()
+            val totalH = (totalMs / MILLIS_PER_HOUR).toFloat()
 
-            /* Clear completed intervals; keep active state; restart start-timestamp */
+            val remainingRaw = keepIntervalsAfter(raw, toMs)
+
+            val newStartMs = when {
+                isActive && now > toMs && startMs < toMs -> toMs
+                isActive -> startMs
+                else -> now
+            }
+
             prefs.edit {
-                remove(intervalsKey(process))
-                putLong(startKey(process), now)
+                if (remainingRaw.isBlank()) {
+                    remove(intervalsKey(process))
+                } else {
+                    putString(intervalsKey(process), remainingRaw)
+                }
+
+                putLong(startKey(process), newStartMs)
             }
 
             if (totalH > 0f) ProcessUsage(process = process, durationH = totalH) else null
         }
         return BackgroundInput(activeProcesses = processes)
+    }
+
+    private fun keepIntervalsAfter(raw: String, boundaryMs: Long): String {
+        if (raw.isBlank()) return ""
+
+        return raw.split(",").mapNotNull { entry ->
+            val parts = entry.split(":")
+            if (parts.size != 2) return@mapNotNull null
+
+            val s = parts[0].toLongOrNull() ?: return@mapNotNull null
+            val e = parts[1].toLongOrNull() ?: return@mapNotNull null
+
+            if (e <= boundaryMs) return@mapNotNull null
+
+            val clippedStart = maxOf(s, boundaryMs)
+            "$clippedStart:$e"
+        }.joinToString(",")
     }
 
     /** Seeds initial state on first ever registration without double-counting. */
@@ -136,17 +165,20 @@ class BackgroundProcessTracker(private val context: Context) {
     }
 
     private fun updateState(process: BackgroundProcess, isNowActive: Boolean) {
-        val now      = System.currentTimeMillis()
+        val now = System.currentTimeMillis()
         val wasActive = prefs.getBoolean(activeKey(process), false)
+
+        if (wasActive == isNowActive) return
+
+        if (wasActive) {
+            val start = prefs.getLong(startKey(process), now)
+            appendInterval(process, start, now)
+        }
+
         prefs.edit {
             putBoolean(activeKey(process), isNowActive)
 
-            if (wasActive && !isNowActive) {
-                /* Process just turned off → close the interval */
-                val start = prefs.getLong(startKey(process), now)
-                appendInterval(process, start, now)
-            } else if (!wasActive && isNowActive) {
-                /* Process just turned on → record start timestamp */
+            if (!wasActive) {
                 putLong(startKey(process), now)
             }
         }

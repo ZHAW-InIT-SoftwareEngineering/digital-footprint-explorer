@@ -23,7 +23,7 @@ object ModelConstants {
         AppCategory.AUDIO_STREAMING      to 0.5,
         AppCategory.SOCIAL_MEDIA         to 1.7,
         AppCategory.MESSAGING            to 0.6,
-        AppCategory.ARTIFICIAL_INTELLIGENCE to 5.0,
+        AppCategory.ARTIFICIAL_INTELLIGENCE to 0.5,
         AppCategory.E_MAIL               to 0.5,
         AppCategory.VIDEO_CALL           to 4.0,
         AppCategory.GAMING               to 1.3,
@@ -46,4 +46,9 @@ object ModelConstants {
 
     /** Backend energy intensity [kWh/GB] — single GB proxy applied uniformly across all categories. */
     const val BACKEND_INTENSITY_GB = 0.055
+
+    /** Per-category multiplier applied to the backend intensity [kWh/GB]. */
+    val BACKEND_INTENSITY_FACTOR_BY_CATEGORY: Map<AppCategory, Double> = mapOf(
+        AppCategory.ARTIFICIAL_INTELLIGENCE to 10.0
+    )
 }

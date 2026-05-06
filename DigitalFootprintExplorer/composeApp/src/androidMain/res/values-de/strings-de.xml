@@ -56,4 +56,6 @@
     <string name="notification_state_stable">Dein Garten ist stabil</string>
     <string name="notification_state_wilting">Dein Garten beginnt zu welken</string>
     <string name="notification_state_withered">Dein Garten ist vertrocknet</string>
+    <string name="notification_foreground_service_title">DFE ist aktiv</string>
+    <string name="notification_foreground_service_description">Displayhelligkeit und Hintergrundprozesse werden für deinen Tageswert erfasst.</string>
 </resources>

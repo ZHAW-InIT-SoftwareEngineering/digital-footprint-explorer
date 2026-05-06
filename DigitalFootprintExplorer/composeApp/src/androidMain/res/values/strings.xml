@@ -1,7 +1,5 @@
 <resources>
     <string name="app_name" translatable="false">Digital Footprint Explorer</string>
-
-    <!--Used in App.kt-->
     <string name="home">
         Home
     </string>
@@ -11,14 +9,6 @@
     <string name="no_emissions">
         No emissions data recorded for yesterday.
     </string>
-    <string name="app_usage">
-        App usage
-    </string>
-    <string name="background">
-        Background
-    </string>
-
-    <!-- Used in WidgetOnboardingSheet.kt-->
     <string name="your_digital_garden">
         Your Digital garden
     </string>
@@ -31,8 +21,6 @@
     <string name="later">
         Later
     </string>
-
-    <!--Used in UsageStatsPermissionSheet.kt-->
     <string name="app_usage_title">
         Usage access required
     </string>
@@ -45,4 +33,28 @@
     <string name="settings">
         Open settings
     </string>
+    <string name="statistics_screen_title">
+        Your usage yesterday
+    </string>
+    <string name="no_statistics">
+        No data available yet.\nThe analysis runs automatically every night.
+    </string>
+    <string name="app_usage">
+        App usage
+    </string>
+    <string name="background">
+        Background
+    </string>
+    <string name="garden_state_flourishing">Flourishing</string>
+    <string name="garden_state_growing">Growing</string>
+    <string name="garden_state_stable">Stable</string>
+    <string name="garden_state_wilting">Wilting</string>
+    <string name="garden_state_withered">Withered</string>
+    <string name="garden_state_unknown">No evaluation yet. Your garden will grow overnight.</string>
+    <string name="notification_title">Daily Footprint Notification</string>
+    <string name="notification_state_flourishing">Your garden is thriving</string>
+    <string name="notification_state_growing">Your garden is growing</string>
+    <string name="notification_state_stable">Your garden is stable</string>
+    <string name="notification_state_wilting">Your garden is starting to wilt</string>
+    <string name="notification_state_withered">Your garden has withered</string>
 </resources>

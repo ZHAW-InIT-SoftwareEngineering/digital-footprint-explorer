@@ -1,24 +1,38 @@
 package ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.worker
 
+import android.Manifest
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.usage.UsageStatsManager
 import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.telephony.TelephonyManager
 import android.util.Log
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import androidx.work.CoroutineWorker
-import androidx.work.ExistingPeriodicWorkPolicy
-import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.DFEApplication
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.MainActivity
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.DataPoint
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.EmissionsCalculator
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.GardenState
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.input.BackgroundInput
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.input.DisplayInput
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.output.EmissionResult
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.service.InstalledAppProvider
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.service.MetricCollector
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.servicelayerplatform.service.NetworkUsageDataSource
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.R
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.util.NEW_WORKER_NAME
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.widget.GardenWidget
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DatePeriod
@@ -29,12 +43,6 @@ import java.util.Calendar
 import java.util.concurrent.TimeUnit
 
 const val KEY_DEBUG_SUMMARY = "debug_summary"
-const val TAG_DEBUG_RUN     = "debug_footprint_run"
-
-const val KEY_GHG_APP_USAGE   = "ghg_app_usage"
-const val KEY_GHG_DISPLAY     = "ghg_display"
-const val KEY_GHG_BACKGROUND  = "ghg_background"
-const val KEY_GHG_TOTAL       = "ghg_total"
 
 class DailyFootprintWorker(
     private val appContext: Context,
@@ -120,24 +128,20 @@ class DailyFootprintWorker(
         GardenWidget.updateState(appContext, gardenState)
         Log.d(TAG, "✅ Worker finished — widget updated")
 
-        val summary = buildSummary(
-            appsScanned  = networkMetrics.size,
-            measuredApps = measuredApps,
-            wifiMB       = totalWifiMB,
-            cellMB       = totalCellMB,
-            displayInput = displayInput,
-            background   = backgroundInput,
-            result       = emissionResult,
-            state        = gardenState.name,
-            baseline     = baseline
-        )
-        return Result.success(workDataOf(
-            KEY_DEBUG_SUMMARY to summary,
-            KEY_GHG_APP_USAGE to emissionResult.ghgAppUsage,
-            KEY_GHG_DISPLAY to emissionResult.ghgDisplay,
-            KEY_GHG_BACKGROUND to emissionResult.ghgBackground,
-            KEY_GHG_TOTAL to emissionResult.ghgTotal
-        ))
+        val textForNotification = when(gardenState) {
+            GardenState.FLOURISHING -> appContext.getString(R.string.notification_state_flourishing)
+            GardenState.GROWING    -> appContext.getString(R.string.notification_state_growing)
+            GardenState.STABLE    -> appContext.getString(R.string.notification_state_stable)
+            GardenState.WILTING    -> appContext.getString(R.string.notification_state_wilting)
+            GardenState.WITHERED   -> appContext.getString(R.string.notification_state_withered)
+        }
+
+        showDailyFootprintNotification(textForNotification)
+
+        //reschedule the next worker
+        scheduleNext(appContext)
+
+        return Result.success()
     }
 
     private fun logDisplay(display: DisplayInput) {
@@ -170,31 +174,6 @@ class DailyFootprintWorker(
         result.categoryBreakdown.forEach { c ->
             Log.d(TAG, "   · [${c.category}] device=${f(c.ghgDevice*1000)}g net=${f(c.ghgNetwork*1000)}g backend=${f(c.ghgBackend*1000)}g")
         }
-    }
-
-    private fun buildSummary(
-        appsScanned: Int, measuredApps: Int,
-        wifiMB: Double, cellMB: Double,
-        displayInput: DisplayInput,
-        background: BackgroundInput,
-        result: EmissionResult,
-        state: String,
-        baseline: Double
-    ): String {
-        val avgBrightness = if (displayInput.intervals.isEmpty()) 0.0
-            else displayInput.intervals.sumOf { it.normalizedBrightness * it.durationH } /
-                 displayInput.intervals.sumOf { it.durationH }
-        val bgSummary = background.activeProcesses.joinToString { "${it.process}=${f(it.durationH.toDouble())}h" }
-            .ifEmpty { "none" }
-        return """
-📶 Network: $appsScanned apps ($measuredApps with data)
-   WiFi ${f(wifiMB)} MB  |  Cellular ${f(cellMB)} MB
-💡 Display: ${displayInput.intervals.size} intervals, avg ${f(avgBrightness*100)}% brightness
-📍 Background: $bgSummary
-🔢 CO₂e: app=${f(result.ghgAppUsage*1000)}g  display=${f(result.ghgDisplay*1000)}g  bg=${f(result.ghgBackground*1000)}g
-   TOTAL: ${f(result.ghgTotal*1000)} gCO₂e
-🌱 GardenState: $state  (baseline ${f(baseline*1000)} gCO₂e)
-        """.trimIndent()
     }
 
     /** Formats with enough precision to show small values (e.g. 0.0024g instead of 0.00g). */
@@ -236,30 +215,88 @@ class DailyFootprintWorker(
         return yesterdayMidnight to todayMidnight
     }
 
+    private fun showDailyFootprintNotification(text: String) {
+        // Starting with Android 13 (Tiramisu), apps need the POST_NOTIFICATIONS permission to send notifications.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val permissionGranted = ContextCompat.checkSelfPermission(
+                appContext,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+
+            if (!permissionGranted) {
+                Log.d(TAG, "Notification permission not granted")
+                return
+            }
+        }
+        val channelId = "daily_footprint"
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                channelId,
+                "Daily Footprint",
+                NotificationManager.IMPORTANCE_DEFAULT
+            )
+            val manager = appContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            manager.createNotificationChannel(channel)
+        }
+
+        val intent = Intent(appContext, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        val pendingIntent: PendingIntent = PendingIntent.getActivity(
+            appContext,
+            0,
+            intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
+        val notification = NotificationCompat.Builder(appContext, channelId)
+            .setContentTitle(appContext.getString(R.string.notification_title))
+            .setContentText(text)
+            .setSmallIcon(R.drawable.garden_widget_preview)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .build()
+
+        NotificationManagerCompat.from(appContext).notify(1001, notification)
+    }
+
     companion object {
         const val TAG = "DFE_Worker"
-        private const val WORK_NAME = "daily_footprint"
 
-        fun schedule(context: Context) {
+        fun scheduleNext(context: Context) {
             val now = Calendar.getInstance()
-            val next5am = Calendar.getInstance().apply {
-                set(Calendar.HOUR_OF_DAY, 5)
+
+            val next3am = Calendar.getInstance().apply {
+                timeInMillis = now.timeInMillis
+                set(Calendar.HOUR_OF_DAY, 3)
                 set(Calendar.MINUTE, 0)
                 set(Calendar.SECOND, 0)
                 set(Calendar.MILLISECOND, 0)
-                if (!after(now)) add(Calendar.DAY_OF_YEAR, 1)
-            }
-            val initialDelayMs = next5am.timeInMillis - now.timeInMillis
 
-            val request = PeriodicWorkRequestBuilder<DailyFootprintWorker>(
-                24, TimeUnit.HOURS,
-                2,  TimeUnit.HOURS
-            )
-                .setInitialDelay(initialDelayMs, TimeUnit.MILLISECONDS)
+                if (!after(now)) {
+                    add(Calendar.DAY_OF_YEAR, 1)
+                }
+            }
+
+            var delayMs = next3am.timeInMillis - now.timeInMillis
+
+            // Sanity check: the delay should be between 0 and 24h, but in case of any clock issues we clamp it to 25h to avoid scheduling a worker far in the future or with a negative delay.
+            val maxDelayMs = TimeUnit.HOURS.toMillis(25)
+            if (delayMs !in 1..maxDelayMs) {
+                Log.w(TAG, "Computed delay $delayMs ms looks wrong — clamping to 24h")
+                delayMs = TimeUnit.HOURS.toMillis(24)
+            }
+
+            Log.d(TAG, "Rescheduling worker: delay=${delayMs}ms until 3 AM next time")
+
+            val request = OneTimeWorkRequestBuilder<DailyFootprintWorker>()
+                .setInitialDelay(delayMs, TimeUnit.MILLISECONDS)
                 .build()
-            WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-                WORK_NAME,
-                ExistingPeriodicWorkPolicy.KEEP,
+
+            WorkManager.getInstance(context).enqueueUniqueWork(
+                NEW_WORKER_NAME,
+                ExistingWorkPolicy.KEEP,
                 request
             )
         }

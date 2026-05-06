@@ -1,5 +1,4 @@
 <resources>
-    <!--Used in App.kt-->
     <string name="home">
         Startseite
     </string>
@@ -9,14 +8,6 @@
     <string name="no_emissions">
         Keine Emissionsdaten für gestern gespeichert.
     </string>
-    <string name="app_usage">
-        App Nutzung
-    </string>
-    <string name="background">
-        Hintergrund
-    </string>
-
-    <!-- Used in WidgetOnboardingSheet.kt-->
     <string name="your_digital_garden">
         Dein digitaler Garten
     </string>
@@ -29,8 +20,6 @@
     <string name="later">
         Später
     </string>
-
-    <!--Used in UsageStatsPermissionSheet.kt-->
     <string name="app_usage_title">
         Zugriff auf Nutzungsdaten benötigt
     </string>
@@ -43,4 +32,28 @@
     <string name="settings">
         Zu den Einstellungen
     </string>
+    <string name="statistics_screen_title">
+        Dein gestriger Verbrauch
+    </string>
+    <string name="no_statistics">
+        Noch keine Daten vorhanden.\nDie Auswertung erfolgt automatisch jede Nacht.
+    </string>
+    <string name="app_usage">
+        App Nutzung
+    </string>
+    <string name="background">
+        Hintergrund
+    </string>
+    <string name="garden_state_flourishing">Blühend</string>
+    <string name="garden_state_growing">Wachsend</string>
+    <string name="garden_state_stable">Stabil</string>
+    <string name="garden_state_wilting">Welkend</string>
+    <string name="garden_state_withered">Verdorrt</string>
+    <string name="garden_state_unknown">Noch keine Auswertung. Dein Garten wächst über Nacht.</string>
+    <string name="notification_title">Tägliche Verbrauchsbenachrichtigung</string>
+    <string name="notification_state_flourishing">Dein Garten blüht auf</string>
+    <string name="notification_state_growing">Dein Garten wächst</string>
+    <string name="notification_state_stable">Dein Garten ist stabil</string>
+    <string name="notification_state_wilting">Dein Garten beginnt zu welken</string>
+    <string name="notification_state_withered">Dein Garten ist vertrocknet</string>
 </resources>

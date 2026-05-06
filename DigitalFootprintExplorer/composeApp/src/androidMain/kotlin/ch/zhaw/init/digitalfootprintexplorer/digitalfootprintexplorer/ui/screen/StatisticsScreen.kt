@@ -19,6 +19,7 @@ import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.Dail
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.ui.component.EmissionPieChart
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.ui.component.EmissionRow
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.R
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.ui.theme.Spacing
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.ui.theme.pieChartAppUsageColor
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.ui.theme.pieChartBackgroundColor
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.ui.theme.pieChartDisplayColor
@@ -40,14 +41,8 @@ fun StatisticsScreen(
             .padding(innerPadding)
             .fillMaxSize()
             .verticalScroll(rememberScrollState()),
-        horizontalAlignment = Alignment.CenterHorizontally,
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(
-            text = stringResource(R.string.statistics_screen_title),
-            style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier.padding(16.dp)
-        )
-
         if (latestEntry != null) {
             val entry = latestEntry!!
             val appUsage = entry.ghgAppUsage
@@ -55,82 +50,111 @@ fun StatisticsScreen(
             val background = entry.ghgBackground
             val total = entry.kgCO2e
 
-            if (total > 0) {
-                EmissionPieChart(
-                    appUsage = appUsage,
-                    display = display,
-                    background = background,
-                    modifier = Modifier
-                        .height(240.dp)
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
-                )
-            } else {
-                Text(
-                    stringResource(R.string.no_emissions),
-                    modifier = Modifier.padding(16.dp)
-                )
-            }
-
             Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
+                modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                )
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer
+                ),
+                shape = MaterialTheme.shapes.medium
             ) {
-                Column(Modifier.padding(16.dp)) {
-
-                    Text("Details:", style = MaterialTheme.typography.titleSmall)
-                    Spacer(Modifier.height(8.dp))
-
-                    EmissionRow(
-                        label = stringResource(R.string.app_usage),
-                        valueGrams = appUsage * 1000,
-                        percentage = if (total > 0) (appUsage / total) else 0.0,
-                        color = pieChartAppUsageColor
-                    )
-
-                    EmissionRow(
-                        label = "Display",
-                        valueGrams = display * 1000,
-                        percentage = if (total > 0) (display / total) else 0.0,
-                        color = pieChartDisplayColor
-                    )
-
-                    EmissionRow(
-                        label = stringResource(R.string.background),
-                        valueGrams = background * 1000,
-                        percentage = if (total > 0) (background / total) else 0.0,
-                        color = pieChartBackgroundColor
-                    )
-
-                    HorizontalDivider(
-                        Modifier.padding(vertical = 8.dp),
-                        DividerDefaults.Thickness,
-                        DividerDefaults.color
-                    )
-
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
                     Text(
-                        "Total: ${"%.2f".format(total * 1000)} g CO₂e",
-                        style = MaterialTheme.typography.bodyLarge
+                        text = stringResource(R.string.statistics_screen_title),
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onBackground
                     )
+
+                    Spacer(Modifier.height(Spacing.gutter))
+
+                    if (total > 0) {
+                        EmissionPieChart(
+                            appUsage = appUsage,
+                            display = display,
+                            background = background,
+                            modifier = Modifier
+                                .height(240.dp)
+                                .fillMaxWidth()
+                        )
+                    } else {
+                        Text(
+                            text = stringResource(R.string.no_emissions),
+                            modifier = Modifier.padding(vertical = 16.dp),
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                    }
+
+                    Spacer(Modifier.height(Spacing.gutter))
+
+                    Column(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = "Details:",
+                            style = MaterialTheme.typography.titleSmall
+                        )
+
+                        Spacer(Modifier.height(8.dp))
+
+                        EmissionRow(
+                            label = stringResource(R.string.app_usage),
+                            valueGrams = appUsage * 1000,
+                            percentage = if (total > 0) (appUsage / total) else 0.0,
+                            color = pieChartAppUsageColor
+                        )
+
+                        EmissionRow(
+                            label = "Display",
+                            valueGrams = display * 1000,
+                            percentage = if (total > 0) (display / total) else 0.0,
+                            color = pieChartDisplayColor
+                        )
+
+                        EmissionRow(
+                            label = stringResource(R.string.background),
+                            valueGrams = background * 1000,
+                            percentage = if (total > 0) (background / total) else 0.0,
+                            color = pieChartBackgroundColor
+                        )
+
+                        HorizontalDivider(
+                            modifier = Modifier.padding(vertical = 8.dp),
+                            thickness = DividerDefaults.Thickness,
+                            color = DividerDefaults.color
+                        )
+
+                        Text(
+                            text = "Total: ${"%.2f".format(total * 1000)} g CO₂e",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
                 }
             }
         } else {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(32.dp),
-                contentAlignment = Alignment.Center
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer
+                ),
+                shape = MaterialTheme.shapes.medium
             ) {
-                Text(
-                    stringResource(R.string.no_statistics),
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(32.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = stringResource(R.string.no_statistics),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
     }

@@ -12,6 +12,7 @@ import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.DFEApplication
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.R
 
 /**
  * Foreground Service that hosts [DisplayBrightnessObserver] and [BackgroundProcessTracker]
@@ -82,8 +83,8 @@ class TrackingService : Service() {
 
     private fun buildNotification(): Notification =
         NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Digitaler Fussabdruck wird erfasst")
-            .setContentText("Display und Hintergrundprozesse werden täglich ausgewertet.")
+            .setContentTitle(getString(R.string.notification_foreground_service_title))
+            .setContentText(getString(R.string.notification_foreground_service_description))
             .setSmallIcon(android.R.drawable.ic_menu_info_details)
             .setPriority(NotificationCompat.PRIORITY_MIN)
             .setSilent(true)

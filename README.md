@@ -1,2 +1,3 @@
-# DigitalFootprintExplorer
-BA Corinee Atilla FS 26
+# Digital Footprint Explorer 
+
+BA Corinne Atilla FS 26

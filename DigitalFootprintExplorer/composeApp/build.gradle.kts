@@ -45,7 +45,7 @@ kotlin {
 }
 
 android {
-    namespace = "ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer"
+    namespace = "ch.zhaw.digitalfootprintexplorer"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     buildFeatures {
@@ -53,7 +53,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer"
+        applicationId = "ch.zhaw.digitalfootprintexplorer"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1

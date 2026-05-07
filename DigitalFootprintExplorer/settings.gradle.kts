@@ -28,5 +28,5 @@ dependencyResolutionManagement {
     }
 }
 
-include(":composeApp")
+include(":digitalFootprintExplorer-android")
 include(":shared")

@@ -48,6 +48,10 @@ android {
     namespace = "ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
+    buildFeatures {
+        buildConfig = true
+    }
+
     defaultConfig {
         applicationId = "ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer"
         minSdk = libs.versions.android.minSdk.get().toInt()

@@ -7,8 +7,8 @@ package ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model
 object ModelConstants {
 
     /* Emission factors [kgCO2e/kWh] */
-    const val EF_SWISS = 0.127
-    const val EF_GLOBAL = 0.471
+    const val EF_SWISS = 0.0392
+    const val EF_GLOBAL = 0.458
 
     /* Charging loss */
     const val CHARGING_EFFICIENCY = 0.585
@@ -38,17 +38,17 @@ object ModelConstants {
      */
     const val P_DISPLAY_MAX_WATT = 0.4
 
-    /**
-     * Background processes \[W]
-     *
-     * TODO: fill in literature values after research.
-     * TODO: other processes
-     */
+    /** Background processes \[W] */
     val P_BACKGROUND_BY_PROCESS: Map<BackgroundProcess, Double> = mapOf(
-        BackgroundProcess.GPS       to 0.2,
-        BackgroundProcess.BLUETOOTH to 0.05
+        BackgroundProcess.GPS       to 0.3,
+        BackgroundProcess.BLUETOOTH to 0.04
     )
 
     /** Backend energy intensity [kWh/GB] — single GB proxy applied uniformly across all categories. */
     const val BACKEND_INTENSITY_GB = 0.055
+
+    /** Per-category multiplier applied to the backend intensity [kWh/GB]. */
+    val BACKEND_INTENSITY_FACTOR_BY_CATEGORY: Map<AppCategory, Double> = mapOf(
+        AppCategory.ARTIFICIAL_INTELLIGENCE to 10.0
+    )
 }

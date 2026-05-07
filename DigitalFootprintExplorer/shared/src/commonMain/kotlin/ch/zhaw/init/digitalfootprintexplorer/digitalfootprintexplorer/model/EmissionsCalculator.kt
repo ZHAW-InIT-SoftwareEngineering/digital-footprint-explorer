@@ -52,7 +52,7 @@ class EmissionsCalculator(
                     category = category,
                     ghgDevice = calculateDevice(category, totalTimeH),
                     ghgNetwork = calculateNetwork(totalWifiGB, totalCellularGB),
-                    ghgBackend = calculateBackend(totalWifiGB + totalCellularGB)
+                    ghgBackend = calculateBackend(category, totalWifiGB + totalCellularGB)
                 )
             }
     }
@@ -79,12 +79,12 @@ class EmissionsCalculator(
     }
 
     /**
-     * GHG_backend,k = totalDataGB * I_backend * EF_global
+     * GHG_backend,k = totalDataGB * I_backend * factor_k * EF_global
      *
-     * Single GB proxy applied uniformly across all categories.
      */
-    private fun calculateBackend(totalDataGB: Double): Double {
-        return totalDataGB * ModelConstants.BACKEND_INTENSITY_GB * ModelConstants.EF_GLOBAL
+    private fun calculateBackend(category: AppCategory, totalDataGB: Double): Double {
+        val factor = ModelConstants.BACKEND_INTENSITY_FACTOR_BY_CATEGORY[category] ?: 1.0
+        return totalDataGB * ModelConstants.BACKEND_INTENSITY_GB * factor * ModelConstants.EF_GLOBAL
     }
 
     /**

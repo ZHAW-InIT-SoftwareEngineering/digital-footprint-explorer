@@ -75,7 +75,7 @@ fun GardenStateCard(state: GardenState?) {
                 text = statusText,
                 style = MaterialTheme.typography.headlineSmall,
                 textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.outline
+                color = MaterialTheme.colorScheme.onBackground
             )
 
             if (state != null) {

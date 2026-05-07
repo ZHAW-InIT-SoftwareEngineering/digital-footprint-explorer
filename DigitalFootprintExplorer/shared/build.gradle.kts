@@ -43,13 +43,13 @@ kotlin {
 sqldelight {
     databases {
         create("DFEDatabase") {
-            packageName.set("ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.database")
+            packageName.set("ch.zhaw.digitalfootprintexplorer.database")
         }
     }
 }
 
 android {
-    namespace = "ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.shared"
+    namespace = "ch.zhaw.digitalfootprintexplorer.shared"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11

@@ -6,7 +6,6 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
-import androidx.glance.GlanceTheme
 import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.action.actionStartActivity
@@ -23,6 +22,8 @@ import androidx.glance.layout.ContentScale
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.state.GlanceStateDefinition
 import androidx.glance.state.PreferencesGlanceStateDefinition
+import androidx.glance.unit.ColorProvider
+import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.ui.theme.surfaceContainerLowDark
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.MainActivity
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.R
 import ch.zhaw.init.digitalfootprintexplorer.digitalfootprintexplorer.model.GardenState
@@ -62,21 +63,19 @@ class GardenWidget : GlanceAppWidget() {
             GardenState.WITHERED    -> R.drawable.garden_state_5_withered
         }
 
-        GlanceTheme {
-            Box(
-                modifier = GlanceModifier
-                    .fillMaxSize()
-                    .background(GlanceTheme.colors.background)
-                    .clickable(actionStartActivity<MainActivity>()),
-                contentAlignment = Alignment.Center
-            ) {
-                Image(
-                    provider = ImageProvider(imageRes),
-                    contentDescription = state.name,
-                    modifier = GlanceModifier.fillMaxSize(),
-                    contentScale = ContentScale.Fit
-                )
-            }
+        Box(
+            modifier = GlanceModifier
+                .fillMaxSize()
+                .background(ColorProvider(surfaceContainerLowDark))
+                .clickable(actionStartActivity<MainActivity>()),
+            contentAlignment = Alignment.Center
+        ) {
+            Image(
+                provider = ImageProvider(imageRes),
+                contentDescription = state.name,
+                modifier = GlanceModifier.fillMaxSize(),
+                contentScale = ContentScale.Fit
+            )
         }
     }
 

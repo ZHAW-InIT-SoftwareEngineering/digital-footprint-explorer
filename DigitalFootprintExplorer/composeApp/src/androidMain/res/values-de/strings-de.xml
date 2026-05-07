@@ -56,4 +56,12 @@
     <string name="notification_state_stable">Dein Garten ist stabil</string>
     <string name="notification_state_wilting">Dein Garten beginnt zu welken</string>
     <string name="notification_state_withered">Dein Garten ist vertrocknet</string>
+    <string name="notification_foreground_service_title">DFE ist aktiv</string>
+    <string name="notification_foreground_service_description">Displayhelligkeit und Hintergrundprozesse werden für deinen Tageswert erfasst.</string>
+    <string name="info_tab_label">Info</string>
+    <string name="info_app_version_label">App-Version</string>
+    <string name="info_disclaimer_label">Disclaimer</string>
+    <string name="info_disclaimer_description">Disclaimer anzeigen</string>
+    <string name="info_zhaw_logo_description">ZHAW Logo</string>
+    <string name="info_zhaw_project_description">Diese App wurde im Rahmen einer Bachelorarbeit an der ZHAW entwickelt.</string>
 </resources>

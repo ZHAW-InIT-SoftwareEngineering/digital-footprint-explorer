@@ -140,7 +140,7 @@ fun InfoScreen(innerPadding: PaddingValues) {
                     .fillMaxWidth()
                     .clickable {
                         context.startActivity(
-                            Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/pages/ZHAW-InIT-SoftwareEngineering/digital-footprint-explorer/"))
+                            Intent(Intent.ACTION_VIEW, Uri.parse("https://zhaw-init-softwareengineering.github.io/digital-footprint-explorer/"))
                         )
                     }
                     .padding(20.dp),

@@ -219,81 +219,81 @@ fun App() {
                                     }
                                 }
 
-                                Card(
-                                    modifier = Modifier
-                                        .fillMaxWidth(),
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = MaterialTheme.colorScheme.surfaceContainer
-                                    ),
-                                    shape = MaterialTheme.shapes.medium
-                                ) {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(20.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text("Demo-Modus", style = MaterialTheme.typography.titleMedium)
-                                        }
-                                        DfeSwitch(
-                                            checked = demoActive,
-                                            onCheckedChange = { enabled ->
-                                                demoActive = enabled
-                                                demoSummaryText = null
-                                                if (enabled) {
-                                                    repo.activate()
-                                                } else {
-                                                    scope.launch { repo.deactivate() }
-                                                }
-                                            }
-                                        )
-                                    }
-
-                                    if (demoActive) {
-                                        Button(
-                                            modifier = Modifier.padding(start = 16.dp, bottom = 8.dp),
-                                            enabled = !demoRefreshing,
-                                            onClick = {
-                                                scope.launch {
-                                                    demoRefreshing = true
-                                                    try {
-                                                        val (result, state) = repo.refresh()
-                                                        demoSummaryText = repo.buildSummary(result, state.name)
-                                                    } catch (e: CancellationException) {
-                                                        throw e
-                                                    } catch (e: Exception) {
-                                                        Log.e("DFE_Demo", "Refresh failed", e)
-                                                    } finally {
-                                                        demoRefreshing = false
-                                                    }
-                                                }
-                                            }
-                                        ) {
-                                            if (demoRefreshing) {
-                                                CircularProgressIndicator(
-                                                    modifier = Modifier.padding(end = 8.dp),
-                                                    strokeWidth = 2.dp,
-                                                    color = MaterialTheme.colorScheme.onPrimary
-                                                )
-                                            }
-                                            Text("Gartenzustand aktualisieren")
-                                        }
-
-                                        demoSummaryText?.let { summary ->
-                                            Text(
-                                                text = summary,
-                                                modifier = Modifier.padding(
-                                                    start = 16.dp,
-                                                    end = 16.dp,
-                                                    bottom = 12.dp
-                                                ),
-                                                style = MaterialTheme.typography.bodySmall,
-                                                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
-                                            )
-                                        }
-                                    }
-                                }
+//                                Card(
+//                                    modifier = Modifier
+//                                        .fillMaxWidth(),
+//                                    colors = CardDefaults.cardColors(
+//                                        containerColor = MaterialTheme.colorScheme.surfaceContainer
+//                                    ),
+//                                    shape = MaterialTheme.shapes.medium
+//                                ) {
+//                                    Row(
+//                                        modifier = Modifier
+//                                            .fillMaxWidth()
+//                                            .padding(20.dp),
+//                                        verticalAlignment = Alignment.CenterVertically
+//                                    ) {
+//                                        Column(modifier = Modifier.weight(1f)) {
+//                                            Text("Demo-Modus", style = MaterialTheme.typography.titleMedium)
+//                                        }
+//                                        DfeSwitch(
+//                                            checked = demoActive,
+//                                            onCheckedChange = { enabled ->
+//                                                demoActive = enabled
+//                                                demoSummaryText = null
+//                                                if (enabled) {
+//                                                    repo.activate()
+//                                                } else {
+//                                                    scope.launch { repo.deactivate() }
+//                                                }
+//                                            }
+//                                        )
+//                                    }
+//
+//                                    if (demoActive) {
+//                                        Button(
+//                                            modifier = Modifier.padding(start = 16.dp, bottom = 8.dp),
+//                                            enabled = !demoRefreshing,
+//                                            onClick = {
+//                                                scope.launch {
+//                                                    demoRefreshing = true
+//                                                    try {
+//                                                        val (result, state) = repo.refresh()
+//                                                        demoSummaryText = repo.buildSummary(result, state.name)
+//                                                    } catch (e: CancellationException) {
+//                                                        throw e
+//                                                    } catch (e: Exception) {
+//                                                        Log.e("DFE_Demo", "Refresh failed", e)
+//                                                    } finally {
+//                                                        demoRefreshing = false
+//                                                    }
+//                                                }
+//                                            }
+//                                        ) {
+//                                            if (demoRefreshing) {
+//                                                CircularProgressIndicator(
+//                                                    modifier = Modifier.padding(end = 8.dp),
+//                                                    strokeWidth = 2.dp,
+//                                                    color = MaterialTheme.colorScheme.onPrimary
+//                                                )
+//                                            }
+//                                            Text("Gartenzustand aktualisieren")
+//                                        }
+//
+//                                        demoSummaryText?.let { summary ->
+//                                            Text(
+//                                                text = summary,
+//                                                modifier = Modifier.padding(
+//                                                    start = 16.dp,
+//                                                    end = 16.dp,
+//                                                    bottom = 12.dp
+//                                                ),
+//                                                style = MaterialTheme.typography.bodySmall,
+//                                                fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace
+//                                            )
+//                                        }
+//                                    }
+//                                }
 
                                 Spacer(modifier = Modifier.height(Spacing.gutter))
 

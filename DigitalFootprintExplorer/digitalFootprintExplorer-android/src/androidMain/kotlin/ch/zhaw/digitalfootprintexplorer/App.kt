@@ -1,8 +1,11 @@
 package ch.zhaw.digitalfootprintexplorer
 
+import android.Manifest
 import android.content.Context
 import android.os.Build
 import android.util.Log
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -32,6 +35,7 @@ import androidx.glance.appwidget.GlanceAppWidgetManager
 import ch.zhaw.digitalfootprintexplorer.demo.DemoRepository
 import ch.zhaw.digitalfootprintexplorer.permission.hasUsageStatsPermission
 import ch.zhaw.digitalfootprintexplorer.permission.openUsageStatsSettings
+import ch.zhaw.digitalfootprintexplorer.permission.hasNotificationPermission
 import ch.zhaw.digitalfootprintexplorer.ui.screen.StatisticsScreen
 import ch.zhaw.digitalfootprintexplorer.ui.theme.DFETheme
 import ch.zhaw.digitalfootprintexplorer.widget.GardenWidget
@@ -66,6 +70,16 @@ fun App() {
         var showWidgetOnboarding by remember {
             mutableStateOf(false)
         }
+        var hasNotificationPermissionGranted by remember {
+            mutableStateOf(hasNotificationPermission(context))
+        }
+
+        // Permission launcher for notifications
+        val notificationPermissionLauncher = rememberLauncherForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { isGranted ->
+            hasNotificationPermissionGranted = isGranted
+        }
 
         LaunchedEffect(Unit) {
             val prefs = context.getSharedPreferences("dfe_onboarding", Context.MODE_PRIVATE)
@@ -73,6 +87,22 @@ fun App() {
 
             showWidgetOnboarding = !widgetOnboardingDone
             hasUsagePermission = hasUsageStatsPermission(context)
+            hasNotificationPermissionGranted = hasNotificationPermission(context)
+        }
+
+        // Request notification permission after usage permission is granted
+        LaunchedEffect(hasUsagePermission) {
+            if (hasUsagePermission) {
+                val prefs = context.getSharedPreferences("dfe_onboarding", Context.MODE_PRIVATE)
+                val notificationPermissionAsked = prefs.getBoolean("notification_permission_asked", false)
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && !notificationPermissionAsked) {
+                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    prefs.edit {
+                        putBoolean("notification_permission_asked", true)
+                    }
+                }
+            }
         }
 
         // Recheck if permission was granted when user returns into app
@@ -81,6 +111,7 @@ fun App() {
 
                 if (event == Lifecycle.Event.ON_RESUME) {
                     hasUsagePermission = hasUsageStatsPermission(context)
+                    hasNotificationPermissionGranted = hasNotificationPermission(context)
                 }
             }
 

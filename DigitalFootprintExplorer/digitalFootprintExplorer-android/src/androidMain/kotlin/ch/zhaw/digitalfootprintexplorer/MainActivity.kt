@@ -14,8 +14,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
-        // run the worker immediately on app start if we have permission,
-        // so that we can show up-to-date data without waiting for the next scheduled run
+        //ensure that the permissions are granted before starting the worker, otherwise data will be missing
         if (hasUsageStatsPermission(this)) {
             DailyFootprintWorker.runNow(applicationContext)
         }

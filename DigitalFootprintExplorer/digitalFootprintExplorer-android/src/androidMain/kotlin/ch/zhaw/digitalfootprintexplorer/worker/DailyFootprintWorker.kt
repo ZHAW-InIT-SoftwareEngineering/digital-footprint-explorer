@@ -64,6 +64,18 @@ class DailyFootprintWorker(
         Log.d(TAG, "▶ Worker started at $workerStartedAt")
         val app = appContext.applicationContext as DFEApplication
 
+        val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+        val yesterday = now.date.minus(DatePeriod(days = 1))
+
+        val alreadyCalculated = app.gardenStateCalculator.isDailyFootprintCalculated(yesterday)
+
+        // do not re-run the calculation if it already calculated the footprint for yesterday
+        if (alreadyCalculated) {
+            Log.d(TAG, "Worker already ran for yesterday (${yesterday}) — skipping calculation")
+            scheduleNext(appContext)
+            return Result.success()
+        }
+
         /* Calendar-day boundaries: yesterday 00:00 → today 00:00 */
         val (startTime, endTime) = yesterdayBoundaries()
         val fmt = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault())
@@ -109,8 +121,6 @@ class DailyFootprintWorker(
         logEmissions(emissionResult)
 
         /* Garden state */
-        val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
-        val yesterday = now.date.minus(DatePeriod(days = 1))
         val (gardenState, baseline) = app.gardenStateCalculator.calculateGardenState(emissionResult.ghgTotal)
         app.gardenStateCalculator.recordDailyFootprint(
             date              = yesterday,
@@ -263,6 +273,24 @@ class DailyFootprintWorker(
 
     companion object {
         const val TAG = "DFE_Worker"
+
+        /**
+         * Fallback method to trigger the worker immediately.
+         */
+        fun runNow(context: Context) {
+            Log.d(TAG, "Enqueue immediate daily footprint worker")
+
+            val request = OneTimeWorkRequestBuilder<DailyFootprintWorker>()
+                .addTag(TAG)
+                .build()
+
+            WorkManager.getInstance(context).enqueueUniqueWork(
+                "${NEW_WORKER_NAME}_IMMEDIATE",
+                ExistingWorkPolicy.REPLACE,
+                request
+            )
+
+        }
 
         fun scheduleNext(context: Context) {
             val now = Calendar.getInstance()

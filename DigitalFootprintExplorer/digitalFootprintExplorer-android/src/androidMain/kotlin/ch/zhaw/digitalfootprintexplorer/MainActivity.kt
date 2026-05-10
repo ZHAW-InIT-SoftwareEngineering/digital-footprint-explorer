@@ -6,11 +6,19 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
+import ch.zhaw.digitalfootprintexplorer.permission.hasUsageStatsPermission
+import ch.zhaw.digitalfootprintexplorer.worker.DailyFootprintWorker
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+
+        // run the worker immediately on app start if we have permission,
+        // so that we can show up-to-date data without waiting for the next scheduled run
+        if (hasUsageStatsPermission(this)) {
+            DailyFootprintWorker.runNow(applicationContext)
+        }
 
         setContent {
             App()

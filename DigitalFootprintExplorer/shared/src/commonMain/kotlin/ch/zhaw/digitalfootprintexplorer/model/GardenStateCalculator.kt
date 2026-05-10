@@ -97,6 +97,10 @@ class GardenStateCalculator(private val database: DFEDatabase) {
         )
     }
 
+    fun isDailyFootprintCalculated(date: LocalDate): Boolean {
+        return database.dailyFootprintQueries.selectLatest().executeAsOneOrNull()?.date == date.toString()
+    }
+
     private fun fromDeviation(today: Double, baseline: Double): GardenState {
         val percentage = (today - baseline) / baseline
         return when {

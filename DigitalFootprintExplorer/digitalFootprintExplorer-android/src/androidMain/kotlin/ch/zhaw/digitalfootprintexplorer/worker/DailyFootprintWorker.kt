@@ -138,15 +138,7 @@ class DailyFootprintWorker(
         GardenWidget.updateState(appContext, gardenState)
         Log.d(TAG, "✅ Worker finished — widget updated")
 
-        val textForNotification = when(gardenState) {
-            GardenState.FLOURISHING -> appContext.getString(R.string.notification_state_flourishing)
-            GardenState.GROWING    -> appContext.getString(R.string.notification_state_growing)
-            GardenState.STABLE    -> appContext.getString(R.string.notification_state_stable)
-            GardenState.WILTING    -> appContext.getString(R.string.notification_state_wilting)
-            GardenState.WITHERED   -> appContext.getString(R.string.notification_state_withered)
-        }
-
-        showDailyFootprintNotification(textForNotification)
+        showDailyFootprintNotification(gardenState)
 
         //reschedule the next worker
         scheduleNext(appContext)
@@ -225,7 +217,7 @@ class DailyFootprintWorker(
         return yesterdayMidnight to todayMidnight
     }
 
-    private fun showDailyFootprintNotification(text: String) {
+    private fun showDailyFootprintNotification(gardenState: GardenState) {
         // Starting with Android 13 (Tiramisu), apps need the POST_NOTIFICATIONS permission to send notifications.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val permissionGranted = ContextCompat.checkSelfPermission(
@@ -260,10 +252,18 @@ class DailyFootprintWorker(
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
+        val text = when(gardenState) {
+            GardenState.FLOURISHING -> appContext.getString(R.string.notification_state_flourishing)
+            GardenState.GROWING    -> appContext.getString(R.string.notification_state_growing)
+            GardenState.STABLE    -> appContext.getString(R.string.notification_state_stable)
+            GardenState.WILTING    -> appContext.getString(R.string.notification_state_wilting)
+            GardenState.WITHERED   -> appContext.getString(R.string.notification_state_withered)
+        }
+
         val notification = NotificationCompat.Builder(appContext, channelId)
             .setContentTitle(appContext.getString(R.string.notification_title))
             .setContentText(text)
-            .setSmallIcon(R.drawable.garden_widget_preview)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(text))
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
             .build()

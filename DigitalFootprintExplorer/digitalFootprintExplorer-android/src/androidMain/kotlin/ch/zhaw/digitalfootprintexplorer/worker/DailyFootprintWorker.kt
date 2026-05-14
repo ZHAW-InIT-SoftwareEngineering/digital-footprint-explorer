@@ -260,18 +260,10 @@ class DailyFootprintWorker(
             GardenState.WITHERED   -> appContext.getString(R.string.notification_state_withered)
         }
 
-        val drawableGarden = when(gardenState) {
-            GardenState.FLOURISHING -> R.drawable.garden_state_1_flourishing
-            GardenState.GROWING    -> R.drawable.garden_state_2_growing
-            GardenState.STABLE    -> R.drawable.garden_state_3_stable
-            GardenState.WILTING    -> R.drawable.garden_state_4_wilting
-            GardenState.WITHERED   -> R.drawable.garden_state_5_withered
-        }
-
         val notification = NotificationCompat.Builder(appContext, channelId)
             .setContentTitle(appContext.getString(R.string.notification_title))
             .setContentText(text)
-            .setSmallIcon(drawableGarden)
+            .setSmallIcon(R.drawable.garden_widget_preview)
             .setStyle(NotificationCompat.BigTextStyle().bigText(text))
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)

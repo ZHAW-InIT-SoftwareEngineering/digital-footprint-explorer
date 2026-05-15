@@ -45,8 +45,7 @@ class DFEApplication : Application() {
 
         displayBrightnessObserver = DisplayBrightnessObserver(this)
         backgroundProcessTracker = BackgroundProcessTracker(this)
-
-        // Restore widget after update
+        
         restoreWidgetIfUpdated()
 
         TrackingService.start(this)

@@ -69,7 +69,7 @@ class DFEApplication : Application() {
                     val latestState = gardenStateCalculator.getLatestGardenState()
                     if (latestState != null) {
                         GardenWidget.updateState(this@DFEApplication, latestState)
-                        Log.d(TAG, "✅ Widget restored after update")
+                        Log.d(TAG, "Widget restored after update")
                     }
                 } catch (e: Exception) {
                     Log.e(TAG, "Error restoring widget after update", e)

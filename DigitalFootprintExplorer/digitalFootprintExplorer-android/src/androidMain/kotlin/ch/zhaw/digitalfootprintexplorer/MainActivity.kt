@@ -7,6 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import ch.zhaw.digitalfootprintexplorer.permission.hasUsageStatsPermission
+import ch.zhaw.digitalfootprintexplorer.servicelayerplatform.service.TrackingService
 import ch.zhaw.digitalfootprintexplorer.worker.DailyFootprintWorker
 
 class MainActivity : ComponentActivity() {
@@ -22,6 +23,11 @@ class MainActivity : ComponentActivity() {
         setContent {
             App()
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        TrackingService.start(this)
     }
 }
 

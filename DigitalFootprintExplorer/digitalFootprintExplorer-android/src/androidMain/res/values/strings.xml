@@ -52,11 +52,11 @@
     <string name="garden_state_withered">Withered</string>
     <string name="garden_state_unknown">No evaluation yet. Your garden will grow overnight.</string>
     <string name="notification_title">Daily Footprint Notification</string>
-    <string name="notification_state_flourishing">Your garden is thriving</string>
-    <string name="notification_state_growing">Your garden is growing</string>
-    <string name="notification_state_stable">Your garden is stable</string>
-    <string name="notification_state_wilting">Your garden is starting to wilt</string>
-    <string name="notification_state_withered">Your garden has withered</string>
+    <string name="notification_state_flourishing">Your garden is flourishing. Your digital footprint was significantly below your average – keep it up.</string>
+    <string name="notification_state_growing">Your garden is growing. Your digital footprint has improved – keep going.</string>
+    <string name="notification_state_stable">Your garden is stable. Your digital footprint is roughly within your average range.</string>
+    <string name="notification_state_wilting">Your garden is starting to wilt. Your digital footprint was above your average – try to be more mindful today.</string>
+    <string name="notification_state_withered">Your garden has withered. Your digital footprint was significantly above your average – try to be more mindful today.</string>
     <string name="notification_foreground_service_title">DFE is active</string>
     <string name="notification_foreground_service_description">Display brightness and background processes are tracked for your daily footprint.</string>
     <string name="info_tab_label">Info</string>

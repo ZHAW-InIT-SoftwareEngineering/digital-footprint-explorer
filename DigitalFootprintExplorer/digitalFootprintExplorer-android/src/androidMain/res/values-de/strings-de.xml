@@ -51,11 +51,11 @@
     <string name="garden_state_withered">Verdorrt</string>
     <string name="garden_state_unknown">Noch keine Auswertung. Dein Garten wächst über Nacht.</string>
     <string name="notification_title">Tägliche Verbrauchsbenachrichtigung</string>
-    <string name="notification_state_flourishing">Dein Garten blüht auf</string>
-    <string name="notification_state_growing">Dein Garten wächst</string>
-    <string name="notification_state_stable">Dein Garten ist stabil</string>
-    <string name="notification_state_wilting">Dein Garten beginnt zu welken</string>
-    <string name="notification_state_withered">Dein Garten ist vertrocknet</string>
+    <string name="notification_state_flourishing">Dein Garten blüht auf. Dein digitaler Fussabdruck lag deutlich unter deinem Durchschnitt – weiter so.</string>
+    <string name="notification_state_growing">Dein Garten wächst. Dein digitaler Fussabdruck hat sich verbessert – bleib dran.</string>
+    <string name="notification_state_stable">Dein Garten ist stabil. Dein digitaler Fussabdruck liegt etwa im Bereich deines Durchschnitts.</string>
+    <string name="notification_state_wilting">Dein Garten beginnt zu welken. Dein digitaler Fussabdruck lag über deinem Durchschnitt – achte heute bewusster darauf.</string>
+    <string name="notification_state_withered">Dein Garten ist vertrocknet. Dein digitaler Fussabdruck lag deutlich über deinem Durchschnitt – achte heute bewusster darauf.</string>
     <string name="notification_foreground_service_title">DFE ist aktiv</string>
     <string name="notification_foreground_service_description">Displayhelligkeit und Hintergrundprozesse werden für deinen Tageswert erfasst.</string>
     <string name="info_tab_label">Info</string>

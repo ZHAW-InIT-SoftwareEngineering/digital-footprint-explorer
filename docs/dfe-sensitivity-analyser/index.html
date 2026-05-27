@@ -1,0 +1,2287 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DFE Model Sensitivity Analyzer</title>
+<link rel="apple-touch-icon" sizes="180x180" href="favicon/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon/favicon-16x16.png">
+<link rel="manifest" href="favicon/site.webmanifest">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+/* ============================================================
+   DFE MODEL SENSITIVITY ANALYZER — Standalone HTML
+   Digital Footprint Explorer | Bachelorarbeit ZHAW 2026
+   ============================================================
+   EDITIERHINWEISE:
+   - Standardwerte der Kategorien: siehe CATS[] weiter unten
+   - Hintergrundprozesse-Leistungswerte: siehe SERVICES[] weiter unten
+   - Netzwerkwerte: siehe S.nw / S.n4 / S.n5
+   - Backend: alle Kategorien verwenden GB-Proxy (kWh/GB × factor)
+     factor=1 für Standard-CDN; factor=10 für KI-Apps (energieintensiv)
+   ============================================================ */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #1a1a1a;
+  background: #f5f5f5;
+  padding: 24px 16px 60px;
+}
+
+/* ---- Container ---- */
+.app { max-width: 960px; margin: 0 auto; }
+
+/* ---- Karten ---- */
+.card {
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+.sec {
+  font-size: 11px;
+  font-weight: 600;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  margin-bottom: 10px;
+}
+
+/* ---- Raster ---- */
+.pgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+.row2  { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 12px; }
+@media (max-width: 640px) { .row2 { grid-template-columns: 1fr; } }
+
+/* ---- Tabs ---- */
+.tabs { display: flex; gap: 4px; margin: 14px 0; flex-wrap: wrap; }
+.tb {
+  padding: 7px 18px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  background: transparent;
+  color: #666;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background .15s, color .15s;
+}
+.tb:hover:not(:disabled) { background: #f0f0f0; }
+.tb.on { background: #f0f0f0; color: #111; border-color: #ccc; font-weight: 600; }
+.tb:disabled { color: #ccc; cursor: not-allowed; }
+
+/* ---- Panel ---- */
+.pnl { display: none; }
+.pnl.on { display: block; }
+
+/* ---- Formularelemente ---- */
+label.lbl { font-size: 12px; color: #666; margin-bottom: 4px; display: block; }
+input[type="number"], select {
+  padding: 7px 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: inherit;
+  background: #fff;
+  color: #1a1a1a;
+  width: 100%;
+}
+input[type="number"] { width: auto; }
+input[type="range"] {
+  width: 100%;
+  accent-color: #4a90d9;
+  height: 4px;
+  margin-top: 4px;
+}
+select:focus, input:focus { outline: 2px solid #4a90d9; outline-offset: 1px; }
+
+/* ---- Toggles / Checkboxen ---- */
+.tog {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  padding: 7px 12px;
+  background: #f5f5f5;
+  border-radius: 8px;
+  flex-wrap: wrap;
+}
+.tog label { color: #555; cursor: pointer; }
+
+/* ---- Schalter-Buttons (OLED/LCD, Hz) ---- */
+.hzbtn {
+  padding: 5px 14px;
+  border-radius: 7px;
+  border: 1px solid #ddd;
+  background: transparent;
+  color: #666;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background .15s;
+}
+.hzbtn.on { background: #f0f0f0; color: #111; border-color: #bbb; font-weight: 600; }
+
+/* ---- Badges ---- */
+.badge {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.bi  { background: #dbeafe; color: #1d4ed8; }
+.bs  { background: #dcfce7; color: #15803d; }
+.bw  { background: #fef3c7; color: #92400e; }
+.bd  { background: #f3e8ff; color: #7c3aed; }
+
+/* ---- Info-Box ---- */
+.ibox {
+  background: #f8f8f8;
+  border-radius: 7px;
+  padding: 9px 13px;
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 12px;
+  border-left: 3px solid #e0e0e0;
+}
+.ibox.warn { border-left-color: #fbbf24; background: #fffbeb; color: #78350f; }
+
+/* ---- Metrik-Karten ---- */
+.metcard {
+  background: #f8f8f8;
+  border-radius: 8px;
+  padding: 12px 14px;
+  text-align: center;
+}
+.metlbl { font-size: 11px; color: #888; margin-bottom: 4px; }
+.metval { font-family: monospace; font-size: 20px; font-weight: 600; color: #1a1a1a; }
+
+/* ---- Tabellen ---- */
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th {
+  text-align: left;
+  padding: 7px 9px;
+  color: #888;
+  font-weight: 600;
+  font-size: 11px;
+  border-bottom: 1px solid #eee;
+  white-space: nowrap;
+}
+td { padding: 6px 9px; border-bottom: 1px solid #f2f2f2; vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+.mono { font-family: monospace; }
+
+/* ---- Legende ---- */
+.leg { display: flex; gap: 14px; flex-wrap: wrap; font-size: 11px; color: #666; margin-bottom: 8px; }
+.legsq { width: 10px; height: 10px; border-radius: 2px; display: inline-block; margin-right: 4px; vertical-align: middle; }
+
+/* ---- Header ---- */
+.hdr {
+  position: sticky;
+  top: 0;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 10px;
+  padding: 16px;
+  z-index: 9;
+}
+.hdr-title { font-size: 16px; font-weight: 600; font-family: monospace; color: #111; }
+.hdr-sub   { font-size: 12px; color: #999; }
+
+/* ---- Service Toggle Zeile (F3) ---- */
+.svc-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-bottom: 1px solid #f2f2f2;
+}
+.svc-row:last-child { border-bottom: none; }
+.svc-name { font-size: 12px; font-weight: 500; min-width: 160px; color: #333; }
+.svc-aktiv {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #555;
+  cursor: pointer;
+}
+
+/* ---- Responsive Tabelle overflow ---- */
+.tbl-wrap { overflow-x: auto; }
+
+/* ---- Highlightzeile (aktiver Wert in Sensitivitätstabelle) ---- */
+tr.cur { background: #eff6ff; }
+tr.cur td { color: #1d4ed8; }
+
+
+
+.footer {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 11px;
+  color: #bbb;
+}
+
+/* ---- Szenarien ---- */
+.sc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-bottom: 14px; }
+.sc-card { background: #fff; border: 1px solid #e5e5e5; border-radius: 10px; padding: 16px; }
+.sc-title { font-size: 13px; font-weight: 700; color: #1a1a1a; margin-bottom: 4px; }
+.sc-desc  { font-size: 11px; color: #888; margin-bottom: 12px; line-height: 1.5; }
+
+/* ---- Referenzkontext-Karte (F2/F3) ---- */
+.refctx { background: #f8fbff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 14px 16px; margin-bottom: 12px; }
+.refctx-title { font-size: 11px; font-weight: 600; color: #3b82f6; text-transform: uppercase; letter-spacing:.06em; margin-bottom:10px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- HEADER -->
+<div class="hdr">
+  <span class="hdr-title">DFE Model Sensitivity Analyzer</span>
+  <span class="hdr-sub">Digital Footprint Explorer — Berechnungsmodell</span>
+
+</div>
+
+<!-- GLOBALE PARAMETER -->
+<div class="card">
+  <div class="sec">Globale Parameter</div>
+  <div class="pgrid">
+    <div>
+      <label class="lbl">Strommix</label>
+      <select id="sel-sm" style="margin-bottom:6px">
+        <option value="ch">Schweiz — 39.2 g CO₂e/kWh</option>
+        <option value="de">Deutschland — 330 g CO₂e/kWh</option>
+        <option value="global">Global - 458 g CO₂e/kWh</option>
+        <option value="cu">Benutzerdefiniert</option>
+      </select>
+      <div id="sm-custom" style="display:none;gap:6px;align-items:center;font-size:12px;margin-top:4px">
+        <input type="number" id="inp-smc" value="0.200" step="0.001" min="0" style="width:90px">
+        <span style="color:#888">kgCO₂e/kWh</span>
+      </div>
+    </div>
+    <div>
+      <label class="lbl">Ladeverlust Faktor η</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="number" id="inp-lv" value="0.585" step="0.01" min="0.1" max="1" style="width:80px">
+      </div>
+    </div>
+    <div>
+      <label class="lbl">Nutzungsdauer (global)</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="number" id="inp-dur" value="1" step="0.5" min="0" style="width:80px">
+        <span style="font-size:12px;color:#888">Stunden</span>
+      </div>
+      <div style="font-size:11px;color:#aaa;margin-top:4px">gilt für F1, F2 und F3</div>
+    </div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tb on" id="btn-f1" onclick="gTab('f1')">① App-Nutzung</button>
+  <button class="tb"    id="btn-f2" onclick="gTab('f2')">② Display</button>
+  <button class="tb"    id="btn-f3" onclick="gTab('f3')">③ Hintergrund</button>
+  <button class="tb"    id="btn-ge" onclick="gTab('ge')">∑ Gesamtanalyse</button>
+  <button class="tb"    id="btn-sc" onclick="gTab('sc')">◎ Szenarien</button>
+</div>
+
+<!-- ============================================================
+     FAKTOR 1 — APP-NUTZUNG
+     ============================================================ -->
+<div id="pnl-f1" class="pnl on">
+
+  <!-- Netzwerk -->
+  <div class="card">
+    <div class="sec">Netzwerk</div>
+    <div class="row2" style="margin-bottom:12px">
+      <div>
+        <label class="lbl">Aktiver Netzwerktyp</label>
+        <select id="sel-net">
+          <option value="wifi">WiFi</option>
+          <option value="4g">4G</option>
+          <option value="5g">5G</option>
+          <option value="cellular">Cellular</option>
+        </select>
+        <div style="font-size:11px;color:#aaa;margin-top:4px">
+          Effektiv: <strong id="neteff" style="font-family:monospace">0.006</strong> kWh/GB
+        </div>
+      </div>
+    </div>
+    <div style="border-top:1px solid #f0f0f0;padding-top:10px">
+      <div style="font-size:11px;color:#888;font-weight:600;margin-bottom:8px">Netzwerte überschreiben</div>
+      <div style="display:flex;gap:14px;flex-wrap:wrap">
+        <div style="display:flex;gap:6px;align-items:center;font-size:12px">
+          <span style="color:#888;min-width:54px">WiFi</span>
+          <input type="number" id="nw"  value="0.006" step="0.001" min="0" style="width:78px">
+          <span style="color:#aaa">kWh/GB</span>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;font-size:12px">
+          <span style="color:#888;min-width:54px">4G</span>
+          <input type="number" id="n4g" value="0.100" step="0.001" min="0" style="width:78px">
+          <span style="color:#aaa">kWh/GB</span>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;font-size:12px">
+          <span style="color:#888;min-width:54px">5G</span>
+          <input type="number" id="n5g" value="0.010" step="0.001" min="0" style="width:78px">
+          <span style="color:#aaa">kWh/GB</span>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;font-size:12px">
+          <span style="color:#888;min-width:54px">Cellular</span>
+          <input type="number" id="ncell" value="0.055" step="0.001" min="0" style="width:78px">
+          <span style="color:#aaa">kWh/GB</span>
+        </div>
+      </div>
+    </div>
+    <!-- Netz-Visualisierung: Anteil am F1-Total + Sensitivität -->
+    <div style="border-top:1px solid #f0f0f0;padding-top:12px;margin-top:12px">
+      <div class="row2">
+        <!-- Donut: Netz-Anteil am App-Nutzung Total (F1) -->
+        <div>
+          <div style="font-size:11px;color:#888;font-weight:600;margin-bottom:8px">Netz-Anteil am App-Nutzung Total (F1)</div>
+          <div style="display:flex;align-items:center;gap:14px">
+            <div style="position:relative;width:110px;height:110px;flex-shrink:0">
+              <canvas id="ch-net-pie"></canvas>
+            </div>
+            <div id="net-pie-legend" style="font-size:11px;color:#666;display:flex;flex-direction:column;gap:4px"></div>
+          </div>
+        </div>
+        <!-- Sensitivitätstabelle: Netz-Term pro Netzwerktyp -->
+        <div>
+          <div style="font-size:11px;color:#888;font-weight:600;margin-bottom:8px">Netzwerktyp — Sensitivität (F1 Total)</div>
+          <table>
+            <thead><tr>
+              <th>Typ</th>
+              <th style="text-align:right">kWh/GB</th>
+              <th style="text-align:right">Netz (gCO₂e)</th>
+              <th style="text-align:right">F1 Total</th>
+              <th style="text-align:right">vs. aktiv</th>
+            </tr></thead>
+            <tbody id="net-sens-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Kategorien -->
+  <div class="card">
+    <div class="sec">Kategorien — Parameter</div>
+
+    <!-- Einheitliche Werte -->
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+      <div class="tog">
+        <input type="checkbox" id="ckP" style="width:14px;height:14px">
+        <label for="ckP">Einheitliches P_Gerät</label>
+        <input type="number" id="vP" value="1.0" step="0.1" min="0" style="width:68px;display:none">
+        <span id="uP" style="display:none;color:#888;font-size:12px">W</span>
+      </div>
+      <div class="tog">
+        <input type="checkbox" id="ckV" style="width:14px;height:14px">
+        <label for="ckV">Einheitliches Datenvolumen</label>
+        <input type="number" id="vV" value="0.100" step="0.01" min="0" style="width:72px;display:none">
+        <span id="uV" style="display:none;color:#888;font-size:12px">GB/h</span>
+      </div>
+    </div>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th style="min-width:130px">Kategorie</th>
+          <th style="text-align:right;min-width:100px">P_Gerät (W)</th>
+          <th style="text-align:right;min-width:110px">Datenvolumen (GB/h)</th>
+          <th style="text-align:right;min-width:130px">Backend (kWh/GB)</th>
+          <th style="text-align:right;min-width:100px">Faktor</th>
+        </tr></thead>
+        <tbody id="cat-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Ergebnisse F1 -->
+  <div class="card">
+    <div class="sec">Ergebnisse — gCO₂e pro Kategorie (Nutzungsdauer: <span id="dur-lbl">1</span>h)</div>
+    <div class="leg">
+      <span><span class="legsq" style="background:#4a90d9"></span>Gerät</span>
+      <span><span class="legsq" style="background:#8b5cf6"></span>Netz</span>
+      <span><span class="legsq" style="background:#f59e0b"></span>Backend</span>
+    </div>
+    <div style="position:relative;width:100%;height:370px;margin-bottom:14px">
+      <canvas id="ch-f1"></canvas>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>
+          <th>Kategorie</th>
+          <th style="text-align:right;color:#4a90d9">Gerät</th>
+          <th style="text-align:right;color:#8b5cf6">Netz</th>
+          <th style="text-align:right;color:#f59e0b">Backend</th>
+          <th style="text-align:right">Total (gCO₂e)</th>
+          <th style="text-align:right">Anteil</th>
+        </tr></thead>
+        <tbody id="res-body"></tbody>
+      </table>
+    </div>
+    <div style="margin-top:8px;font-size:11px;color:#aaa">
+      Netz: <span id="dur-net">WiFi</span> &nbsp;|&nbsp;
+      Strommix: <span id="dur-sm">39.2</span> g/kWh &nbsp;|&nbsp;
+      η = <span id="dur-lv">0.585</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- ============================================================
+     FAKTOR 2 — DISPLAY
+     ============================================================ -->
+<div id="pnl-f2" class="pnl">
+
+  <div id="f2-note" class="ibox"></div>
+  <div class="row2">
+    <div class="card">
+      <div class="sec">Display Parameter</div>
+      <div style="margin-bottom:16px">
+        <label class="lbl">Maximalleistung P_max</label>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="number" id="inp-pdisp" value="400" step="10" min="0" style="width:90px">
+          <span style="font-size:12px;color:#888">mW</span>
+        </div>
+        <div style="font-size:11px;color:#bbb;margin-top:4px">Leistung bei 100% Helligkeit (P_display = P_max × Helligkeit)</div>
+      </div>
+      <div style="margin-bottom:14px">
+        <label class="lbl">Helligkeit: <strong id="br-lbl">50</strong>%</label>
+        <input type="range" id="sl-br" min="1" max="100" value="50" step="1">
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:#bbb;margin-top:3px">
+          <span>1%</span><span>100%</span>
+        </div>
+      </div>
+      <div style="background:#f8f8f8;border-radius:8px;padding:10px 12px;font-size:12px;color:#666;margin-top:4px">
+        <div style="font-weight:600;margin-bottom:4px;font-size:11px;text-transform:uppercase;letter-spacing:.05em">Formel</div>
+        <div style="font-family:monospace;font-size:12px">P_display = P_max × (Helligkeit / 100)</div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="card">
+        <div class="sec">Ergebnis Display</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+          <div class="metcard">
+            <div class="metlbl">Displayleistung</div>
+            <div class="metval"><span id="f2-pw">—</span> W</div>
+          </div>
+          <div class="metcard">
+            <div class="metlbl">GHG Emissionen</div>
+            <div class="metval" style="font-size:17px"><span id="f2-ghg">—</span> <span style="font-size:12px;color:#888">gCO₂e</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="sec">Helligkeit — Sensitivität (linear)</div>
+        <div style="font-size:11px;color:#888;margin-bottom:8px">P_display = P_max × (Helligkeit / 100)</div>
+        <table><thead><tr>
+          <th>Helligkeit</th>
+          <th style="text-align:right">Faktor</th>
+          <th style="text-align:right">P_Display (W)</th>
+          <th style="text-align:right">GHG (gCO₂e)</th>
+        </tr></thead><tbody id="br-body"></tbody></table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     FAKTOR 3 — HINTERGRUNDPROZESSE
+     ============================================================ -->
+<div id="pnl-f3" class="pnl">
+
+  <div class="ibox">
+    Berechnung: E_Hintergrund (Wh) = Σ (P_Dienst × aktive Dauer) &nbsp;|&nbsp;
+    Aktive Dauer = globale Nutzungsdauer wenn Dienst aktiv.
+    Alle Werte gelten für <strong id="f3-dur">1</strong>h Nutzungsdauer.
+  </div>
+  <div class="row2">
+    <div class="card">
+      <div class="sec">Hintergrunddienste — Konfiguration</div>
+      <div id="svc-list"></div>
+      <div style="margin-top:14px;padding-top:12px;border-top:1px solid #f0f0f0">
+        <div style="font-size:11px;color:#888;font-weight:600;margin-bottom:8px">Leistungswerte (W) — editierbar</div>
+        <div id="svc-power-inputs"></div>
+        <div style="font-size:11px;color:#bbb;margin-top:8px">
+          Quellen: GPS ~300 mW (Carroll & Heiser 2010), Bluetooth ~40 mW
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div class="metcard">
+          <div class="metlbl">F3 Total GHG</div>
+          <div class="metval"><span id="f3-tot">—</span></div>
+          <div style="font-size:11px;color:#888;margin-top:3px">gCO₂e</div>
+        </div>
+        <div class="metcard">
+          <div class="metlbl">Aktive Dienste</div>
+          <div class="metval"><span id="f3-aktiv">0</span></div>
+          <div style="font-size:11px;color:#888;margin-top:3px">von 2</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="sec">GHG pro Dienst</div>
+        <div class="leg">
+          <span><span class="legsq" style="background:#10b981"></span>Aktiv</span>
+          <span><span class="legsq" style="background:#e5e5e5"></span>Inaktiv</span>
+        </div>
+        <div style="position:relative;width:100%;height:200px;margin-bottom:10px">
+          <canvas id="ch-f3"></canvas>
+        </div>
+        <table><thead><tr>
+          <th>Dienst</th>
+          <th style="text-align:right">P (mW)</th>
+          <th style="text-align:right">Status</th>
+          <th style="text-align:right">GHG (gCO₂e)</th>
+        </tr></thead><tbody id="f3-res-body"></tbody></table>
+      </div>
+      <div class="card">
+        <div class="sec">Sensitivität — 1h pro Dienst aktiv</div>
+        <div style="font-size:11px;color:#888;margin-bottom:8px">Unabhängig von Nutzungsdauer — zeigt immer den Wert für 1 Stunde</div>
+        <table><thead><tr>
+          <th>Dienst</th>
+          <th style="text-align:right">P (mW)</th>
+          <th style="text-align:right">1h GHG (gCO₂e)</th>
+        </tr></thead><tbody id="f3-sens-body"></tbody></table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     GESAMTANALYSE
+     ============================================================ -->
+<div id="pnl-ge" class="pnl">
+
+  <div class="card">
+    <div class="sec">Analysemodus</div>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start;margin-bottom:14px">
+      <div class="tog">
+        <input type="radio" id="ge-mode-ref" name="ge-mode" checked style="width:14px;height:14px">
+        <label for="ge-mode-ref">Referenz-App</label>
+      </div>
+      <div class="tog">
+        <input type="radio" id="ge-mode-mix" name="ge-mode" style="width:14px;height:14px">
+        <label for="ge-mode-mix">Nutzungsprofil / Mix</label>
+      </div>
+    </div>
+
+    <!-- Modus: Referenz-App -->
+    <div id="ge-ref-box">
+      <div style="max-width:280px">
+        <label class="lbl">Referenz-App</label>
+        <select id="ge-cat">
+          <option value="vid">Video Streaming</option>
+          <option value="aud">Audio Streaming</option>
+          <option value="soc">Social Media</option>
+          <option value="msg">Messaging</option>
+          <option value="ki">KI-Apps</option>
+          <option value="ema">E-Mail</option>
+          <option value="vc">Video Call</option>
+          <option value="gam">Gaming</option>
+          <option value="nav">Navigation</option>
+          <option value="son">Sonstiges</option>
+        </select>
+      </div>
+      <div style="font-size:11px;color:#888;margin-top:8px">
+        F1 wird nur für die gewählte Kategorie über die globale Nutzungsdauer berechnet.
+        F2 und F3 verwenden ebenfalls dieselbe globale Nutzungsdauer.
+      </div>
+    </div>
+
+    <!-- Modus: Mix -->
+    <div id="ge-mix-box" style="display:none">
+      <div class="ibox" style="margin-bottom:12px">
+        Gib hier die Dauer pro Kategorie in Stunden ein. F1 ergibt sich aus der Summe aller Einträge.
+        F2 und F3 werden auf die <strong>gesamte Mix-Dauer</strong> bezogen.
+      </div>
+
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Kategorie</th>
+              <th style="text-align:right">Dauer (h)</th>
+            </tr>
+          </thead>
+          <tbody id="ge-mix-body"></tbody>
+        </table>
+      </div>
+
+      <div style="margin-top:10px;font-size:11px;color:#888">
+        Gesamtdauer Mix: <strong id="ge-mix-totaldur">0.00</strong> h
+      </div>
+    </div>
+  </div>
+
+  <!-- Cards + Faktorvergleich nebeneinander -->
+  <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:12px;margin-bottom:12px">
+
+    <!-- Linke Spalte: Metric-Cards -->
+    <div class="card" style="display:flex;flex-direction:column;gap:8px;height:100%;">
+      <!-- F1 aufgesplittet -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        <div class="metcard" style="padding:10px 12px">
+          <div class="metlbl" style="font-size:10px">F1 Gerät</div>
+          <div style="font-family:monospace;font-size:16px;font-weight:600;color:#4a90d9"><span id="g-f1-dv">—</span></div>
+          <div style="font-size:10px;color:#bbb;margin-top:2px">gCO₂e</div>
+        </div>
+        <div class="metcard" style="padding:10px 12px">
+          <div class="metlbl" style="font-size:10px">F1 Netz</div>
+          <div style="font-family:monospace;font-size:16px;font-weight:600;color:#8b5cf6"><span id="g-f1-nt">—</span></div>
+          <div style="font-size:10px;color:#bbb;margin-top:2px">gCO₂e</div>
+        </div>
+        <div class="metcard" style="padding:10px 12px">
+          <div class="metlbl" style="font-size:10px">F1 Backend</div>
+          <div style="font-family:monospace;font-size:16px;font-weight:600;color:#f59e0b"><span id="g-f1-bk">—</span></div>
+          <div style="font-size:10px;color:#bbb;margin-top:2px">gCO₂e</div>
+        </div>
+        <div class="metcard" style="padding:10px 12px;border:1px solid #bfdbfe">
+          <div class="metlbl" style="font-size:10px">F1 Total</div>
+          <div style="font-family:monospace;font-size:16px;font-weight:600;color:#1d4ed8"><span id="g-f1">—</span></div>
+          <div style="font-size:10px;color:#bbb;margin-top:2px">gCO₂e</div>
+        </div>
+      </div>
+      <!-- F2, F3, Total -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+        <div class="metcard" style="padding:10px 12px">
+          <div class="metlbl" style="font-size:10px">F2 Display</div>
+          <div style="font-family:monospace;font-size:16px;font-weight:600;color:#ec4899"><span id="g-f2">—</span></div>
+          <div style="font-size:10px;color:#bbb;margin-top:2px">gCO₂e</div>
+        </div>
+        <div class="metcard" style="padding:10px 12px">
+          <div class="metlbl" style="font-size:10px">F3 Hintergrund</div>
+          <div style="font-family:monospace;font-size:16px;font-weight:600;color:#10b981"><span id="g-f3">—</span></div>
+          <div style="font-size:10px;color:#bbb;margin-top:2px">gCO₂e</div>
+        </div>
+        <div class="metcard" style="padding:10px 12px;border:2px solid #d1fae5">
+          <div class="metlbl" style="font-size:10px;font-weight:600">TOTAL</div>
+          <div style="font-family:monospace;font-size:16px;font-weight:600;color:#15803d"><span id="g-tot">—</span></div>
+          <div style="font-size:10px;color:#bbb;margin-top:2px">gCO₂e</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rechte Spalte: Faktorvergleich gestapelt -->
+    <div class="card" style="margin-bottom:0">
+      <div class="sec">Faktorvergleich (gestapelt)</div>
+      <div class="leg">
+        <span><span class="legsq" style="background:#4a90d9"></span>Gerät</span>
+        <span><span class="legsq" style="background:#8b5cf6"></span>Netz</span>
+        <span><span class="legsq" style="background:#f59e0b"></span>Backend</span>
+        <span><span class="legsq" style="background:#ec4899"></span>Display</span>
+        <span><span class="legsq" style="background:#10b981"></span>Hintergrund</span>
+      </div>
+      <div style="position:relative;width:100%;height:200px">
+        <canvas id="ch-ge"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Anteil F1 / F2 / F3 am Total — volle Breite -->
+  <div class="card" style="margin-bottom:12px">
+    <div class="sec">Anteil F1 / F2 / F3 am Total</div>
+    <div style="font-size:11px;color:#888;margin-bottom:10px">Gesamte GHG-Emissionen in gCO₂e inkl. aller Teilkomponenten</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
+      <div style="font-size:11px;font-weight:600;color:#555;text-align:center">Aktuell</div>
+      <div style="font-size:11px;font-weight:600;color:#aaa;text-align:center">DFE Default</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+        <div style="position:relative;width:100%;height:160px"><canvas id="ch-gc"></canvas></div>
+        <div id="pie-legend" style="display:flex;flex-direction:column;gap:4px;font-size:11px;color:#555;width:100%"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+        <div style="position:relative;width:100%;height:160px"><canvas id="ch-gc-def"></canvas></div>
+        <div id="pie-legend-def" style="display:flex;flex-direction:column;gap:4px;font-size:11px;color:#aaa;width:100%"></div>
+      </div>
+    </div>
+    <div style="border-top:1px solid #f0f0f0;padding-top:12px">
+      <div style="font-size:11px;font-weight:600;color:#888;margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">Differenz Aktuell vs. DFE Default</div>
+      <table>
+        <thead><tr>
+          <th></th>
+          <th style="text-align:right">Aktuell</th>
+          <th style="text-align:right">Default</th>
+          <th style="text-align:right">Δ absolut</th>
+          <th style="text-align:right">Δ %</th>
+        </tr></thead>
+        <tbody id="diff-body-tot"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:12px">
+    <div class="sec">Energieverbrauch vom Gerät — Aufteilung nach Faktor</div>
+    <div style="font-size:11px;color:#888;margin-bottom:10px">GHG-Emissionen in gCO₂e (inkl. Ladeverlust η): F1 Gerät-Anteil + F2 Display + F3 Hintergrund</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
+      <div style="font-size:11px;font-weight:600;color:#555;text-align:center">Aktuell</div>
+      <div style="font-size:11px;font-weight:600;color:#aaa;text-align:center">DFE Default</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+        <div style="position:relative;width:100%;height:160px"><canvas id="ch-dev-pie"></canvas></div>
+        <div id="dev-pie-legend" style="display:flex;flex-direction:column;gap:4px;font-size:11px;color:#555;width:100%"></div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+        <div style="position:relative;width:100%;height:160px"><canvas id="ch-dev-pie-def"></canvas></div>
+        <div id="dev-pie-legend-def" style="display:flex;flex-direction:column;gap:4px;font-size:11px;color:#aaa;width:100%"></div>
+      </div>
+    </div>
+    <div style="border-top:1px solid #f0f0f0;padding-top:12px">
+      <div style="font-size:11px;font-weight:600;color:#888;margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em">Differenz Aktuell vs. DFE Default</div>
+      <table>
+        <thead><tr>
+          <th></th>
+          <th style="text-align:right">Aktuell</th>
+          <th style="text-align:right">Default</th>
+          <th style="text-align:right">Δ absolut</th>
+          <th style="text-align:right">Δ %</th>
+        </tr></thead>
+        <tbody id="diff-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="ibox">
+    Modus: <strong id="g-mode-lbl">Referenz-App</strong> &nbsp;|&nbsp;
+    Bezugsdauer F1/F2/F3: <strong id="g-dur">1</strong>h &nbsp;|&nbsp;
+    Strommix: <strong id="g-sm">39.2</strong> g/kWh &nbsp;|&nbsp;
+    η = <strong id="g-lv">0.585</strong>
+  </div>
+</div>
+
+<!-- ============================================================
+     SZENARIEN
+     ============================================================ -->
+<div id="pnl-sc" class="pnl">
+
+  <div class="ibox">
+    Alle drei Szenarien verwenden die globalen Parameter (Strommix, Ladeverlust, Netzwerktyp, Modellwerte der Kategorien).
+    Die Nutzungszeiten, Display-Segmente und Hintergrunddienste sind pro Szenario fix hinterlegt und nicht editierbar.
+  </div>
+
+  <div class="sc-grid" id="sc-cards"></div>
+
+  <!-- Szenariovergleich -->
+  <div class="card">
+    <div class="sec">Szenariovergleich — Aktuell vs. DFE Default</div>
+    <div class="leg">
+      <span><span class="legsq" style="background:#4a90d9"></span>F1 Aktuell</span>
+      <span><span class="legsq" style="background:#ec4899"></span>F2 Aktuell</span>
+      <span><span class="legsq" style="background:#10b981"></span>F3 Aktuell</span>
+      <span><span class="legsq" style="background:#93c5fd;border:1px solid #bbb"></span>F1 Default</span>
+      <span><span class="legsq" style="background:#f9a8d4;border:1px solid #bbb"></span>F2 Default</span>
+      <span><span class="legsq" style="background:#6ee7b7;border:1px solid #bbb"></span>F3 Default</span>
+    </div>
+    <div style="position:relative;width:100%;height:240px">
+      <canvas id="ch-sc-cmp"></canvas>
+    </div>
+    <div style="margin-top:12px;border-top:1px solid #f0f0f0;padding-top:10px">
+      <div style="font-size:11px;font-weight:600;color:#888;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">Δ Total pro Szenario vs. DFE Default</div>
+      <table>
+        <thead><tr>
+          <th>Szenario</th>
+          <th style="text-align:right">Aktuell (gCO₂e)</th>
+          <th style="text-align:right">Default (gCO₂e)</th>
+          <th style="text-align:right">Δ absolut</th>
+          <th style="text-align:right">Δ %</th>
+        </tr></thead>
+        <tbody id="sc-diff-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+</div><!-- /app -->
+
+<div class="footer">DFE Model Sensitivity Analyzer &nbsp;|&nbsp; ZHAW Bachelorarbeit 2026 &nbsp;|&nbsp; Baumann Corinne & Kolali Mehmet Atilla</div>
+
+<!-- ============================================================
+     JAVASCRIPT — BERECHNUNGSMODELL & INTERAKTION
+     ============================================================ -->
+<script>
+/* ------------------------------------------------------------------
+   DATENKONFIGURATION
+   Hier kannst du alle Standardwerte anpassen.
+   ------------------------------------------------------------------ */
+
+/**
+ * CATS — App-Kategorien
+ * id:     eindeutige ID
+ * name:   Anzeigename
+ * p:      Geräteleistung in Watt (exkl. Display)
+ * v:      Datenvolumen in GB/h
+ * b:      Backend-Energieintensität in kWh/GB (DIMPACT Eq. 7+8 / GB-Proxy für alle)
+ * factor: Backend-Multiplikator (1 = Standard; >1 für energieintensivere Backends wie KI)
+ *         Formel: E_backend = V_GB × b × factor × CI × 1000
+ */
+const CATS = [
+  { id:'vid', name:'Video Streaming', p:1.0,  v:0.58,  b:0.055, factor:1  },
+  { id:'aud', name:'Audio Streaming', p:0.5,  v:0.106, b:0.055, factor:1  },
+  { id:'soc', name:'Social Media',    p:1.7,  v:1.451, b:0.055, factor:1  },
+  { id:'msg', name:'Messaging',       p:0.6,  v:0.002, b:0.055, factor:1  },
+  { id:'ki',  name:'KI-Apps',         p:0.5,  v:0.012, b:0.055, factor:10 },
+  { id:'ema', name:'E-Mail',          p:0.5,  v:0.002, b:0.055, factor:1  },
+  { id:'vc',  name:'Video Call',      p:4.0,  v:0.5,   b:0.055, factor:1  },
+  { id:'gam', name:'Gaming',          p:1.3,  v:0.1,   b:0.055, factor:1  },
+  { id:'nav', name:'Navigation',      p:0.9,  v:0.02,  b:0.055, factor:1  },
+  { id:'son', name:'Sonstiges',       p:0.5,  v:0.05,  b:0.055, factor:1  },
+];
+
+/**
+ * SERVICES — Hintergrunddienste (Faktor 3)
+ * id:     eindeutige ID
+ * name:   Anzeigename
+ * p:      Leistung in Watt (editierbar in der UI)
+ * aktiv:  Standardmässig aktiv?
+ * quelle: Literaturquelle für Leistungswert
+ */
+const SERVICES_DEFAULT = [
+  { id:'gps', name:'GPS',       p:0.300, aktiv:false, quelle:'~300 mW' },
+  { id:'bt',  name:'Bluetooth', p:0.040, aktiv:false, quelle:'~40 mW'  },
+];
+
+const NETNAMES = { wifi:'WiFi', '4g':'4G', '5g':'5G' };
+
+/* ------------------------------------------------------------------
+   DFE DEFAULT-WERTE — eingefroren für Vergleichsberechnung
+   Niemals zur Laufzeit verändern.
+   ------------------------------------------------------------------ */
+const CATS_DEFAULT = CATS.map(c => ({ ...c }));
+const DEFAULTS = {
+  schweizerStrommix: 'ch',   // Schweizer Strommix
+  strommix:  0.0392,  // kgCO₂e/kWh
+  globalerStrommix: 0.458,
+  ladeverlust:  0.585,   // Ladeverlust
+  nt:  'wifi',
+  nw:  0.006,  // kWh/GB WiFi  [DIMPACT Table 4, Aslan et al. 2018]
+  n4:  0.100,  // kWh/GB 4G    [DIMPACT Table 4, Pihkola 2018]
+  n5:  0.010,  // kWh/GB 5G    [Golard et al. 2023, IEEE Access]
+  nc:  0.055,  // kWh/GB Cellular
+  pDisp: 0.4,  // W Display-Referenzleistung (400 mW)
+  br:  50,     // % Helligkeit
+  // Hintergrunddienste alle inaktiv per Default
+  services: SERVICES_DEFAULT.map(s => ({ ...s, aktiv:false })),
+};
+
+/* ------------------------------------------------------------------
+   SZENARIEN — fix hinterlegt, nicht editierbar
+   Nutzungszeiten in Stunden pro Kategorie.
+   Display-Segmente: { dt, hz, br, dur } — additive GHG-Berechnung.
+   Hintergrund: { svcId: dauer_h } — aktive Dauer pro Dienst.
+   ------------------------------------------------------------------ */
+const SCENARIOS = [
+  {
+    id: 'avg',
+    name: 'Durchschnittlicher Nutzer',
+    beschreibung: 'Typisches Nutzungsverhalten basierend auf Schweizer Smartphone-Studien. Ausgewogene Mischung aus Streaming, Social Media und Kommunikation. Gesamtnutzungsdauer ca. 3.5h/Tag.',
+    apps: { vid:0.5, aud:0.5, soc:0.8, msg:0.5, ki:0.2, ema:0.2, vc:0.1, gam:0.3, nav:0.2, son:0.2 },
+    display: [
+      { br:80,  dur:1.0 },
+      { br:50,  dur:1.5 },
+      { br:20,  dur:1.0 },
+    ],
+    hintergrund: { gps:0.3, bt:1.0 },
+  },
+  {
+    id: 'stream',
+    name: 'Heavy Streamer',
+    beschreibung: 'Intensiver Medienkonsum mit hohem Anteil an Video-Streaming und Social Media. Hohe Displayhelligkeit (Aussenraum). Gesamtnutzungsdauer ca. 5.4h/Tag.',
+    apps: { vid:2.0, aud:1.0, soc:1.0, msg:0.3, ki:0.1, ema:0.1, vc:0.2, gam:0.5, nav:0.1, son:0.1 },
+    display: [
+      { br:90, dur:2.0 },
+      { br:70, dur:2.0 },
+      { br:30, dur:1.4 },
+    ],
+    hintergrund: { gps:0.1, bt:3.0 },
+  },
+  {
+    id: 'comm',
+    name: 'Kommunikativer Nutzer',
+    beschreibung: 'Fokus auf Kommunikation und produktiver Nutzung. Viel Messaging, E-Mail und Video-Calls, wenig Streaming. Moderates Display-Profil. Gesamtnutzungsdauer ca. 3.7h/Tag.',
+    apps: { vid:0.2, aud:0.2, soc:0.5, msg:1.0, ki:0.3, ema:0.5, vc:0.5, gam:0.1, nav:0.3, son:0.1 },
+    display: [
+      { br:60, dur:1.5 },
+      { br:40, dur:1.2 },
+      { br:20, dur:1.0 },
+    ],
+    hintergrund: { gps:0.3, bt:0.5 },
+  },
+];
+
+
+
+/* ------------------------------------------------------------------
+   ANWENDUNGSZUSTAND
+   ------------------------------------------------------------------ */
+const S = {
+  // Global
+  smp: 'ch',    // 'ch' | 'de' | global |'cu' 
+  smc: 0.2,     // benutzerdefinierter Strommix (kgCO₂e/kWh)
+  lv:  0.585,    // Ladeverlust-Faktor
+  dur: 1,       // Nutzungsdauer (h)
+
+  // Faktor 1 — Netzwerk
+  nt:  'wifi',
+  nw:  0.006,   // WiFi kWh/GB  [DIMPACT Table 4, Aslan et al. 2018]
+  n4:  0.100,   // 4G  kWh/GB   [DIMPACT Table 4, Pihkola 2018]
+  n5:  0.010,   // 5G  kWh/GB   [Golard et al. 2023, IEEE Access]
+  nc:  0.055,   // Cellular kWh/GB
+
+  // Einheitliche Overrides
+  uP:   { on:false, v:1.0    },
+  uV:   { on:false, v:0.1    },
+
+   // Kategorien (Kopie von CATS)
+  cats: CATS.map(c => ({ ...c })),
+
+  // Faktor 2 — Display
+  pDisp: 0.4,  // Referenzleistung in W (= 400 mW bei 33–66% Helligkeit)
+  br: 50,
+
+  // Faktor 3 — Hintergrunddienste
+  services: SERVICES_DEFAULT.map(s => ({ ...s })),
+
+  // Gesamtanalyse
+  ge: {
+    mode: 'ref',     // 'ref' | 'mix'
+    catId: 'vid',    // Referenz-App
+    mix: {           // Nutzungsprofil / Mix in Stunden
+      vid: 0.25,
+      aud: 0.10,
+      soc: 0.15,
+      msg: 0.10,
+      ki:  0.05,
+      ema: 0.05,
+      vc:  0.05,
+      gam: 0.10,
+      nav: 0.05,
+      son: 0.10,
+    }
+  },
+};
+
+/* ------------------------------------------------------------------
+   BERECHNUNGSFUNKTIONEN
+   ------------------------------------------------------------------ */
+
+/** Aktueller Strommix in kgCO₂e/kWh */
+function sm() {
+  switch (S.smp) {
+    case 'ch':
+      return 0.0392;
+    case 'de':
+      return 0.330;
+    case 'global':
+      return 0.458;
+    default:
+      return S.smc;
+  }
+}
+
+/** Aktueller Netzwerk-Energiewert in kWh/GB */
+function nkwh() {
+  return S.nt === 'wifi'     ? S.nw
+       : S.nt === '4g'       ? S.n4
+       : S.nt === '5g'       ? S.n5
+       : S.nt === 'cellular' ? S.nc
+       : S.n5;
+}
+
+/**
+ * Kategorie mit aktiven Overrides (P_Gerät, Datenvolumen).
+ */
+function eff(c) {
+  const p = S.uP.on ? S.uP.v : c.p;
+  const v = S.uV.on ? S.uV.v : c.v;
+  return { ...c, p, v };
+}
+
+/**
+ * Backend-GHG Berechnung — GB-Proxy für alle Kategorien.
+ *
+ * Formel: V_GB [GB] × b [kWh/GB] × factor × CI [kgCO₂/kWh] × 1000 → gCO₂e
+ *
+ * @param {object} e    - effektive Kategorie (nach eff())
+ * @param {number} V_GB - Datenvolumen in GB
+ * @param {number} d    - Nutzungsdauer in h (nicht verwendet, aber für API-Konsistenz)
+ * @param {number} m    - Strommix in kgCO₂e/kWh
+ * @returns {number}    - GHG in gCO₂e
+ */
+function calcBackend(e, V_GB, d, m) {
+  return V_GB * e.b * (e.factor || 1) * m * 1000;
+}
+
+/** Faktor 1: GHG pro Kategorie */
+function calcF1() {
+  const strommix = sm();
+  const globaleStrommix = DEFAULTS.globalerStrommix;
+  const ladeverlust = S.lv;
+  const duration = S.dur;
+  const network = nkwh();
+  return S.cats.map(c => {
+    const e    = eff(c);
+    const V_GB = e.v * duration;
+    // Gerät: (P [W] × t [h] / 1000 [→kWh]) / η × CI × 1000 [→g]
+    const dv = (e.p * duration / 1000) / ladeverlust * strommix * 1000;
+    // Netz: V [GB] × I_netz [kWh/GB] × CI × 1000  (DIMPACT Eq. 2+6)
+    const nt = V_GB * network * globaleStrommix * 1000;
+    // Backend: kategorienspezifisch (s. calcBackend)
+    const bk = calcBackend(e, V_GB, duration, globaleStrommix);
+    return { name:c.name, id:c.id, factor:c.factor||1, dv, nt, bk, tot:dv+nt+bk };
+  });
+}
+
+/**
+ * Lineare Helligkeitsskalierung (0–100% → 0.0–1.0)
+ * P_display = P_max × (br / 100)
+ */
+function brightnessF(br) {
+  return br / 100;
+}
+
+/** Faktor 2: {p [W], ghg [gCO₂e]} */
+function calcF2() {
+  const p   = S.pDisp * brightnessF(S.br);
+  const ghg = (p * S.dur / 1000) / S.lv * sm() * 1000;
+  return { p, ghg };
+}
+
+/** Faktor 2 für beliebige Helligkeit und Dauer (z.B. Szenarien) */
+function calcF2Custom(br, dur) {
+  const p   = S.pDisp * brightnessF(br);
+  const ghg = (p * dur / 1000) / S.lv * sm() * 1000;
+  return { p, ghg };
+}
+
+/** Faktor 3: GHG pro Dienst */
+function calcF3() {
+  const strommix = sm();
+  const ladeverlust = S.lv;
+  const duration = S.dur;
+  return S.services.map(svc => {
+    const ghg = svc.aktiv ? (svc.p * duration / 1000) / ladeverlust * strommix * 1000 : 0;
+    return { ...svc, ghg };
+  });
+}
+
+function calcF3_1h(svc) {
+  return (svc.p * 1.0 / 1000) / S.lv * sm() * 1000;
+}
+
+/**
+ * Schattenberechnung mit eingefrorenen DFE-Defaultwerten.
+ * Verwendet denselben Analysemodus (Referenz-App oder Mix) wie die Hauptberechnung,
+ * aber mit CATS_DEFAULT, DEFAULTS.sm, DEFAULTS.nw, DEFAULTS.lv, DEFAULTS.pDisp, DEFAULTS.br.
+ * Für GHG_Netz und GHG_Backend soll der globale Strommix verwendet werden.
+ * @param {number} usedDur  — Bezugsdauer in h (aus aktueller upGe-Berechnung)
+ * @param {string} mode     — 'ref' | 'mix'
+ * @param {string} catId    — Referenz-App-ID (nur für mode==='ref')
+ * @param {object} mix      — Nutzungsprofil (nur für mode==='mix')
+ * @returns {{ f1dv, f1nt, f1bk, f1t, f2ghg, f2p, f3t, tot }}
+ */
+function calcDefault(usedDur, mode, catId, mix) {
+  const strommix = DEFAULTS.strommix;
+  const globaleStrommix = DEFAULTS.globalerStrommix;
+  const ladeverlust = DEFAULTS.ladeverlust;
+  const network = DEFAULTS.nw;
+
+  function f1Cat(id, dur) {
+    const c = CATS_DEFAULT.find(x => x.id === id) || CATS_DEFAULT[0];
+    const V_GB = c.v * dur;
+    const dv = (c.p * dur / 1000) / ladeverlust * strommix * 1000;
+    const nt = V_GB * network * globaleStrommix * 1000;
+    const bk = calcBackendRaw(c, V_GB, dur, globaleStrommix);
+    return { dv, nt, bk, tot: dv+nt+bk };
+  }
+
+  let f1dv=0, f1nt=0, f1bk=0, f1t=0;
+  if (mode === 'ref') {
+    const r = f1Cat(catId, usedDur);
+    f1dv=r.dv; f1nt=r.nt; f1bk=r.bk; f1t=r.tot;
+  } else {
+    Object.entries(mix).forEach(([id, dur]) => {
+      const d = parseFloat(dur)||0;
+      if (d<=0) return;
+      const r = f1Cat(id, d);
+      f1dv+=r.dv; f1nt+=r.nt; f1bk+=r.bk; f1t+=r.tot;
+    });
+  }
+
+  const pDisp = DEFAULTS.pDisp * brightnessF(DEFAULTS.br);
+  const f2ghg = (pDisp * usedDur / 1000) / ladeverlust * strommix * 1000;
+  const f2p   = pDisp;
+
+  // F3 default: alle Dienste inaktiv → 0
+  const f3t = 0;
+
+  return { f1dv, f1nt, f1bk, f1t, f2ghg, f2p, f3t, tot: f1t+f2ghg+f3t };
+}
+
+/**
+ * Backend-GHG ohne globalen State — für Schattenberechnung.
+ */
+function calcBackendRaw(c, V_GB, d, m) {
+  return V_GB * c.b * (c.factor || 1) * m * 1000;
+}
+
+/**
+ * Berechnet F1 für eine einzelne Kategorie mit gegebener Dauer.
+ * Verwendet die aktuellen globalen Parameter (Strommix, Ladeverlust, Netzwerktyp, Modellwerte).
+ * @param {string} catId - Kategorie-ID aus CATS
+ * @param {number} dur   - Nutzungsdauer in Stunden
+ * @returns {number}     - GHG in gCO₂e
+ */
+function calcF1forCat(catId, dur) {
+  const stormmix = sm();
+  const globalerStrommix = DEFAULTS.globalerStrommix;
+  const ladeverlust = S.lv;
+  const network = nkwh();
+  const c = S.cats.find(x => x.id === catId) || S.cats[0];
+  const e = eff(c);
+  const V_GB = e.v * dur;
+  const dv = (e.p * dur / 1000) / ladeverlust * stormmix * 1000;
+  const nt = V_GB * network * globalerStrommix * 1000;
+  const bk = calcBackend(e, V_GB, dur, globalerStrommix);
+  return dv + nt + bk;
+}
+
+/**
+ * Berechnet F1-Komponenten für eine einzelne Kategorie.
+ * @param {string} catId
+ * @param {number} dur
+ * @returns {{ dv:number, nt:number, bk:number, tot:number, cat:object }}
+ */
+function calcF1PartsForCat(catId, dur) {
+  const stormmix = sm();
+  const globalerStrommix = DEFAULTS.globalerStrommix;
+  const ladeverlust = S.lv;
+  const network = nkwh();
+  const c = S.cats.find(x => x.id === catId) || S.cats[0];
+  const e = eff(c);
+
+  const V_GB = e.v * dur;
+  const dv = (e.p * dur / 1000) / ladeverlust * stormmix * 1000;
+  const nt = V_GB * network * globalerStrommix * 1000;
+  const bk = calcBackend(e, V_GB, dur, globalerStrommix);
+
+  return { dv, nt, bk, tot: dv + nt + bk, cat: c };
+}
+
+/**
+ * Berechnet F1-Komponenten für ein Nutzungsprofil / Mix.
+ * mix = { catId: dauer_h }
+ * @param {object} mix
+ * @returns {{ dv:number, nt:number, bk:number, tot:number, totalDur:number }}
+ */
+function calcF1PartsForMix(mix) {
+  let dv = 0, nt = 0, bk = 0, totalDur = 0;
+
+  Object.entries(mix).forEach(([catId, dur]) => {
+    const d = parseFloat(dur) || 0;
+    if (d <= 0) return;
+
+    const r = calcF1PartsForCat(catId, d);
+    dv += r.dv;
+    nt += r.nt;
+    bk += r.bk;
+    totalDur += d;
+  });
+
+  return { dv, nt, bk, tot: dv + nt + bk, totalDur };
+}
+
+/**
+ * Berechnet F2 für ein Display-Segment-Array.
+ * Jedes Segment: { br, dur }
+ * @param {Array} segments
+ * @returns {number} - GHG in gCO₂e
+ */
+function calcF2forSegments(segments) {
+  return segments.reduce((sum, seg) => {
+    return sum + calcF2Custom(seg.br, seg.dur).ghg;
+  }, 0);
+}
+
+/**
+ * Berechnet F3 für ein Objekt { svcId: dauer_h }.
+ * @param {object} svcDurations - z.B. { gps:0.3, bt:1.0 }
+ * @returns {number} - GHG in gCO₂e
+ */
+function calcF3forDurations(svcDurations) {
+  const stormmix = sm();
+  const ladeverlust = S.lv;
+  return SERVICES_DEFAULT.reduce((sum, svc) => {
+    const dur = svcDurations[svc.id] || 0;
+    if (dur <= 0) return sum;
+    return sum + (svc.p * dur / 1000) / ladeverlust * stormmix * 1000;
+  }, 0);
+}
+
+/** F2 für Szenario-Segmente mit Default-Parametern (DEFAULTS.sm, DEFAULTS.lv, DEFAULTS.pDisp) */
+function calcF2forSegments_default(segments) {
+  return segments.reduce((sum, seg) => {
+    const p = DEFAULTS.pDisp * brightnessF(seg.br);
+    return sum + (p * seg.dur / 1000) / DEFAULTS.ladeverlust * DEFAULTS.strommix * 1000;
+  }, 0);
+}
+
+/** F3 für Szenario-Hintergrunddauern mit Default-Parametern */
+function calcF3forDurations_default(svcDurations) {
+  return SERVICES_DEFAULT.reduce((sum, svc) => {
+    const dur = svcDurations[svc.id] || 0;
+    if (dur <= 0) return sum;
+    return sum + (svc.p * dur / 1000) / DEFAULTS.ladeverlust * DEFAULTS.strommix * 1000;
+  }, 0);
+}
+
+/**
+ * Berechnet alle drei Faktoren für ein Szenario-Objekt.
+ * @param {object} sc - SCENARIOS Eintrag
+ * @returns {{ f1, f2, f3, tot }}
+ */
+function calcScenario(sc) {
+  const f1 = Object.entries(sc.apps).reduce((sum, [id, dur]) => {
+    return sum + calcF1forCat(id, dur);
+  }, 0);
+  const f2  = calcF2forSegments(sc.display);
+  const f3  = calcF3forDurations(sc.hintergrund);
+  return { f1, f2, f3, tot: f1 + f2 + f3 };
+}
+
+/* ------------------------------------------------------------------
+   TABELLENZELLEN FÜR BACKEND-PARAMETER
+   ------------------------------------------------------------------ */
+
+/** Backend kWh/GB Zelle — editierbarer Wert */
+function renderBkCell(c) {
+  return `<td style="text-align:right">
+    <div style="display:flex;align-items:center;gap:3px;justify-content:flex-end">
+      <input type="number" value="${c.b}" step="0.0001" min="0"
+        style="width:82px;text-align:right;font-size:12px" data-c="${c.id}" data-f="b">
+      <span style="font-size:10px;color:#888;margin-left:2px">kWh/GB</span>
+    </div>
+  </td>`;
+}
+
+/** Faktor Zelle — editierbarer Multiplikator */
+function renderFactorCell(c) {
+  return `<td style="text-align:right">
+    <div style="display:flex;align-items:center;gap:3px;justify-content:flex-end">
+      <input type="number" value="${c.factor || 1}" step="1" min="1"
+        style="width:60px;text-align:right;font-size:12px" data-c="${c.id}" data-f="factor">
+      <span style="font-size:10px;color:#888;margin-left:2px">×</span>
+    </div>
+  </td>`;
+}
+
+/* ------------------------------------------------------------------
+   CHART-INSTANZEN
+   ------------------------------------------------------------------ */
+let cF1=null, cGe=null, cGc=null, cF3=null, cNetPie=null, cScCmp=null, cDevPie=null, cGcDef=null, cDevPieDef=null;
+
+function initCharts() {
+  Chart.defaults.font.size = 11;
+  Chart.defaults.color = '#888';
+
+  cF1 = new Chart(document.getElementById('ch-f1'), {
+    type: 'bar',
+    data: { labels:[], datasets:[
+      { label:'Gerät',   data:[], backgroundColor:'#4a90d9', stack:'s' },
+      { label:'Netz',    data:[], backgroundColor:'#8b5cf6', stack:'s' },
+      { label:'Backend', data:[], backgroundColor:'#f59e0b', stack:'s' },
+    ]},
+    options: {
+      indexAxis: 'y', responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display:false },
+        tooltip:{ callbacks:{ footer: it => 'Total: '+it.reduce((s,i)=>s+i.parsed.x,0).toFixed(5)+' gCO₂e' }}},
+      scales:{ x:{ stacked:true, grid:{ color:'rgba(0,0,0,0.06)' }}, y:{ stacked:true }}
+    }
+  });
+
+  // Netzwerk — Donut: Netz-Anteil am F1-Total (Gerät, Netz, Backend)
+  cNetPie = new Chart(document.getElementById('ch-net-pie'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Gerät', 'Netz', 'Backend'],
+      datasets:[{
+        data: [0,0,0],
+        backgroundColor: ['#4a90d9','#8b5cf6','#f59e0b'],
+        borderWidth: 2,
+        borderColor: '#fff',
+        hoverOffset: 4,
+      }]
+    },
+    options:{
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '60%',
+      plugins:{
+        legend:{ display:false },
+        tooltip:{
+          callbacks:{
+            label: ctx => {
+              const total = ctx.dataset.data.reduce((a,b)=>a+b,0);
+              const pct   = total > 0 ? (ctx.parsed/total*100).toFixed(1) : '0.0';
+              return ` ${ctx.label}: ${ctx.parsed.toFixed(4)} gCO₂e (${pct}%)`;
+            }
+          }
+        }
+      }
+    }
+  });
+
+  cGe = new Chart(document.getElementById('ch-ge'), {
+    type: 'bar',
+    data: { labels:['F1 App-Nutzung','F2 Display','F3 Hintergrund'],
+      datasets:[
+        { label:'Gerät',       data:[0,0,0], backgroundColor:'#4a90d9', stack:'s' },
+        { label:'Netz',        data:[0,0,0], backgroundColor:'#8b5cf6', stack:'s' },
+        { label:'Backend',     data:[0,0,0], backgroundColor:'#f59e0b', stack:'s' },
+        { label:'Display',     data:[0,0,0], backgroundColor:'#ec4899', stack:'s' },
+        { label:'Hintergrund', data:[0,0,0], backgroundColor:'#10b981', stack:'s' },
+      ]},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display:false }},
+      scales:{ x:{ stacked:true }, y:{ stacked:true, grid:{ color:'rgba(0,0,0,0.06)' }}}
+    }
+  });
+
+  cGc = new Chart(document.getElementById('ch-gc'), {
+    type: 'doughnut',
+    data: {
+      labels: ['App-Nutzung (F1)', 'Display (F2)', 'Hintergrund (F3)'],
+      datasets:[{
+        data: [0, 0, 0],
+        backgroundColor: ['#4a90d9', '#ec4899', '#10b981'],
+        borderWidth: 2,
+        borderColor: '#fff',
+        hoverOffset: 6,
+      }]
+    },
+    options:{
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '55%',
+      plugins:{
+        legend:{ display: false },
+        tooltip:{
+          callbacks:{
+            label: ctx => ` ${ctx.label}: ${ctx.parsed.toFixed(4)} gCO₂e (${ctx.dataset.data.reduce((a,b)=>a+b,0)>0 ? (ctx.parsed/ctx.dataset.data.reduce((a,b)=>a+b,0)*100).toFixed(1) : 0}%)`
+          }
+        }
+      }
+    }
+  });
+
+  cDevPie = new Chart(document.getElementById('ch-dev-pie'), {
+    type: 'doughnut',
+    data: {
+      labels: ['F1 Gerät (App)', 'F2 Display', 'F3 Hintergrund'],
+      datasets:[{
+        data: [0, 0, 0],
+        backgroundColor: ['#4a90d9', '#ec4899', '#10b981'],
+        borderWidth: 2,
+        borderColor: '#fff',
+        hoverOffset: 6,
+      }]
+    },
+    options:{
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '55%',
+      plugins:{
+        legend:{ display: false },
+        tooltip:{
+          callbacks:{
+            label: ctx => {
+              const tot = ctx.dataset.data.reduce((a,b)=>a+b,0);
+              const pct = tot > 0 ? (ctx.parsed/tot*100).toFixed(1) : '0.0';
+              return ` ${ctx.label}: ${ctx.parsed.toFixed(4)} gCO₂e (${pct}%)`;
+            }
+          }
+        }
+      }
+    }
+  });
+
+  const defCols = ['#93c5fd','#f9a8d4','#6ee7b7'];
+  const defDoughnutOpts = (lbls) => ({
+    type: 'doughnut',
+    data: { labels: lbls, datasets:[{ data:[0,0,0], backgroundColor:defCols, borderWidth:2, borderColor:'#fff', hoverOffset:4 }]},
+    options:{
+      responsive:true, maintainAspectRatio:false, cutout:'55%',
+      plugins:{ legend:{ display:false },
+        tooltip:{ callbacks:{ label: ctx => {
+          const tot=ctx.dataset.data.reduce((a,b)=>a+b,0);
+          const pct=tot>0?(ctx.parsed/tot*100).toFixed(1):'0.0';
+          return ` ${ctx.label}: ${ctx.parsed.toFixed(4)} gCO₂e (${pct}%)`;
+        }}}}
+    }
+  });
+
+  cGcDef     = new Chart(document.getElementById('ch-gc-def'),       defDoughnutOpts(['App-Nutzung (F1)','Display (F2)','Hintergrund (F3)']));
+  cDevPieDef = new Chart(document.getElementById('ch-dev-pie-def'),  defDoughnutOpts(['F1 Gerät (App)','F2 Display','F3 Hintergrund']));
+
+  cF3 = new Chart(document.getElementById('ch-f3'), {
+    type: 'bar',
+    data: { labels:[], datasets:[{ label:'GHG', data:[], backgroundColor:[], borderRadius:3 }]},
+    options:{
+      indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display:false }},
+      scales:{ x:{ grid:{ color:'rgba(0,0,0,0.06)' }}, y:{} }
+    }
+  });
+
+  // Szenarien — Vergleichsbalken
+  cScCmp = new Chart(document.getElementById('ch-sc-cmp'), {
+    type: 'bar',
+    data: {
+      labels: SCENARIOS.map(s => s.name),
+      datasets: [
+        { label:'F1 Aktuell', data:[0,0,0], backgroundColor:'#4a90d9', stack:'cur' },
+        { label:'F2 Aktuell', data:[0,0,0], backgroundColor:'#ec4899', stack:'cur' },
+        { label:'F3 Aktuell', data:[0,0,0], backgroundColor:'#10b981', stack:'cur' },
+        { label:'F1 Default', data:[0,0,0], backgroundColor:'#93c5fd', stack:'def' },
+        { label:'F2 Default', data:[0,0,0], backgroundColor:'#f9a8d4', stack:'def' },
+        { label:'F3 Default', data:[0,0,0], backgroundColor:'#6ee7b7', stack:'def' },
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display:false },
+        tooltip:{ callbacks:{ footer: it => {
+          const stackTot = it.reduce((s,i)=>s+i.parsed.y,0);
+          return 'Stack Total: '+stackTot.toFixed(4)+' gCO₂e';
+        }}}},
+      scales:{ x:{ stacked:true }, y:{ stacked:true, grid:{ color:'rgba(0,0,0,0.06)' }}}
+    }
+  });
+}
+
+/* ------------------------------------------------------------------
+   UPDATE-FUNKTIONEN
+   ------------------------------------------------------------------ */
+
+function upAll() { upGlobal(); upF1(); upF2(); upF3(); upGe(); upSc(); }
+
+function upGlobal() {
+  document.getElementById('f3-dur').textContent  = S.dur;
+}
+
+function upF1() {
+  const r = calcF1();
+  const n = nkwh(), m = sm();
+
+  document.getElementById('neteff').textContent  = n.toFixed(4);
+  document.getElementById('dur-lbl').textContent = S.dur;
+  document.getElementById('dur-net').textContent = NETNAMES[S.nt];
+  document.getElementById('dur-sm').textContent  = (m*1000).toFixed(0);
+  document.getElementById('dur-lv').textContent  = S.lv;
+
+  // Kategorientabelle neu aufbauen
+  const cb = document.getElementById('cat-body');
+  cb.innerHTML = '';
+  S.cats.forEach(c => {
+    const tr = document.createElement('tr');
+
+    // P_Gerät Zelle
+    const pCell = S.uP.on
+      ? `<td style="text-align:right"><span class="mono" style="color:#bbb">${S.uP.v.toFixed(2)}</span></td>`
+      : `<td style="text-align:right"><input type="number" value="${c.p}" step="0.1" min="0"
+           style="width:70px;text-align:right;font-size:12px" data-c="${c.id}" data-f="p"></td>`;
+
+    // Datenvolumen Zelle
+    const vCell = S.uV.on
+      ? `<td style="text-align:right"><span class="mono" style="color:#bbb">${S.uV.v.toFixed(4)}</span></td>`
+      : `<td style="text-align:right"><input type="number" value="${c.v}" step="0.001" min="0"
+           style="width:78px;text-align:right;font-size:12px" data-c="${c.id}" data-f="v"></td>`;
+
+    tr.innerHTML = `
+      <td style="font-size:12px">${c.name}</td>
+      ${pCell}
+      ${vCell}
+      ${renderBkCell(c)}
+      ${renderFactorCell(c)}`;
+    cb.appendChild(tr);
+  });
+
+  // Inline-Events für alle Kategorie-Inputs (p, v, b, factor)
+  cb.querySelectorAll('input[data-c]').forEach(inp => {
+    inp.addEventListener('change', e => {
+      const id  = e.target.dataset.c;
+      const fld = e.target.dataset.f;
+      const val = parseFloat(e.target.value) || 0;
+      S.cats = S.cats.map(c => c.id === id ? { ...c, [fld]:val } : c);
+      upAll();
+    });
+  });
+
+  // Ergebnistabelle
+  let td=0, tn=0, tb=0, tt=0;
+  r.forEach(x => { td+=x.dv; tn+=x.nt; tb+=x.bk; tt+=x.tot; });
+
+  const rb = document.getElementById('res-body');
+  rb.innerHTML = '';
+  r.forEach(x => {
+    const pct  = tt > 0 ? (x.tot/tt*100).toFixed(1) : '0.0';
+    const tr   = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="font-size:12px">${x.name}</td>
+      <td class="mono" style="text-align:right;color:#4a90d9">${x.dv.toFixed(5)}</td>
+      <td class="mono" style="text-align:right;color:#8b5cf6">${x.nt.toFixed(5)}</td>
+      <td class="mono" style="text-align:right;color:#f59e0b">${x.bk.toFixed(5)}</td>
+      <td class="mono" style="text-align:right;font-weight:600">${x.tot.toFixed(5)}</td>
+      <td style="text-align:right;color:#aaa;font-size:11px">${pct}%</td>`;
+    rb.appendChild(tr);
+  });
+
+  // Summenzeile
+  const tot = document.createElement('tr');
+  tot.style.borderTop = '2px solid #eee';
+  tot.innerHTML = `
+    <td style="font-weight:600;font-size:12px">Total F1</td>
+    <td class="mono" style="text-align:right;font-weight:600;color:#4a90d9">${td.toFixed(5)}</td>
+    <td class="mono" style="text-align:right;font-weight:600;color:#8b5cf6">${tn.toFixed(5)}</td>
+    <td class="mono" style="text-align:right;font-weight:600;color:#f59e0b">${tb.toFixed(5)}</td>
+    <td class="mono" style="text-align:right;font-weight:600;color:#15803d">${(td+tn+tb).toFixed(5)}</td>
+    <td style="text-align:right;color:#aaa;font-size:11px">100%</td>`;
+  rb.appendChild(tot);
+
+  // Chart
+  if (cF1) {
+    cF1.data.labels           = r.map(x => x.name);
+    cF1.data.datasets[0].data = r.map(x => +x.dv.toFixed(6));
+    cF1.data.datasets[1].data = r.map(x => +x.nt.toFixed(6));
+    cF1.data.datasets[2].data = r.map(x => +x.bk.toFixed(6));
+    cF1.update('none');
+  }
+
+  // Netzwerk-Visualisierung aktualisieren
+  upNetVis(r);
+}
+
+/**
+ * Netzwerk-Visualisierung:
+ * 1) Donut: Gerät / Netz / Backend Anteile am F1-Total
+ * 2) Sensitivitätstabelle: Netz-Term + F1-Total über alle 3 Netzwerktypen
+ */
+function upNetVis(r1) {
+  const m  = sm();
+  const dv = r1.reduce((s,x) => s+x.dv, 0);
+  const nt = r1.reduce((s,x) => s+x.nt, 0);
+  const bk = r1.reduce((s,x) => s+x.bk, 0);
+  const f1Total = dv + nt + bk;
+
+  // 1) Donut aktualisieren (nur F1-Komponenten)
+  if (cNetPie) {
+    cNetPie.data.datasets[0].data = [+dv.toFixed(6), +nt.toFixed(6), +bk.toFixed(6)];
+    cNetPie.update();
+  }
+
+  // Custom Legende neben Donut
+  const pieDefs = [
+    { label:'Gerät',   v:dv, col:'#4a90d9' },
+    { label:'Netz',    v:nt, col:'#8b5cf6' },
+    { label:'Backend', v:bk, col:'#f59e0b' },
+  ];
+  const legEl = document.getElementById('net-pie-legend');
+  if (legEl) {
+    legEl.innerHTML = pieDefs.map(x => {
+      const pct    = f1Total > 0 ? (x.v/f1Total*100).toFixed(1) : '0.0';
+      const isNetz = x.label === 'Netz';
+      return `<span style="display:flex;align-items:center;gap:4px;${isNetz?'font-weight:600;color:#1a1a1a':''}">
+        <span style="width:8px;height:8px;border-radius:2px;background:${x.col};flex-shrink:0"></span>
+        ${x.label}: <span style="font-family:monospace">${x.v.toFixed(4)}</span>
+        <span style="color:#bbb">(${pct}%)</span>
+      </span>`;
+    }).join('');
+  }
+
+  // 2) Sensitivitätstabelle: alle 3 Typen durchrechnen
+  const netTypes = [
+    { key:'wifi',     label:'WiFi',     i: S.nw },
+    { key:'4g',       label:'4G',       i: S.n4 },
+    { key:'5g',       label:'5G',       i: S.n5 },
+    { key:'cellular', label:'Cellular', i: S.nc },
+  ];
+
+  // Nicht-Netz-Anteil von F1 (Gerät + Backend) — bleibt über Typen konstant
+  const nonNet = dv + bk;
+  const curN   = nkwh();
+
+  const tbody = document.getElementById('net-sens-body');
+  if (tbody) {
+    tbody.innerHTML = '';
+    netTypes.forEach(t => {
+      // Netz-Term skaliert proportional zu I_netz: ntNew = nt / curN * t.i
+      const ntNew  = curN > 0 ? nt / curN * t.i : 0;
+      const totNew = nonNet + ntNew;
+      const diff   = f1Total > 0 ? (totNew - f1Total) / f1Total * 100 : 0;
+      const isActive = t.key === S.nt;
+      const tr = document.createElement('tr');
+      if (isActive) tr.className = 'cur';
+      tr.innerHTML = `
+        <td style="font-size:12px">${t.label}${isActive?' ◀':''}</td>
+        <td class="mono" style="text-align:right">${t.i.toFixed(4)}</td>
+        <td class="mono" style="text-align:right;color:#8b5cf6">${ntNew.toFixed(4)}</td>
+        <td class="mono" style="text-align:right">${totNew.toFixed(4)}</td>
+        <td class="mono" style="text-align:right;color:${diff > 1 ? '#dc2626': diff < -1 ? '#15803d':'#bbb'}">
+          ${isActive ? '—' : (diff>=0?'+':'')+diff.toFixed(1)+'%'}
+        </td>`;
+      tbody.appendChild(tr);
+    });
+  }
+}
+
+function upF2() {
+  const { p, ghg } = calcF2();
+
+  document.getElementById('f2-pw').textContent  = p.toFixed(3);
+  document.getElementById('f2-ghg').textContent = ghg.toFixed(4);
+  document.getElementById('br-lbl').textContent = S.br;
+
+  const note = document.getElementById('f2-note');
+  note.textContent = `P_display = ${(S.pDisp*1000).toFixed(0)} mW × ${(S.br/100).toFixed(2)} = ${(p*1000).toFixed(0)} mW`;
+
+  // Helligkeit — lineare Sensitivitätstabelle (5 Stufen)
+  const brt = document.getElementById('br-body');
+  brt.innerHTML = '';
+  [10, 25, 50, 75, 100].forEach(br => {
+    const f    = br / 100;
+    const pp   = S.pDisp * f;
+    const gg   = (pp * S.dur / 1000) / S.lv * sm() * 1000;
+    const cur  = S.br === br;
+    const tr   = document.createElement('tr');
+    if (cur) tr.className = 'cur';
+    tr.innerHTML = `<td>${br}%${cur?' ◀':''}</td>
+      <td class="mono" style="text-align:right">${f.toFixed(2)}</td>
+      <td class="mono" style="text-align:right">${pp.toFixed(3)}</td>
+      <td class="mono" style="text-align:right">${gg.toFixed(4)}</td>`;
+    brt.appendChild(tr);
+  });
+}
+
+function upF3() {
+  const r3    = calcF3();
+  const tot   = r3.reduce((s,x) => s + x.ghg, 0);
+  const aktiv = r3.filter(x => x.aktiv).length;
+
+  document.getElementById('f3-tot').textContent   = tot.toFixed(4);
+  document.getElementById('f3-aktiv').textContent = aktiv;
+
+  const svcList = document.getElementById('svc-list');
+  const svcPow  = document.getElementById('svc-power-inputs');
+  svcList.innerHTML = '';
+  svcPow.innerHTML  = '';
+
+  S.services.forEach(svc => {
+    const row = document.createElement('div');
+    row.className = 'svc-row';
+    row.innerHTML = `
+      <label class="svc-aktiv">
+        <input type="checkbox" ${svc.aktiv?'checked':''} data-svc="${svc.id}" class="svc-ck" style="width:15px;height:15px">
+        <span class="svc-name">${svc.name}</span>
+      </label>
+      <span style="font-size:11px;color:#bbb;margin-left:auto">${svc.aktiv ? calcF3_1h(svc).toFixed(4)+' gCO₂e/h':'inaktiv'}</span>`;
+    svcList.appendChild(row);
+
+    const pi = document.createElement('div');
+    pi.style.cssText = 'display:flex;gap:8px;align-items:center;font-size:12px;margin-bottom:6px';
+    pi.innerHTML = `
+      <span style="color:#888;min-width:170px">${svc.name}</span>
+      <input type="number" value="${(svc.p*1000).toFixed(0)}" step="1" min="0"
+        data-svcpow="${svc.id}" style="width:74px;text-align:right;font-size:12px">
+      <span style="color:#aaa">mW</span>
+      <span style="color:#ddd;font-size:11px">${svc.quelle}</span>`;
+    svcPow.appendChild(pi);
+  });
+
+  svcList.querySelectorAll('.svc-ck').forEach(ck => {
+    ck.addEventListener('change', e => {
+      const id = e.target.dataset.svc;
+      S.services = S.services.map(s => s.id===id ? {...s, aktiv:e.target.checked} : s);
+      upAll();
+    });
+  });
+  svcPow.querySelectorAll('input[data-svcpow]').forEach(inp => {
+    inp.addEventListener('change', e => {
+      const id  = e.target.dataset.svcpow;
+      const val = (parseFloat(e.target.value) || 0) / 1000;
+      S.services = S.services.map(s => s.id===id ? {...s, p:val} : s);
+      upAll();
+    });
+  });
+
+  const rb3 = document.getElementById('f3-res-body');
+  rb3.innerHTML = '';
+  r3.forEach(x => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="font-size:12px">${x.name}</td>
+      <td class="mono" style="text-align:right">${(x.p*1000).toFixed(0)}</td>
+      <td style="text-align:right">
+        <span class="badge" style="background:${x.aktiv?'#d1fae5':'#f3f4f6'};color:${x.aktiv?'#15803d':'#888'}">
+          ${x.aktiv?'Aktiv':'Inaktiv'}
+        </span>
+      </td>
+      <td class="mono" style="text-align:right;font-weight:${x.aktiv?600:400};color:${x.aktiv?'#15803d':'#bbb'}">${x.ghg.toFixed(4)}</td>`;
+    rb3.appendChild(tr);
+  });
+
+  const sens = document.getElementById('f3-sens-body');
+  sens.innerHTML = '';
+  S.services.forEach(svc => {
+    const g1h = calcF3_1h(svc);
+    const tr  = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="font-size:12px">${svc.name}</td>
+      <td class="mono" style="text-align:right">${(svc.p*1000).toFixed(0)}</td>
+      <td class="mono" style="text-align:right">${g1h.toFixed(4)}</td>`;
+    sens.appendChild(tr);
+  });
+
+  if (cF3) {
+    cF3.data.labels           = S.services.map(s => s.name);
+    cF3.data.datasets[0].data = r3.map(x => +x.ghg.toFixed(6));
+    cF3.data.datasets[0].backgroundColor = r3.map(x => x.aktiv ? '#10b981' : '#e5e7eb');
+    cF3.update('none');
+  }
+
+}
+
+function upGe() {
+  const m = sm();
+  const f3r = calcF3();
+
+  let f1dv = 0, f1nt = 0, f1bk = 0, f1t = 0;
+  let usedDur = S.dur;
+
+  if (S.ge.mode === 'ref') {
+    const f1 = calcF1PartsForCat(S.ge.catId, S.dur);
+    f1dv = f1.dv;
+    f1nt = f1.nt;
+    f1bk = f1.bk;
+    f1t  = f1.tot;
+    usedDur = S.dur;
+  } else {
+    const mixRes = calcF1PartsForMix(S.ge.mix);
+    f1dv = mixRes.dv;
+    f1nt = mixRes.nt;
+    f1bk = mixRes.bk;
+    f1t  = mixRes.tot;
+    usedDur = mixRes.totalDur || 0;
+  }
+
+  // F2 und F3 auf gleiche Bezugsdauer wie Gesamtanalyse
+  const oldDur = S.dur;
+  S.dur = usedDur > 0 ? usedDur : 0;
+  const f2r = calcF2();
+  const f3t = f3r.reduce((s,x) => {
+    if (!x.aktiv) return s;
+    if (usedDur <= 0) return s;
+    return s + (x.p * usedDur / 1000) / S.lv * sm() * 1000;
+  }, 0);
+  S.dur = oldDur;
+
+  const tot = f1t + f2r.ghg + f3t;
+
+  document.getElementById('g-f1-dv').textContent = f1dv.toFixed(4);
+  document.getElementById('g-f1-nt').textContent = f1nt.toFixed(4);
+  document.getElementById('g-f1-bk').textContent = f1bk.toFixed(4);
+  document.getElementById('g-f1').textContent    = f1t.toFixed(4);
+  document.getElementById('g-f2').textContent    = f2r.ghg.toFixed(4);
+  document.getElementById('g-f3').textContent    = f3t.toFixed(4);
+  document.getElementById('g-tot').textContent   = tot.toFixed(4);
+
+  document.getElementById('g-mode-lbl').textContent = S.ge.mode === 'ref' ? 'Referenz-App' : 'Nutzungsprofil / Mix';
+  document.getElementById('g-dur').textContent      = usedDur.toFixed(2).replace(/\.00$/, '');
+  document.getElementById('g-sm').textContent       = (m*1000).toFixed(0);
+  document.getElementById('g-lv').textContent       = S.lv;
+
+  // Mix UI aktualisieren
+  const mixTotal = Object.values(S.ge.mix).reduce((a,b)=>a+(parseFloat(b)||0),0);
+  const mixLbl = document.getElementById('ge-mix-totaldur');
+  if (mixLbl) mixLbl.textContent = mixTotal.toFixed(2);
+
+  // Charts
+  if (cGe) {
+    cGe.data.datasets[0].data = [+f1dv.toFixed(6), 0, 0];
+    cGe.data.datasets[1].data = [+f1nt.toFixed(6), 0, 0];
+    cGe.data.datasets[2].data = [+f1bk.toFixed(6), 0, 0];
+    cGe.data.datasets[3].data = [0, +f2r.ghg.toFixed(6), 0];
+    cGe.data.datasets[4].data = [0, 0, +f3t.toFixed(6)];
+    cGe.update('none');
+  }
+
+  if (cGc) {
+    cGc.data.datasets[0].data = [+f1t.toFixed(6), +f2r.ghg.toFixed(6), +f3t.toFixed(6)];
+    cGc.update('none');
+
+    const pieTotal = f1t + f2r.ghg + f3t;
+    const pieDefs  = [
+      { label:'App-Nutzung (F1)', v:f1t,      col:'#4a90d9', w:null },
+      { label:'Display (F2)',     v:f2r.ghg,  col:'#ec4899', w:f2r.p },
+      { label:'Hintergrund (F3)', v:f3t,      col:'#10b981', w:S.services.filter(sv=>sv.aktiv).reduce((s,sv)=>s+sv.p,0) },
+    ];
+    const leg = document.getElementById('pie-legend');
+    if (leg) {
+      leg.innerHTML = '';
+      pieDefs.forEach(x => {
+        const pct = pieTotal > 0 ? (x.v/pieTotal*100).toFixed(1) : '0.0';
+        leg.innerHTML += `<span style="display:flex;align-items:center;gap:6px">
+          <span style="width:10px;height:10px;border-radius:2px;background:${x.col};flex-shrink:0"></span>
+          <span>${x.label}<br>
+            <strong style="font-family:monospace">${x.v.toFixed(4)} gCO₂e</strong>
+            ${x.w!==null ? `<span style="color:#888;font-size:10px"> / ${(x.w*1000).toFixed(0)} mW</span>` : ''}
+            <span style="color:#bbb;font-size:10px"> (${pct}%)</span>
+          </span></span>`;
+      });
+    }
+  }
+
+  // === AKTUELL: Gerät-GHG Kuchendiagramm ===
+  const devGhgF1  = f1dv;
+  const devGhgF2  = f2r.ghg;
+  const devGhgF3  = f3t;
+  if (cDevPie) {
+    cDevPie.data.datasets[0].data = [+devGhgF1.toFixed(6), +devGhgF2.toFixed(6), +devGhgF3.toFixed(6)];
+    cDevPie.update('none');
+  }
+  const devPieTotal = devGhgF1 + devGhgF2 + devGhgF3;
+  const wF1 = usedDur > 0 ? devGhgF1 / 1000 * S.lv / (sm() * usedDur) * 1000 : 0;
+  const wF2 = f2r.p;
+  const wF3 = S.services.filter(sv => sv.aktiv).reduce((s, sv) => s + sv.p, 0);
+
+  const devLeg = document.getElementById('dev-pie-legend');
+  if (devLeg) {
+    devLeg.innerHTML = '';
+    [{ label:'F1 Gerät (App)', ghg:devGhgF1, w:wF1, col:'#4a90d9' },
+     { label:'F2 Display',     ghg:devGhgF2, w:wF2, col:'#ec4899' },
+     { label:'F3 Hintergrund', ghg:devGhgF3, w:wF3, col:'#10b981' }].forEach(x => {
+      const pct = devPieTotal > 0 ? (x.ghg/devPieTotal*100).toFixed(1) : '0.0';
+      devLeg.innerHTML += `<span style="display:flex;align-items:center;gap:6px">
+        <span style="width:10px;height:10px;border-radius:2px;background:${x.col};flex-shrink:0"></span>
+        <span>${x.label}<br>
+          <strong style="font-family:monospace">${x.ghg.toFixed(4)} gCO₂e</strong>
+          <span style="color:#888;font-size:10px"> / ${(x.w*1000).toFixed(0)} mW</span>
+          <span style="color:#bbb;font-size:10px"> (${pct}%)</span>
+        </span></span>`;
+    });
+  }
+
+  // === DEFAULT: Schattenberechnung ===
+  const def = calcDefault(usedDur, S.ge.mode, S.ge.catId, S.ge.mix);
+
+  if (cGcDef) {
+    cGcDef.data.datasets[0].data = [+def.f1t.toFixed(6), +def.f2ghg.toFixed(6), +def.f3t.toFixed(6)];
+    cGcDef.update('none');
+  }
+
+  // Default-Legende für F1/F2/F3-Pie
+  const defPieTotal = def.f1t + def.f2ghg + def.f3t;
+  const defPieLeg = document.getElementById('pie-legend-def');
+  if (defPieLeg) {
+    defPieLeg.innerHTML = '';
+    [{ label:'App-Nutzung (F1)', v:def.f1t,   col:'#93c5fd', w:null },
+     { label:'Display (F2)',     v:def.f2ghg, col:'#f9a8d4', w:def.f2p },
+     { label:'Hintergrund (F3)', v:def.f3t,   col:'#6ee7b7', w:0 }].forEach(x => {
+      const pct = defPieTotal > 0 ? (x.v/defPieTotal*100).toFixed(1) : '0.0';
+      defPieLeg.innerHTML += `<span style="display:flex;align-items:center;gap:6px">
+        <span style="width:10px;height:10px;border-radius:2px;background:${x.col};flex-shrink:0"></span>
+        <span>${x.label}<br>
+          <strong style="font-family:monospace">${x.v.toFixed(4)} gCO₂e</strong>
+          ${x.w!==null && x.w>0 ? `<span style="color:#bbb;font-size:10px"> / ${(x.w*1000).toFixed(0)} mW</span>` : ''}
+          <span style="color:#bbb;font-size:10px"> (${pct}%)</span>
+        </span></span>`;
+    });
+  }
+
+  // Differenztabelle F1/F2/F3 Total
+  const diffBodyTot = document.getElementById('diff-body-tot');
+  if (diffBodyTot) {
+    diffBodyTot.innerHTML = '';
+    const totRows = [
+      { label:'App-Nutzung (F1)', cur:f1t,      def:def.f1t,   col:'#4a90d9' },
+      { label:'Display (F2)',     cur:f2r.ghg,  def:def.f2ghg, col:'#ec4899' },
+      { label:'Hintergrund (F3)', cur:f3t,      def:def.f3t,   col:'#10b981' },
+      { label:'TOTAL',            cur:tot,       def:def.tot,   col:'#15803d', bold:true },
+    ];
+    totRows.forEach(row => {
+      const delta    = row.cur - row.def;
+      const deltaPct = row.def > 0 ? (delta / row.def * 100) : 0;
+      const dColor   = delta > 0.00005 ? '#dc2626' : delta < -0.00005 ? '#15803d' : '#aaa';
+      const sign     = delta >= 0 ? '+' : '';
+      const tr       = document.createElement('tr');
+      if (row.bold) tr.style.borderTop = '2px solid #eee';
+      tr.innerHTML = `
+        <td style="font-size:12px;${row.bold?'font-weight:600':''}">
+          <span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${row.col};margin-right:5px;vertical-align:middle"></span>
+          ${row.label}
+        </td>
+        <td class="mono" style="text-align:right;font-size:11px">${row.cur.toFixed(4)}</td>
+        <td class="mono" style="text-align:right;font-size:11px;color:#aaa">${row.def.toFixed(4)}</td>
+        <td class="mono" style="text-align:right;font-size:11px;font-weight:${row.bold?'600':'400'};color:${dColor}">${sign}${delta.toFixed(4)}</td>
+        <td class="mono" style="text-align:right;font-size:11px;font-weight:${row.bold?'600':'400'};color:${dColor}">${sign}${deltaPct.toFixed(1)}%</td>`;
+      diffBodyTot.appendChild(tr);
+    });
+  }
+
+  if (cDevPieDef) {
+    cDevPieDef.data.datasets[0].data = [+def.f1dv.toFixed(6), +def.f2ghg.toFixed(6), +def.f3t.toFixed(6)];
+    cDevPieDef.update('none');
+  }
+
+  const defDevTotal = def.f1dv + def.f2ghg + def.f3t;
+  const defLeg = document.getElementById('dev-pie-legend-def');
+  if (defLeg) {
+    defLeg.innerHTML = '';
+    [{ label:'F1 Gerät (App)', ghg:def.f1dv, w:def.f2p, col:'#93c5fd' },
+     { label:'F2 Display',     ghg:def.f2ghg,w:def.f2p, col:'#f9a8d4' },
+     { label:'F3 Hintergrund', ghg:def.f3t,  w:0,       col:'#6ee7b7' }].forEach((x,i) => {
+      const wVal = i===0 ? (usedDur>0 ? def.f1dv/1000*DEFAULTS.ladeverlust/(DEFAULTS.strommix*usedDur)*1000 : 0) : i===1 ? def.f2p : 0;
+      const pct  = defDevTotal > 0 ? (x.ghg/defDevTotal*100).toFixed(1) : '0.0';
+      defLeg.innerHTML += `<span style="display:flex;align-items:center;gap:6px">
+        <span style="width:10px;height:10px;border-radius:2px;background:${x.col};flex-shrink:0"></span>
+        <span>${x.label}<br>
+          <strong style="font-family:monospace">${x.ghg.toFixed(4)} gCO₂e</strong>
+          ${i<2?`<span style="color:#bbb;font-size:10px"> / ${(wVal*1000).toFixed(0)} mW</span>`:''}
+          <span style="color:#bbb;font-size:10px"> (${pct}%)</span>
+        </span></span>`;
+    });
+  }
+
+  // === DIFFERENZ-TABELLE ===
+  const diffBody = document.getElementById('diff-body');
+  if (diffBody) {
+    diffBody.innerHTML = '';
+    const rows = [
+      { label:'F1 Gerät (App)', cur:devGhgF1,  def:def.f1dv,  col:'#4a90d9' },
+      { label:'F2 Display',     cur:devGhgF2,  def:def.f2ghg, col:'#ec4899' },
+      { label:'F3 Hintergrund', cur:devGhgF3,  def:def.f3t,   col:'#10b981' },
+      { label:'Total Gerät',    cur:devPieTotal, def:defDevTotal, col:'#555', bold:true },
+    ];
+    rows.forEach(row => {
+      const delta    = row.cur - row.def;
+      const deltaPct = row.def > 0 ? (delta / row.def * 100) : 0;
+      const isUp     = delta > 0.00005;
+      const isDown   = delta < -0.00005;
+      const dColor   = isUp ? '#dc2626' : isDown ? '#15803d' : '#aaa';
+      const sign     = delta >= 0 ? '+' : '';
+      const tr       = document.createElement('tr');
+      if (row.bold) tr.style.borderTop = '2px solid #eee';
+      tr.innerHTML = `
+        <td style="font-size:12px;${row.bold?'font-weight:600':''}">
+          <span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${row.col};margin-right:5px;vertical-align:middle"></span>
+          ${row.label}
+        </td>
+        <td class="mono" style="text-align:right;font-size:11px">${row.cur.toFixed(4)}</td>
+        <td class="mono" style="text-align:right;font-size:11px;color:#aaa">${row.def.toFixed(4)}</td>
+        <td class="mono" style="text-align:right;font-size:11px;font-weight:${row.bold?'600':'400'};color:${dColor}">${sign}${delta.toFixed(4)}</td>
+        <td class="mono" style="text-align:right;font-size:11px;font-weight:${row.bold?'600':'400'};color:${dColor}">${sign}${deltaPct.toFixed(1)}%</td>`;
+      diffBody.appendChild(tr);
+    });
+  }
+}
+
+function renderGeMixTable() {
+  const body = document.getElementById('ge-mix-body');
+  if (!body) return;
+
+  body.innerHTML = '';
+  S.cats.forEach(c => {
+    const v = S.ge.mix[c.id] ?? 0;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="font-size:12px">${c.name}</td>
+      <td style="text-align:right">
+        <input type="number"
+               value="${v}"
+               step="0.05"
+               min="0"
+               data-ge-mix="${c.id}"
+               style="width:78px;text-align:right;font-size:12px">
+      </td>`;
+    body.appendChild(tr);
+  });
+
+  body.querySelectorAll('input[data-ge-mix]').forEach(inp => {
+    inp.addEventListener('input', e => {
+      const id = e.target.dataset.geMix;
+      S.ge.mix[id] = parseFloat(e.target.value) || 0;
+      upGe();
+    });
+  });
+}
+
+/* ------------------------------------------------------------------
+   TAB-NAVIGATION
+   ------------------------------------------------------------------ */
+function gTab(t) {
+  ['f1','f2','f3','ge','sc'].forEach(x => {
+    const p = document.getElementById('pnl-'+x);
+    const b = document.getElementById('btn-'+x);
+    if (p) p.classList.toggle('on', x === t);
+    if (b) b.classList.toggle('on', x === t);
+  });
+}
+
+/* ------------------------------------------------------------------
+   SZENARIEN
+   ------------------------------------------------------------------ */
+function upSc() {
+  const container = document.getElementById('sc-cards');
+  if (!container) return;
+  container.innerHTML = '';
+
+  const fmt4 = v => v.toFixed(4);
+  const fmt1 = v => v.toFixed(1);
+
+  SCENARIOS.forEach(sc => {
+    const res = calcScenario(sc);
+    const tot = res.tot || 1;
+    const pF1 = (res.f1/tot*100).toFixed(1);
+    const pF2 = (res.f2/tot*100).toFixed(1);
+    const pF3 = (res.f3/tot*100).toFixed(1);
+    const totalDur = Object.values(sc.apps).reduce((a,b)=>a+b,0);
+
+    // Default-Schattenberechnung für dieses Szenario
+    const defRes = calcDefault(totalDur, 'mix', null, sc.apps);
+    // F2 und F3 für Default separat berechnen mit Szenario-Segmenten und festen Hintergrunddauern
+    const defF2 = calcF2forSegments_default(sc.display);
+    const defF3 = calcF3forDurations_default(sc.hintergrund);
+    const defTot = defRes.f1t + defF2 + defF3;
+    const delta    = res.tot - defTot;
+    const deltaPct = defTot > 0 ? (delta / defTot * 100) : 0;
+    const dColor   = delta > 0.00005 ? '#dc2626' : delta < -0.00005 ? '#15803d' : '#888';
+    const sign     = delta >= 0 ? '+' : '';
+
+    // App-Nutzung Zeilen
+    const appRows = Object.entries(sc.apps)
+      .filter(([,d]) => d > 0)
+      .map(([id,d]) => {
+        const cat = CATS.find(c=>c.id===id);
+        return `<tr>
+          <td style="font-size:11px;color:#555">${cat ? cat.name : id}</td>
+          <td class="mono" style="text-align:right;font-size:11px">${d}h</td>
+        </tr>`;
+      }).join('');
+
+    const dispRows = sc.display.map(seg =>
+      `<tr>
+        <td style="font-size:11px;color:#555">${seg.br}% — ${seg.br < 33 ? 'dunkel' : seg.br <= 66 ? 'normal' : 'hell'}</td>
+        <td class="mono" style="text-align:right;font-size:11px">${seg.dur}h</td>
+      </tr>`
+    ).join('');
+
+    const bgRows = Object.entries(sc.hintergrund)
+      .filter(([,d]) => d > 0)
+      .map(([id,d]) => {
+        const svc = SERVICES_DEFAULT.find(s=>s.id===id);
+        return `<tr>
+          <td style="font-size:11px;color:#555">${svc ? svc.name : id}</td>
+          <td class="mono" style="text-align:right;font-size:11px">${d}h</td>
+        </tr>`;
+      }).join('');
+
+    const card = document.createElement('div');
+    card.className = 'sc-card';
+    card.innerHTML = `
+      <div class="sc-title">${sc.name}</div>
+      <div class="sc-desc">${sc.beschreibung}</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(90px, 1fr));gap:6px;margin-bottom:10px">
+        <div class="metcard">
+          <div class="metlbl" style="font-size:10px">F1 App</div>
+          <div style="font-family:monospace;font-size:13px;font-weight:600;color:#4a90d9">${fmt4(res.f1)}</div>
+          <div style="font-size:9px;color:#bbb">${pF1}%</div>
+        </div>
+        <div class="metcard">
+          <div class="metlbl" style="font-size:10px">F2 Display</div>
+          <div style="font-family:monospace;font-size:13px;font-weight:600;color:#ec4899">${fmt4(res.f2)}</div>
+          <div style="font-size:9px;color:#bbb">${pF2}%</div>
+        </div>
+        <div class="metcard">
+          <div class="metlbl" style="font-size:10px">F3 Hintergrund</div>
+          <div style="font-family:monospace;font-size:13px;font-weight:600;color:#10b981">${fmt4(res.f3)}</div>
+          <div style="font-size:9px;color:#bbb">${pF3}%</div>
+        </div>
+        <div class="metcard" style="border:1px solid #86efac">
+          <div class="metlbl" style="font-size:10px">Total</div>
+          <div style="font-family:monospace;font-size:13px;font-weight:600;color:#15803d">${fmt4(res.tot)}</div>
+          <div style="font-size:9px;color:#bbb">gCO₂e</div>
+        </div>
+      </div>
+      <!-- Delta vs. Default -->
+      <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:#f8f8f8;border-radius:7px;margin-bottom:10px;font-size:11px">
+        <span style="color:#888;font-weight:600">Δ vs. DFE Default:</span>
+        <span style="font-family:monospace;font-weight:600;color:${dColor}">${sign}${fmt4(delta)} gCO₂e</span>
+        <span style="font-family:monospace;color:${dColor}">(${sign}${deltaPct.toFixed(1)}%)</span>
+        <span style="color:#bbb;margin-left:auto">Default: ${fmt4(defTot)} gCO₂e</span>
+      </div>
+      <!-- Szenario-Details -->
+      <div style="display:grid;grid-template-columns:1fr;gap:8px">
+        <div>
+          <div style="font-size:10px;font-weight:600;color:#4a90d9;margin-bottom:4px">App-Nutzung (${fmt1(totalDur)}h)</div>
+          <table>${appRows}</table>
+        </div>
+        <div>
+          <div style="font-size:10px;font-weight:600;color:#ec4899;margin-bottom:4px">Display-Segmente</div>
+          <table>${dispRows}</table>
+        </div>
+        <div>
+          <div style="font-size:10px;font-weight:600;color:#10b981;margin-bottom:4px">Hintergrund</div>
+          <table>${bgRows}</table>
+        </div>
+      </div>`;
+    container.appendChild(card);
+  });
+
+  // Vergleichschart + Diff-Tabelle aktualisieren
+  const results    = SCENARIOS.map(sc => calcScenario(sc));
+  const defResults = SCENARIOS.map(sc => {
+    const totalDur = Object.values(sc.apps).reduce((a,b)=>a+b,0);
+    const dr = calcDefault(totalDur, 'mix', null, sc.apps);
+    const df2 = calcF2forSegments_default(sc.display);
+    const df3 = calcF3forDurations_default(sc.hintergrund);
+    return { f1:dr.f1t, f2:df2, f3:df3, tot:dr.f1t+df2+df3 };
+  });
+
+  if (cScCmp) {
+    cScCmp.data.datasets[0].data = results.map(r    => +r.f1.toFixed(6));
+    cScCmp.data.datasets[1].data = results.map(r    => +r.f2.toFixed(6));
+    cScCmp.data.datasets[2].data = results.map(r    => +r.f3.toFixed(6));
+    cScCmp.data.datasets[3].data = defResults.map(r => +r.f1.toFixed(6));
+    cScCmp.data.datasets[4].data = defResults.map(r => +r.f2.toFixed(6));
+    cScCmp.data.datasets[5].data = defResults.map(r => +r.f3.toFixed(6));
+    cScCmp.update('none');
+  }
+
+  const diffBody = document.getElementById('sc-diff-body');
+  if (diffBody) {
+    diffBody.innerHTML = '';
+    SCENARIOS.forEach((sc, i) => {
+      const cur   = results[i].tot;
+      const def2  = defResults[i].tot;
+      const delta = cur - def2;
+      const pct   = def2 > 0 ? (delta/def2*100) : 0;
+      const dCol  = delta > 0.00005 ? '#dc2626' : delta < -0.00005 ? '#15803d' : '#aaa';
+      const sign  = delta >= 0 ? '+' : '';
+      const tr    = document.createElement('tr');
+      tr.innerHTML = `
+        <td style="font-size:12px;font-weight:500">${sc.name}</td>
+        <td class="mono" style="text-align:right;font-size:11px">${cur.toFixed(4)}</td>
+        <td class="mono" style="text-align:right;font-size:11px;color:#aaa">${def2.toFixed(4)}</td>
+        <td class="mono" style="text-align:right;font-size:11px;font-weight:600;color:${dCol}">${sign}${delta.toFixed(4)}</td>
+        <td class="mono" style="text-align:right;font-size:11px;font-weight:600;color:${dCol}">${sign}${pct.toFixed(1)}%</td>`;
+      diffBody.appendChild(tr);
+    });
+  }
+}
+
+/* ------------------------------------------------------------------
+   EVENT-BINDING
+   ------------------------------------------------------------------ */
+function bindEvents() {
+
+  // Globale Parameter
+  document.getElementById('sel-sm').addEventListener('change', e => {
+    S.smp = e.target.value;
+    document.getElementById('sm-custom').style.display = e.target.value === 'cu' ? 'flex' : 'none';
+    upAll();
+  });
+  document.getElementById('inp-smc').addEventListener('input', e => { S.smc = parseFloat(e.target.value)||0; upAll(); });
+  document.getElementById('inp-lv').addEventListener('input',  e => { S.lv  = parseFloat(e.target.value)||0.585; upAll(); });
+  document.getElementById('inp-dur').addEventListener('input', e => { S.dur = parseFloat(e.target.value)||1; upAll(); });
+
+  // Faktor 1 — Netzwerk
+  document.getElementById('sel-net').addEventListener('change', e => { S.nt = e.target.value; upAll(); });
+  document.getElementById('nw').addEventListener('input',  e => { S.nw = parseFloat(e.target.value)||0; upAll(); });
+  document.getElementById('n4g').addEventListener('input', e => { S.n4 = parseFloat(e.target.value)||0; upAll(); });
+  document.getElementById('n5g').addEventListener('input', e => { S.n5 = parseFloat(e.target.value)||0; upAll(); });
+  document.getElementById('ncell').addEventListener('input', e => { S.nc = parseFloat(e.target.value)||0; upAll(); });
+
+  // Einfache Overrides (P, V)
+  [['ckP','vP','uP'],['ckV','vV','uV']].forEach(([ck,vk,uk]) => {
+    document.getElementById(ck).addEventListener('change', e => {
+      S[uk].on = e.target.checked;
+      document.getElementById(vk).style.display = e.target.checked ? 'inline-block' : 'none';
+      document.getElementById(uk).style.display = e.target.checked ? 'inline'       : 'none';
+      upAll();
+    });
+    document.getElementById(vk).addEventListener('input', e => { S[uk].v = parseFloat(e.target.value)||0; upAll(); });
+  });
+
+  document.getElementById('inp-pdisp').addEventListener('input', e => { S.pDisp = (parseFloat(e.target.value)||400)/1000; upAll(); });
+  document.getElementById('sl-br').addEventListener('input', e => { S.br = +e.target.value; upAll(); });
+
+  // Gesamtanalyse — Modus
+  document.getElementById('ge-mode-ref').addEventListener('change', e => {
+    if (!e.target.checked) return;
+    S.ge.mode = 'ref';
+    document.getElementById('ge-ref-box').style.display = 'block';
+    document.getElementById('ge-mix-box').style.display = 'none';
+    upGe();
+  });
+
+  document.getElementById('ge-mode-mix').addEventListener('change', e => {
+    if (!e.target.checked) return;
+    S.ge.mode = 'mix';
+    document.getElementById('ge-ref-box').style.display = 'none';
+    document.getElementById('ge-mix-box').style.display = 'block';
+    upGe();
+  });
+
+  // Gesamtanalyse — Referenz-App
+  document.getElementById('ge-cat').addEventListener('change', e => {
+    S.ge.catId = e.target.value;
+    upGe();
+  });
+}
+
+/* ------------------------------------------------------------------
+   INITIALISIERUNG
+   ------------------------------------------------------------------ */
+// Dropdowns auf State-Werte zurücksetzen (verhindert Browser-Formular-Restore-Konflikt)
+document.getElementById('sel-net').value   = S.nt;
+document.getElementById('sel-sm').value    = S.smp;
+document.getElementById('inp-dur').value    = S.dur;
+document.getElementById('inp-lv').value    = S.lv;
+document.getElementById('n5g').value    = S.n5;
+document.getElementById('ncell').value  = S.nc;
+document.getElementById('n4g').value    = S.n4;
+document.getElementById('nw').value     = S.nw;
+document.getElementById('inp-pdisp').value = (S.pDisp * 1000).toFixed(0);
+document.getElementById('sl-br').value = S.br;
+document.getElementById('ge-cat').value = S.ge.catId;
+document.getElementById('ge-mode-ref').checked = S.ge.mode === 'ref';
+document.getElementById('ge-mode-mix').checked = S.ge.mode === 'mix';
+document.getElementById('ge-ref-box').style.display = S.ge.mode === 'ref' ? 'block' : 'none';
+document.getElementById('ge-mix-box').style.display = S.ge.mode === 'mix' ? 'block' : 'none';
+
+initCharts();
+bindEvents();
+renderGeMixTable();
+upAll();
+</script>
+</body>
+</html>

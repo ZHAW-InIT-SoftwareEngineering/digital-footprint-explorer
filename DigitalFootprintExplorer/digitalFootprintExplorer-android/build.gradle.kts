@@ -56,8 +56,8 @@ android {
         applicationId = "ch.zhaw.digitalfootprintexplorer"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 5
-        versionName = "1.4"
+        versionCode = 8
+        versionName = "1.7"
     }
     packaging {
         resources {

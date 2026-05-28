@@ -15,7 +15,7 @@
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
     <!-- Foreground service for continuous brightness / GPS / Bluetooth tracking -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <!-- Restart TrackingService after device reboot -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
@@ -48,7 +48,7 @@
         <!-- Foreground service: hosts DisplayBrightnessObserver and BackgroundProcessTracker -->
         <service
             android:name=".servicelayerplatform.service.TrackingService"
-            android:foregroundServiceType="dataSync"
+            android:foregroundServiceType="specialUse"
             android:exported="false" />
 
         <!-- Restarts TrackingService and WorkManager after device reboot -->

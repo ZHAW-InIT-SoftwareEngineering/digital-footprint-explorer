@@ -1,0 +1,122 @@
+@startuml architecture-split-simple
+
+top to bottom direction
+skinparam linetype ortho
+skinparam classBackgroundColor White
+skinparam classBorderColor #888888
+skinparam packageBorderColor #555555
+skinparam packageFontStyle bold
+skinparam packageFontSize 12
+skinparam classFontSize 11
+skinparam arrowColor #444444
+skinparam padding 4
+
+' ──────────────────────────────────────────────
+'  LAYER 1: Android App
+' ──────────────────────────────────────────────
+package "digitalFootprintExplorer-android" as androidApp #F3E5F5 {
+  package "Einstiegspunkte" #E1BEE7 {
+    class DFEApplication
+    class MainActivity
+  }
+  package "Service Layer" #E1BEE7 {
+    class TrackingService
+    class MetricCollector
+    class DisplayBrightnessObserver
+    class BackgroundProcessTracker
+    class NetworkUsageDataSource
+    class InstalledAppProvider
+    interface LauncherAppQuery
+    class AndroidLauncherAppQuery
+    class App
+  }
+  package "Worker" #E1BEE7 {
+    class DailyFootprintWorker
+    class BootReceiver
+  }
+  package "Demo" #E1BEE7 {
+    class DemoRepository
+    class DemoCalculator
+  }
+  package "Widget" #E1BEE7 {
+    class GardenWidget
+    class GardenWidgetReceiver
+  }
+  package "UI" #E1BEE7 {
+    class App
+    class StatisticsScreen
+    class GardenStateCard
+    class EmissionPieChart
+  }
+}
+
+' ──────────────────────────────────────────────
+'  LAYER 2: shared · androidMain
+' ──────────────────────────────────────────────
+package "shared · androidMain" as androidMain #E3F2FD {
+  class AndroidPlatform
+  class "DatabaseDriverFactory (actual)" as AndroidDBFactory
+}
+
+' ──────────────────────────────────────────────
+'  LAYER 3: shared · commonMain
+' ──────────────────────────────────────────────
+package "shared · commonMain" as commonMain #E6F4EA {
+  package "Plattform-Abstraktion" #C8E6C9 {
+    interface Platform
+    class "DatabaseDriverFactory (expect)" as DBFactory
+    class DFEDatabase
+  }
+  package "Berechnungslogik" #C8E6C9 {
+    class EmissionsCalculator
+    class GardenStateCalculator
+    class ModelConstants
+  }
+  package "model.input" #C8E6C9 {
+    class AppUsageInput
+    class DisplayInput
+    class BackgroundInput
+    class BrightnessInterval
+    class ProcessUsage
+  }
+  package "model.output" #C8E6C9 {
+    class EmissionResult
+    class CategoryEmission
+    class DailyFootprintEntry
+  }
+  package "Enums & DataPoint" #C8E6C9 {
+    enum AppCategory
+    enum GardenState
+    enum BackgroundProcess
+    enum NetworkType
+    class DataPoint
+  }
+}
+
+' ──────────────────────────────────────────────
+'  Layout: klassen-level Hidden Arrows erzwingen vertikalen Stack
+' ──────────────────────────────────────────────
+DFEApplication        -[hidden]down-> EmissionsCalculator
+DailyFootprintWorker  -[hidden]down-> AppCategory
+EmissionsCalculator   -[hidden]down-> AndroidPlatform
+AppCategory           -[hidden]down-> AndroidDBFactory
+
+' ──────────────────────────────────────────────
+'  Schicht-übergreifende Beziehungen
+' ──────────────────────────────────────────────
+AndroidPlatform       ..|> Platform       : implements
+AndroidDBFactory      --|> DBFactory      : actual
+
+DailyFootprintWorker  -down..> EmissionsCalculator
+DailyFootprintWorker  -down..> GardenStateCalculator
+DemoCalculator        -down..> EmissionsCalculator
+MetricCollector       -down..> AppUsageInput
+DisplayBrightnessObserver -down..> DisplayInput
+BackgroundProcessTracker  -down..> BackgroundInput
+StatisticsScreen      -down..> DailyFootprintEntry
+GardenWidget          -down..> GardenState
+App                   -down..> GardenState
+InstalledAppProvider  -down..> AppCategory
+AndroidLauncherAppQuery ..|> LauncherAppQuery
+
+@enduml

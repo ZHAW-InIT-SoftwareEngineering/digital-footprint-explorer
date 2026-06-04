@@ -1,0 +1,315 @@
+@startuml architecture-split
+
+skinparam linetype ortho
+skinparam classBackgroundColor White
+skinparam classBorderColor #888888
+skinparam packageBorderColor #555555
+skinparam packageFontStyle bold
+skinparam arrowColor #444444
+skinparam noteBackgroundColor #FFFDE7
+
+' ──────────────────────────────────────────────
+'  LAYER 1: shared · commonMain  (grün)
+' ──────────────────────────────────────────────
+package "shared · commonMain  [plattformunabhängig]" as commonMain #E6F4EA {
+
+  package "Plattform-Abstraktion" as PA #C8E6C9 {
+    interface Platform {
+      + String name
+    }
+    class DatabaseDriverFactory <<expect>> {
+      + SqlDriver createDriver()
+    }
+    class DFEDatabase
+    DatabaseDriverFactory ..> DFEDatabase : erstellt
+  }
+
+  package "model – Berechnungslogik" as CALC #C8E6C9 {
+    class EmissionsCalculator {
+      + EmissionResult calculate(\n  List<AppUsageInput>,\n  DisplayInput,\n  BackgroundInput)
+    }
+    class GardenStateCalculator {
+      + recordDailyFootprint(...)
+      + calculateGardenState(Double)
+      + getLatestGardenState()
+      + getLatestEntry()
+      + isDailyFootprintCalculated(LocalDate)
+    }
+    class ModelConstants <<object>> {
+      + EF_SWISS / EF_GLOBAL
+      + P_DEVICE_BY_CATEGORY
+      + P_BACKGROUND_BY_PROCESS
+      + NETWORK_INTENSITY_WIFI/CELLULAR
+      + BACKEND_INTENSITY_GB
+    }
+    EmissionsCalculator ..> ModelConstants : verwendet
+    GardenStateCalculator ..> DFEDatabase : verwendet
+  }
+
+  package "model.input – Eingabedaten" as INPUT #C8E6C9 {
+    class AppUsageInput {
+      + AppCategory category
+      + Long foregroundMs
+      + DataPoint<Long> wifiBytes
+      + DataPoint<Long> cellularBytes
+    }
+    class DisplayInput {
+      + List<BrightnessInterval> intervals
+    }
+    class BackgroundInput {
+      + List<ProcessUsage> usages
+    }
+    class BrightnessInterval {
+      + Double brightness
+      + Long durationMs
+    }
+    class ProcessUsage {
+      + BackgroundProcess process
+      + Long durationMs
+    }
+    DisplayInput o-- BrightnessInterval
+    BackgroundInput o-- ProcessUsage
+  }
+
+  package "model.output – Ausgabedaten" as OUTPUT #C8E6C9 {
+    class EmissionResult {
+      + Double ghgTotal
+      + Double ghgAppUsage
+      + Double ghgDisplay
+      + Double ghgBackground
+      + List<CategoryEmission> categories
+    }
+    class CategoryEmission {
+      + AppCategory category
+      + Double ghgDevice
+      + Double ghgNetwork
+      + Double ghgBackend
+      + Double ghgTotal
+    }
+    class DailyFootprintEntry {
+      + LocalDate date
+      + Double kgCO2e
+      + GardenState state
+    }
+    EmissionResult o-- CategoryEmission
+  }
+
+  package "model – Enums & DataPoint" as ENUMS #C8E6C9 {
+    enum AppCategory {
+      VIDEO_STREAMING
+      AUDIO_STREAMING
+      SOCIAL_MEDIA
+      MESSAGING
+      ARTIFICIAL_INTELLIGENCE
+      E_MAIL
+      VIDEO_CALL
+      GAMING
+      NAVIGATION
+      MISCELLANEOUS
+    }
+    enum GardenState {
+      FLOURISHING
+      GROWING
+      STABLE
+      WILTING
+      WITHERED
+    }
+    enum BackgroundProcess {
+      GPS
+      BLUETOOTH
+    }
+    enum NetworkType {
+      WIFI
+      CELLULAR
+    }
+    class DataPoint <<sealed>> {
+      + Double valueOrDefault(Double)
+    }
+    class "DataPoint.Measured" as DPM
+    class "DataPoint.Estimated" as DPE
+    class "DataPoint.Unavailable" as DPU
+    DataPoint <|-- DPM
+    DataPoint <|-- DPE
+    DataPoint <|-- DPU
+    DataPoint +.. DPM
+    DataPoint +.. DPE
+    DataPoint +.. DPU
+  }
+
+  ' commonMain-interne Beziehungen
+  EmissionsCalculator ..> AppUsageInput  : konsumiert
+  EmissionsCalculator ..> DisplayInput   : konsumiert
+  EmissionsCalculator ..> BackgroundInput : konsumiert
+  EmissionsCalculator ..> EmissionResult  : produziert
+  GardenStateCalculator ..> GardenState   : berechnet
+  GardenStateCalculator ..> DailyFootprintEntry : liefert
+  AppUsageInput ..> AppCategory  : nutzt
+  AppUsageInput ..> DataPoint    : nutzt
+  ProcessUsage  ..> BackgroundProcess : nutzt
+}
+
+' ──────────────────────────────────────────────
+'  LAYER 2: shared · androidMain  (blau-hell)
+' ──────────────────────────────────────────────
+package "shared · androidMain  [Android-Plattform-Impl.]" as androidMain #E3F2FD {
+
+  class AndroidPlatform {
+    + String name  ' = "Android ${SDK}"
+  }
+  class "DatabaseDriverFactory\n(actual)" as AndroidDBFactory {
+    - Context context
+    + SqlDriver createDriver()
+  }
+
+  AndroidPlatform       ..|> Platform         : implements\n(actual)
+  AndroidDBFactory      --|> DatabaseDriverFactory : actual
+}
+
+' ──────────────────────────────────────────────
+'  LAYER 3: digitalFootprintExplorer-android  (lila)
+' ──────────────────────────────────────────────
+package "digitalFootprintExplorer-android  [Android App]" as androidApp #F3E5F5 {
+
+  package "Einstiegspunkte" as ENTRY #E1BEE7 {
+    class DFEApplication <<Application>> {
+      + onCreate()
+    }
+    class MainActivity <<Activity>> {
+      + onCreate(Bundle?)
+      + onResume()
+    }
+  }
+
+  package "servicelayerplatform.service  [Datenaggregation]" as SVC #E1BEE7 {
+    class TrackingService <<ForegroundService>> {
+      + onStartCommand()
+      + onDestroy()
+    }
+    class MetricCollector {
+      + List<AppUsageInput> collect(fromMs, toMs)
+    }
+    class DisplayBrightnessObserver {
+      + register()
+      + unregister()
+      + onScreenOn() / onScreenOff()
+      + DisplayInput collectAndReset(fromMs, toMs)
+    }
+    class BackgroundProcessTracker {
+      + BackgroundInput collectAndReset(fromMs, toMs)
+      + BackgroundInput peek()
+    }
+    class NetworkUsageDataSource {
+      + DataPoint<Long> getWifiBytes(uid, from, to)
+      + DataPoint<Long> getCellularBytes(uid, from, to)
+    }
+    class InstalledAppProvider {
+      + List<App> getInstalledLauncherApps()
+    }
+  }
+
+  package "servicelayerplatform.datasource" as DS #E1BEE7 {
+    interface LauncherAppQuery {
+      + List<ResolveInfo> queryLauncherApps()
+    }
+    class AndroidLauncherAppQuery {
+      + List<ResolveInfo> queryLauncherApps()
+    }
+    class App {
+      + Int uid
+      + String name
+      + String packageName
+      + AppCategory category
+    }
+    AndroidLauncherAppQuery ..|> LauncherAppQuery
+    InstalledAppProvider ..> LauncherAppQuery : verwendet
+    InstalledAppProvider ..> App : erzeugt
+  }
+
+  package "worker" as WORK #E1BEE7 {
+    class DailyFootprintWorker <<CoroutineWorker>> {
+      + doWork(): Result
+    }
+    class BootReceiver <<BroadcastReceiver>> {
+      + onReceive()
+    }
+  }
+
+  package "demo" as DEMO #E1BEE7 {
+    class DemoRepository {
+      + getEmissions(): EmissionResult
+      + getGardenState(): GardenState
+    }
+    class DemoCalculator <<object>> {
+      + calculate(tracker): EmissionResult
+    }
+  }
+
+  package "widget" as WGT #E1BEE7 {
+    class GardenWidget <<GlanceAppWidget>> {
+      + Content()
+    }
+    class GardenWidgetReceiver <<GlanceAppWidgetReceiver>>
+    GardenWidgetReceiver ..> GardenWidget : stellt bereit
+  }
+
+  package "ui" as UI #E1BEE7 {
+    class "App (Composable)" as AppUI
+    class StatisticsScreen <<Composable>>
+    class GardenStateCard <<Composable>>
+    class EmissionPieChart <<Composable>>
+  }
+
+  ' Android-interne Beziehungen
+  DFEApplication ..> GardenStateCalculator     : erstellt
+  DFEApplication ..> DisplayBrightnessObserver : erstellt
+  DFEApplication ..> BackgroundProcessTracker  : erstellt
+  DFEApplication ..> TrackingService           : startet
+  TrackingService o-- DisplayBrightnessObserver
+  TrackingService o-- BackgroundProcessTracker
+  MetricCollector ..> InstalledAppProvider     : verwendet
+  MetricCollector ..> NetworkUsageDataSource   : verwendet
+  DailyFootprintWorker ..> MetricCollector         : verwendet
+  DailyFootprintWorker ..> DisplayBrightnessObserver : verwendet
+  DailyFootprintWorker ..> BackgroundProcessTracker  : verwendet
+  DailyFootprintWorker ..> EmissionsCalculator       : verwendet
+  DailyFootprintWorker ..> GardenStateCalculator     : verwendet
+  DailyFootprintWorker ..> GardenWidget              : aktualisiert
+  DemoRepository   ..> DemoCalculator          : delegiert an
+  DemoCalculator   ..> BackgroundProcessTracker : peek()
+  DemoCalculator   ..> EmissionsCalculator      : verwendet
+  AppUI            ..> GardenStateCalculator    : verwendet
+  AppUI            ..> GardenStateCard
+  AppUI            ..> StatisticsScreen
+  StatisticsScreen ..> EmissionPieChart
+  StatisticsScreen ..> GardenStateCalculator   : getLatestEntry()
+  GardenWidget     ..> GardenState             : zeigt
+}
+
+' ──────────────────────────────────────────────
+'  Schicht-übergreifende Beziehungen
+' ──────────────────────────────────────────────
+MetricCollector           ..> AppUsageInput      : produziert >
+DisplayBrightnessObserver ..> DisplayInput        : produziert >
+BackgroundProcessTracker  ..> BackgroundInput     : produziert >
+InstalledAppProvider      ..> AppCategory         : nutzt >
+App                       ..> AppCategory         : nutzt >
+DailyFootprintWorker      ..> DailyFootprintEntry : speichert >
+DemoRepository            ..> EmissionResult      : gibt zurück >
+StatisticsScreen          ..> DailyFootprintEntry : zeigt >
+
+note top of commonMain
+  Plattformunabhängiger Kern
+  (Kotlin Multiplatform – auch für iOS nutzbar)
+end note
+
+note top of androidMain
+  Android-spezifische Implementierungen
+  der expect/actual-Schnittstellen
+end note
+
+note top of androidApp
+  Android App – UI, Services, Worker
+  (nur auf Android lauffähig)
+end note
+
+@enduml

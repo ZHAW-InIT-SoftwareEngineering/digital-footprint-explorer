@@ -142,3 +142,23 @@ a:hover { text-decoration: underline; }
 @media (max-width: 768px) {
   header { position: static; }
 }
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+th, td {
+  padding: 8px;
+  text-align: left;
+}
+
+thead tr {
+  background-color: black;
+  color: white;
+}
+
+/* Every odd row in tbody */
+tbody tr:nth-child(odd) {
+  background-color: #f2f2f2;
+}

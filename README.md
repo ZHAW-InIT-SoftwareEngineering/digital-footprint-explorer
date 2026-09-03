@@ -6,8 +6,6 @@
 
 > **Make the invisible environmental impacts of your digital activities visible.**
 
-<img src="docs/images/widget.png" alt="Digital Footprint Explorer widget" width="300" align="left" style="marign-right: 15px;"/>
-
 The **Digital Footprint Explorer (DFE)** is a mobile application developed at the **Zurich University of Applied Sciences (ZHAW)**. It translates unseen digital resource consumption—such as data streaming, messaging, social media usage, and AI processing—into intuitive, emotionally engaging eco-feedback.
 
 ---
@@ -18,6 +16,8 @@ While modern digital activities feel virtual and weightless, they rely on energy
 
 * **Flourishing State:** When your digital footprint remains low, your garden thrives with vibrant plants.
 * **Deteriorating State:** High data-intensive consumption (such as high-definition video streaming) gradually degrades the virtual environment.
+
+<img src="docs/images/widget.png" alt="Digital Footprint Explorer widget" width="300"/>
 
 ---
 
@@ -34,6 +34,14 @@ While modern digital activities feel virtual and weightless, they rely on energy
 The Digital Footprint Explorer respects user privacy:
 - No personal usage data, browsing history, or message content is inspected or stored outside your local device.
 - Network traffic statistics are read exclusively at the aggregate system layer to compute the visual representation.
+
+--
+
+## Installing the App
+
+For Android users, the app is available on the Google Play Store:
+
+[![Get it on Google Play](https://play.google.com/intl/en_us/badges/images/generic/en_badge_web_generic.png)](https://play.google.com/store/apps/details?id=ch.zhaw.digitalfootprintexplorer&hl=en)
 
 --
 

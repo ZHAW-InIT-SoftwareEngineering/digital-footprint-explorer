@@ -1,6 +1,6 @@
 # Digital Footprint Explorer (DFE) 🌿📱
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-yellow.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Android-blue)](#)
 [![Institution](https://img.shields.io/badge/Developed%20at-ZHAW-red)](https://www.zhaw.ch)
 

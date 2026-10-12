@@ -248,6 +248,36 @@ class InstalledAppProviderTest {
         assertEquals(AppCategory.VIDEO_CALL, apps[0].category)
     }
 
+    @Test
+    fun testConfigCategoryWinsWhenAppDeclaresNoCategory() {
+        val installedAppProvider = InstalledAppProvider(launcherAppQuery = launcherAppQuery)
+
+        val expected = mapOf(
+            "com.google.android.youtube" to AppCategory.VIDEO_STREAMING,
+            "com.spotify.music" to AppCategory.AUDIO_STREAMING,
+            "com.instagram.android" to AppCategory.SOCIAL_MEDIA,
+            "com.google.android.apps.maps" to AppCategory.NAVIGATION,
+            "com.google.android.apps.tachyon" to AppCategory.VIDEO_CALL,
+            "com.google.android.apps.messaging" to AppCategory.MESSAGING
+        )
+
+        val resolveInfos = expected.keys.mapIndexed { index, packageName ->
+            val info = createApplicationInfo(
+                uid = 2000 + index,
+                category = ApplicationInfo.CATEGORY_UNDEFINED,
+                label = packageName,
+                packageName = packageName
+            )
+            createResolveInfo(packageName = packageName, applicationInfo = info)
+        }
+        every { launcherAppQuery.create(context) } returns resolveInfos
+
+        val apps = installedAppProvider.getInstalledLauncherApps(context)
+
+        assertEquals(expected.size, apps.size)
+        apps.forEach { assertEquals(expected[it.packageName], it.category, it.packageName) }
+    }
+
     private fun createApplicationInfo(
         uid: Int,
         category: Int,

@@ -65,4 +65,35 @@
     <string name="info_disclaimer_description">View disclaimer</string>
     <string name="info_zhaw_logo_description">ZHAW Logo</string>
     <string name="info_zhaw_project_description">This app was developed as part of a bachelors thesis at ZHAW.</string>
+    <string name="display">Display</string>
+    <string name="history_title">Weekly report</string>
+    <string name="history_whole_week">Whole week</string>
+    <string name="history_previous_week">Previous week</string>
+    <string name="history_next_week">Next week</string>
+    <string name="history_swipe_hint">Swipe to change the week, tap a day to analyse it</string>
+    <string name="history_no_data">No data recorded for this period.</string>
+    <string name="history_categories">App usage by category</string>
+    <string name="history_total">Total</string>
+    <string name="history_daily_average">Daily average</string>
+    <string name="history_vs_last_week">%1$s vs. last week</string>
+    <string name="history_no_comparison">No comparison with last week available</string>
+    <string-array name="weekday_short_names">
+        <item>Mon</item>
+        <item>Tue</item>
+        <item>Wed</item>
+        <item>Thu</item>
+        <item>Fri</item>
+        <item>Sat</item>
+        <item>Sun</item>
+    </string-array>
+    <string name="category_video_streaming">Video streaming</string>
+    <string name="category_audio_streaming">Audio streaming</string>
+    <string name="category_social_media">Social media</string>
+    <string name="category_messaging">Messaging</string>
+    <string name="category_artificial_intelligence">Artificial intelligence</string>
+    <string name="category_e_mail">E-mail</string>
+    <string name="category_video_call">Video calls</string>
+    <string name="category_gaming">Gaming</string>
+    <string name="category_navigation">Navigation</string>
+    <string name="category_miscellaneous">Miscellaneous</string>
 </resources>

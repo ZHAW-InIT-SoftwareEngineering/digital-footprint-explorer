@@ -72,6 +72,7 @@
     <string name="history_swipe_hint">Wischen, um die Woche zu wechseln. Tag antippen für die Tagesanalyse</string>
     <string name="history_no_data">Für diesen Zeitraum sind keine Daten vorhanden.</string>
     <string name="history_categories">App-Nutzung nach Kategorie</string>
+    <string name="history_updated">Aktualisiert: %1$s Uhr</string>
     <string name="history_total">Total</string>
     <string name="history_daily_average">Tagesdurchschnitt</string>
     <string name="history_vs_last_week">%1$s vs. Vorwoche</string>

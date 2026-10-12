@@ -17,6 +17,7 @@
 
 package ch.zhaw.digitalfootprintexplorer.model
 
+import ch.zhaw.digitalfootprintexplorer.model.output.EmissionResult
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.isoDayNumber
@@ -97,3 +98,25 @@ fun List<DayHistory>.dailyAverage(): HistorySummary? {
         categories = emptyList()
     )
 }
+
+/**
+ * Converts a calculation result into the history shape used by the statistics, e.g. for the
+ * not yet finished current day that is not stored in the database.
+ */
+fun EmissionResult.toDayHistory(date: LocalDate): DayHistory = DayHistory(
+    date = date,
+    totalKg = ghgTotal,
+    appUsageKg = ghgAppUsage,
+    displayKg = ghgDisplay,
+    backgroundKg = ghgBackground,
+    categories = categoryBreakdown.map { c ->
+        CategoryHistory(
+            category = c.category,
+            totalKg = c.ghgTotal,
+            apps = appBreakdown
+                .filter { it.category == c.category }
+                .map { AppHistory(it.appName, it.ghgTotal) }
+                .sortedByDescending { it.totalKg }
+        )
+    }.sortedByDescending { it.totalKg }
+)

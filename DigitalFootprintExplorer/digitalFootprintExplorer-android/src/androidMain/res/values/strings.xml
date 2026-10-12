@@ -73,6 +73,7 @@
     <string name="history_swipe_hint">Swipe to change the week, tap a day to analyse it</string>
     <string name="history_no_data">No data recorded for this period.</string>
     <string name="history_categories">App usage by category</string>
+    <string name="history_updated">Updated: %1$s</string>
     <string name="history_total">Total</string>
     <string name="history_daily_average">Daily average</string>
     <string name="history_vs_last_week">%1$s vs. last week</string>

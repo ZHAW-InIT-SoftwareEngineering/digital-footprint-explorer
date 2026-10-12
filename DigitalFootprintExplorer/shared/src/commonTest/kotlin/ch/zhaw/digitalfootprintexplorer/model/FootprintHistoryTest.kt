@@ -86,6 +86,25 @@ class FootprintHistoryTest {
     }
 
     @Test
+    fun `result converts to day history with apps sorted per category`() {
+        val apps = listOf(
+            AppUsageInput("YouTube", AppCategory.VIDEO_STREAMING, 1800, DataPoint.Measured(1e9), DataPoint.Measured(0.0)),
+            AppUsageInput("Netflix", AppCategory.VIDEO_STREAMING, 3600, DataPoint.Measured(2e9), DataPoint.Measured(5e8)),
+            AppUsageInput("Signal", AppCategory.MESSAGING, 600, DataPoint.Measured(1e7), DataPoint.Measured(0.0))
+        )
+        val result = EmissionsCalculator().calculate(apps, DisplayInput(emptyList()), BackgroundInput(emptyList()))
+
+        val day = result.toDayHistory(LocalDate(2026, 10, 12))
+
+        assertEquals(LocalDate(2026, 10, 12), day.date)
+        assertEquals(result.ghgTotal, day.totalKg, 1e-12)
+        assertEquals(2, day.categories.size)
+        val video = day.categories.first { it.category == AppCategory.VIDEO_STREAMING }
+        assertEquals(listOf("Netflix", "YouTube"), video.apps.map { it.appName })
+        assertEquals(video.totalKg, video.apps.sumOf { it.totalKg }, 1e-12)
+    }
+
+    @Test
     fun `summarize drops categories and apps without emission`() {
         val day = DayHistory(
             date = LocalDate(2026, 10, 12), totalKg = 1.0, appUsageKg = 1.0,

@@ -84,8 +84,14 @@ fun StatisticsScreen(
     val context = LocalContext.current
     val app = context.applicationContext as DFEApplication
 
-    var history by remember { mutableStateOf<Map<LocalDate, DayHistory>?>(null) }
-    LaunchedEffect(Unit) { history = app.gardenStateCalculator.getAllDays() }
+    var storedDays by remember { mutableStateOf<Map<LocalDate, DayHistory>?>(null) }
+    LaunchedEffect(Unit) { storedDays = app.gardenStateCalculator.getAllDays() }
+
+    // The current day is not stored yet, it is calculated from midnight until the app was opened.
+    val todaySnapshot by app.todayFootprint.snapshot.collectAsState()
+    val history = storedDays?.let { stored ->
+        todaySnapshot?.let { stored + (it.day.date to it.day) } ?: stored
+    }
 
     Column(
         modifier = Modifier
@@ -190,7 +196,8 @@ fun StatisticsScreen(
                     }
                 }
 
-                val weekDays = weekDates.mapNotNull { days[it] }
+                // The unfinished current day would pull the average down, so it only appears as a bar.
+                val weekDays = weekDates.filter { it != today }.mapNotNull { days[it] }
                 val average = weekDays.dailyAverage()
                 val previousMonday = monday.minus(DatePeriod(days = 7))
                 val previousAverage = (0..6)
@@ -242,6 +249,17 @@ fun StatisticsScreen(
                     hasData = selectedDate in days
                 )
             }
+        }
+
+        todaySnapshot?.let { snapshot ->
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = stringResource(R.string.history_updated, formatUpdated(snapshot.calculatedAtMs)),
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
@@ -508,6 +526,9 @@ private fun AppCategory.labelRes(): Int = when (this) {
 
 private fun weekRangeLabel(from: LocalDate, to: LocalDate): String =
     "${formatDate(from, "dMMM")} – ${formatDate(to, "dMMM")}"
+
+private fun formatUpdated(epochMs: Long): String =
+    java.text.SimpleDateFormat("dd.MM.yy HH:mm", Locale.getDefault()).format(java.util.Date(epochMs))
 
 private fun dayLabel(date: LocalDate): String = formatDate(date, "EEEEdMMMM")
 

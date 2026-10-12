@@ -19,6 +19,7 @@ package ch.zhaw.digitalfootprintexplorer.ui.component
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,6 +34,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,6 +44,8 @@ import ch.zhaw.digitalfootprintexplorer.ui.theme.pieChartAppUsageColor
 import ch.zhaw.digitalfootprintexplorer.ui.theme.pieChartBackgroundColor
 import ch.zhaw.digitalfootprintexplorer.ui.theme.pieChartDisplayColor
 import kotlinx.datetime.LocalDate
+
+private val BAR_WIDTH = 28.dp
 
 /** One bar of the [WeekBarChart]. A null [values] means no data was recorded for that day. */
 data class DayBar(
@@ -85,11 +89,10 @@ fun WeekBarChart(
                 modifier = Modifier
                     .weight(1f)
                     .clip(RoundedCornerShape(8.dp))
-                    .background(
-                        if (selected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
-                        else androidx.compose.ui.graphics.Color.Transparent
-                    )
-                    .clickable { onSelect(day.date) }
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) { onSelect(day.date) }
                     .padding(vertical = 8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -102,7 +105,7 @@ fun WeekBarChart(
                     if (day.values != null && maxDay > 0 && total > 0) {
                         Column(
                             modifier = Modifier
-                                .width(20.dp)
+                                .width(BAR_WIDTH)
                                 .fillMaxHeight((total / maxDay).toFloat())
                                 .clip(RoundedCornerShape(4.dp))
                         ) {
@@ -122,7 +125,7 @@ fun WeekBarChart(
                     } else {
                         Box(
                             modifier = Modifier
-                                .width(20.dp)
+                                .width(BAR_WIDTH)
                                 .height(2.dp)
                                 .background(MaterialTheme.colorScheme.outlineVariant)
                         )

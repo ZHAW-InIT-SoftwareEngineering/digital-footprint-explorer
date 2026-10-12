@@ -18,10 +18,10 @@
 package ch.zhaw.digitalfootprintexplorer.ui.screen
 
 import android.text.format.DateFormat
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -454,7 +454,11 @@ private fun CategoryRow(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(enabled = canExpand) { expanded = !expanded }
+            .clickable(
+                enabled = canExpand,
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ) { expanded = !expanded }
             .padding(vertical = 6.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -484,7 +488,7 @@ private fun CategoryRow(
             trackColor = MaterialTheme.colorScheme.surfaceContainerHigh
         )
 
-        AnimatedVisibility(visible = expanded) {
+        if (expanded) {
             Column(modifier = Modifier.padding(start = 12.dp, top = 8.dp)) {
                 category.apps.forEach { appEntry ->
                     val appShare = if (category.totalKg > 0) appEntry.totalKg / category.totalKg else 0.0

@@ -67,6 +67,8 @@ class EmissionsCalculator(
                     ghgTotal = calculateAppUsage(entries).sumOf { it.ghgTotal }
                 )
             }
+            // Installed apps without any usage would only add empty rows.
+            .filter { it.ghgTotal > 0.0 }
     }
 
     /**

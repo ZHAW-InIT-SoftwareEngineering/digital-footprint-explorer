@@ -84,4 +84,21 @@ class FootprintHistoryTest {
         assertEquals(0.5, average.displayKg, 1e-12)
         assertEquals(0.5, average.backgroundKg, 1e-12)
     }
+
+    @Test
+    fun `summarize drops categories and apps without emission`() {
+        val day = DayHistory(
+            date = LocalDate(2026, 10, 12), totalKg = 1.0, appUsageKg = 1.0,
+            displayKg = 0.0, backgroundKg = 0.0,
+            categories = listOf(
+                CategoryHistory(AppCategory.MESSAGING, 1.0, listOf(AppHistory("Signal", 1.0), AppHistory("Telegram", 0.0))),
+                CategoryHistory(AppCategory.E_MAIL, 0.0, listOf(AppHistory("Gmail", 0.0)))
+            )
+        )
+
+        val summary = listOf(day).summarize()
+
+        assertEquals(listOf(AppCategory.MESSAGING), summary.categories.map { it.category })
+        assertEquals(listOf("Signal"), summary.categories.single().apps.map { it.appName })
+    }
 }

@@ -67,9 +67,11 @@ fun List<DayHistory>.summarize(): HistorySummary {
                 apps = entries.flatMap { it.apps }
                     .groupBy { it.appName }
                     .map { (name, apps) -> AppHistory(name, apps.sumOf { it.totalKg }) }
+                    .filter { it.totalKg > 0.0 }
                     .sortedByDescending { it.totalKg }
             )
         }
+        .filter { it.totalKg > 0.0 }
         .sortedByDescending { it.totalKg }
 
     return HistorySummary(

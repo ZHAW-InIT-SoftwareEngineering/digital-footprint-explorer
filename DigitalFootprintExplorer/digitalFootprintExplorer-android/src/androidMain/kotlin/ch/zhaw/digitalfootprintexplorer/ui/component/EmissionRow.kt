@@ -66,6 +66,6 @@ fun EmissionRow(
 
 /** "12.3%" or, when [valueGrams] is given, "4.56 g CO₂e (12.3%)". */
 fun formatEmission(share: Double, valueGrams: Double?): String {
-    val percent = "%.1f%%".format(share * 100)
+    val percent = if (share > 0 && share < 0.0005) "<0.1%" else "%.1f%%".format(share * 100)
     return if (valueGrams != null) "${"%.2f".format(valueGrams)} g CO₂e ($percent)" else percent
 }

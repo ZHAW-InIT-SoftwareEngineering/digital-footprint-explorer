@@ -18,6 +18,7 @@
 package ch.zhaw.digitalfootprintexplorer.model
 
 import ch.zhaw.digitalfootprintexplorer.database.DFEDatabase
+import ch.zhaw.digitalfootprintexplorer.model.output.AppEmission
 import ch.zhaw.digitalfootprintexplorer.model.output.CategoryEmission
 import kotlinx.datetime.LocalDate
 
@@ -49,6 +50,7 @@ class GardenStateCalculator(private val database: DFEDatabase) {
      * @param gardenState       The garden state derived from this day's footprint.
      * @param baselineKgCO2e    The rolling baseline used to derive the garden state.
      * @param categoryBreakdown Per-category emission breakdown to store in DailyEmissionCategory.
+     * @param appBreakdown      Per-app emission breakdown to store in DailyEmissionApp.
      */
     fun recordDailyFootprint(
         date: LocalDate,
@@ -59,7 +61,8 @@ class GardenStateCalculator(private val database: DFEDatabase) {
         measuredAt: String,
         gardenState: GardenState,
         baselineKgCO2e: Double,
-        categoryBreakdown: List<CategoryEmission>
+        categoryBreakdown: List<CategoryEmission>,
+        appBreakdown: List<AppEmission> = emptyList()
     ) {
         val dateStr = date.toString()
         database.dailyFootprintQueries.insert(
@@ -68,6 +71,9 @@ class GardenStateCalculator(private val database: DFEDatabase) {
         )
         categoryBreakdown.forEach { c ->
             database.dailyFootprintQueries.insertCategory(dateStr, c.category.name, c.ghgTotal)
+        }
+        appBreakdown.forEach { a ->
+            database.dailyFootprintQueries.insertApp(dateStr, a.category.name, a.appName, a.ghgTotal)
         }
     }
 
@@ -112,6 +118,41 @@ class GardenStateCalculator(private val database: DFEDatabase) {
             ghgBackground = latest.background_kg,
             measuredAt = latest.calculated_at
         )
+    }
+
+    /**
+     * Returns every recorded day incl. category and app breakdown, keyed by date.
+     * The history is small (one row per day), so it is loaded in one go.
+     */
+    fun getAllDays(): Map<LocalDate, DayHistory> {
+        val queries = database.dailyFootprintQueries
+        val apps = queries.selectAllApps().executeAsList()
+            .groupBy { it.date to it.category }
+        val categories = queries.selectAllCategories().executeAsList()
+            .groupBy { it.date }
+
+        return queries.selectAll().executeAsList().associate { day ->
+            val dayCategories = categories[day.date].orEmpty().mapNotNull { c ->
+                val category = runCatching { AppCategory.valueOf(c.category) }.getOrNull()
+                    ?: return@mapNotNull null
+                CategoryHistory(
+                    category = category,
+                    totalKg = c.total_kg,
+                    apps = apps[day.date to c.category].orEmpty()
+                        .map { AppHistory(it.app_name, it.total_kg) }
+                        .sortedByDescending { it.totalKg }
+                )
+            }
+            val date = LocalDate.parse(day.date)
+            date to DayHistory(
+                date = date,
+                totalKg = day.total_kg,
+                appUsageKg = day.app_usage_kg,
+                displayKg = day.display_kg,
+                backgroundKg = day.background_kg,
+                categories = dayCategories
+            )
+        }
     }
 
     fun isDailyFootprintCalculated(date: LocalDate): Boolean {

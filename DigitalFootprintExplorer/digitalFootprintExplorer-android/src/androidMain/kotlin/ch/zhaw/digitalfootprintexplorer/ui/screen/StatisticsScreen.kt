@@ -56,7 +56,9 @@ import ch.zhaw.digitalfootprintexplorer.model.summarize
 import ch.zhaw.digitalfootprintexplorer.ui.component.DayBar
 import ch.zhaw.digitalfootprintexplorer.ui.component.DayBarValues
 import ch.zhaw.digitalfootprintexplorer.ui.component.WeekBarChart
+import ch.zhaw.digitalfootprintexplorer.ui.component.appendCo2eUnit
 import ch.zhaw.digitalfootprintexplorer.ui.component.formatEmission
+import androidx.compose.ui.text.buildAnnotatedString
 import ch.zhaw.digitalfootprintexplorer.ui.theme.ChartColors
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
@@ -292,7 +294,7 @@ private fun DailyAverageHeader(
         )
         if (averageKg != null) {
             Text(
-                text = "%.2f g CO₂e".format(averageKg * 1000),
+                text = buildAnnotatedString { append("%.2f".format(averageKg * 1000)); appendCo2eUnit() },
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.onBackground
             )
@@ -353,7 +355,7 @@ private fun EmissionBreakdown(
             )
             summary?.let {
                 Text(
-                    text = "%.2f g CO₂e".format(it.totalKg * 1000),
+                    text = buildAnnotatedString { append("%.2f".format(it.totalKg * 1000)); appendCo2eUnit() },
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onBackground
                 )

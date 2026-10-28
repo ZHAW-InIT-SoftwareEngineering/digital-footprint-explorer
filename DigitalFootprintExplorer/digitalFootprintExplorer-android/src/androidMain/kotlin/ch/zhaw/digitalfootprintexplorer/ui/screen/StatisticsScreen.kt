@@ -23,6 +23,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
@@ -56,9 +57,7 @@ import ch.zhaw.digitalfootprintexplorer.ui.component.DayBar
 import ch.zhaw.digitalfootprintexplorer.ui.component.DayBarValues
 import ch.zhaw.digitalfootprintexplorer.ui.component.WeekBarChart
 import ch.zhaw.digitalfootprintexplorer.ui.component.formatEmission
-import ch.zhaw.digitalfootprintexplorer.ui.theme.pieChartAppUsageColor
-import ch.zhaw.digitalfootprintexplorer.ui.theme.pieChartBackgroundColor
-import ch.zhaw.digitalfootprintexplorer.ui.theme.pieChartDisplayColor
+import ch.zhaw.digitalfootprintexplorer.ui.theme.ChartColors
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DatePeriod
@@ -226,10 +225,17 @@ fun StatisticsScreen(
                             }
                         )
                     }
+                    // The unfinished current day is excluded, same as in the header average.
+                    val pageAverage = (0..6)
+                        .map { pageMonday.plus(DatePeriod(days = it)) }
+                        .filter { it != today }
+                        .mapNotNull { days[it] }
+                        .dailyAverage()
                     WeekBarChart(
                         days = bars,
                         selectedDate = selectedDate,
-                        onSelect = { tappedDate = it }
+                        onSelect = { tappedDate = it },
+                        averageKg = pageAverage?.totalKg
                     )
                 }
 
@@ -237,8 +243,11 @@ fun StatisticsScreen(
                 HorizontalDivider()
                 Spacer(Modifier.height(12.dp))
 
+                val selectedLabel = dayLabel(selectedDate)
                 EmissionBreakdown(
-                    title = dayLabel(selectedDate),
+                    title = if (selectedDate == today) {
+                        stringResource(R.string.history_today_so_far, selectedLabel)
+                    } else selectedLabel,
                     summary = days[selectedDate]?.let { listOf(it).dailyAverage() }
                 )
 
@@ -334,29 +343,40 @@ private fun EmissionBreakdown(
     summary: HistorySummary?
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-        Spacer(Modifier.height(8.dp))
+        // The unit is shown once here; the three values below only carry a plain "g".
+        Row(verticalAlignment = Alignment.Bottom) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.weight(1f)
+            )
+            summary?.let {
+                Text(
+                    text = "%.2f g CO₂e".format(it.totalKg * 1000),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+        Spacer(Modifier.height(12.dp))
         Row(modifier = Modifier.fillMaxWidth()) {
             BreakdownValue(
                 label = stringResource(R.string.app_usage),
                 valueKg = summary?.appUsageKg,
-                color = pieChartAppUsageColor,
+                color = ChartColors.appUsage,
                 modifier = Modifier.weight(1f)
             )
             BreakdownValue(
                 label = stringResource(R.string.display),
                 valueKg = summary?.displayKg,
-                color = pieChartDisplayColor,
+                color = ChartColors.display,
                 modifier = Modifier.weight(1f)
             )
             BreakdownValue(
                 label = stringResource(R.string.background),
                 valueKg = summary?.backgroundKg,
-                color = pieChartBackgroundColor,
+                color = ChartColors.background,
                 modifier = Modifier.weight(1f)
             )
         }
@@ -371,21 +391,35 @@ private fun BreakdownValue(
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium,
-            color = color
-        )
-        Text(
-            text = if (valueKg != null) "%.2f".format(valueKg * 1000) else "–",
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-        Text(
-            text = "g CO₂e",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .size(8.dp)
+                    .clip(CircleShape)
+                    .background(color)
+            )
+            Spacer(Modifier.width(6.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Row(verticalAlignment = Alignment.Bottom) {
+            Text(
+                text = if (valueKg != null) "%.2f".format(valueKg * 1000) else "–",
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onBackground
+            )
+            if (valueKg != null) {
+                Text(
+                    text = " g",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 3.dp)
+                )
+            }
+        }
     }
 }
 
@@ -425,19 +459,6 @@ private fun HistoryDetails(
                 CategoryRow(category, categoriesTotal)
             }
 
-            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
-        }
-
-        Row(modifier = Modifier.fillMaxWidth()) {
-            Text(
-                text = stringResource(R.string.history_total),
-                style = MaterialTheme.typography.titleSmall,
-                modifier = Modifier.weight(1f)
-            )
-            Text(
-                text = "%.2f g CO₂e".format(total * 1000),
-                style = MaterialTheme.typography.titleSmall
-            )
         }
     }
 }

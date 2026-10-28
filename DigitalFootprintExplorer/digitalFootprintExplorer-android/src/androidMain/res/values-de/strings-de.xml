@@ -74,6 +74,7 @@
     <string name="history_categories">App-Nutzung nach Kategorie</string>
     <string name="history_updated">Aktualisiert: %1$s Uhr</string>
     <string name="history_total">Total</string>
+    <string name="history_today_so_far">%1$s (bisher)</string>
     <string name="history_daily_average">Tagesdurchschnitt</string>
     <string name="history_vs_last_week">%1$s vs. Vorwoche</string>
     <string name="history_no_comparison">Kein Vergleich mit der Vorwoche möglich</string>

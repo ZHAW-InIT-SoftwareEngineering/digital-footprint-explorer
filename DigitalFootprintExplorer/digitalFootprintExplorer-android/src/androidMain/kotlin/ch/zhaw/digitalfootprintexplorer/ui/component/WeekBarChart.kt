@@ -49,13 +49,13 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import ch.zhaw.digitalfootprintexplorer.ui.theme.ChartColors
 import kotlin.math.ceil
-import kotlin.math.roundToInt
 import kotlinx.datetime.LocalDate
 
 private val BAR_WIDTH = 35.dp
 private val MIN_BAR_HEIGHT = 4.dp
 private val AXIS_WIDTH = 38.dp
-private const val AXIS_STEP_GRAMS = 25.0
+private const val MAX_GRID_LINES = 4
+private val GRID_STEPS_GRAMS = listOf(1.0, 2.0, 5.0, 10.0, 25.0, 50.0, 100.0, 250.0, 500.0, 1000.0)
 
 /** One bar of the [WeekBarChart]. A null [values] means no data was recorded for that day. */
 data class DayBar(
@@ -86,7 +86,8 @@ fun WeekBarChart(
     averageKg: Double? = null
 ) {
     val maxDayGrams = days.maxOf { it.values?.totalKg ?: 0.0 } * 1000.0
-    val axisMaxGrams = ceilToStep(maxOf(maxDayGrams, (averageKg ?: 0.0) * 1000.0))
+    val axisMaxGrams = ceilToGram(maxOf(maxDayGrams, (averageKg ?: 0.0) * 1000.0))
+    val gridStepGrams = gridStepFor(axisMaxGrams)
     val axisMaxKg = axisMaxGrams / 1000.0
     val barAreaHeight = 140.dp
     val rowPadding = 8.dp
@@ -105,10 +106,10 @@ fun WeekBarChart(
             ) {
                 drawLine(gridColor, Offset(0f, 0f), Offset(size.width, 0f), strokeWidth = 1.dp.toPx())
                 drawLine(gridColor, Offset(0f, size.height), Offset(size.width, size.height), strokeWidth = 1.dp.toPx())
-                // Faint orientation line for every AXIS_STEP_GRAMS between 0 and the maximum.
-                val steps = (axisMaxGrams / AXIS_STEP_GRAMS).roundToInt()
+                // Faint orientation line for every gridStepGrams between 0 and the maximum.
+                val steps = ceil(axisMaxGrams / gridStepGrams).toInt()
                 for (i in 1 until steps) {
-                    val y = size.height * (1f - i / steps.toFloat())
+                    val y = size.height * (1f - (i * gridStepGrams / axisMaxGrams).toFloat())
                     drawLine(
                         color = gridColor.copy(alpha = 0.5f),
                         start = Offset(0f, y),
@@ -243,8 +244,11 @@ private fun Modifier.centeredOnY(y: Dp): Modifier = layout { measurable, constra
 }
 
 /** Rounds [value] up to the next multiple of 25 (at least 25). */
-private fun ceilToStep(value: Double): Double =
-    maxOf(1.0, ceil(value / AXIS_STEP_GRAMS)) * AXIS_STEP_GRAMS
+/** Rounds up to the next whole gram, so small weeks get a small axis (at least 1 g). */
+private fun ceilToGram(value: Double): Double = maxOf(1.0, ceil(value))
+
+private fun gridStepFor(axisMaxGrams: Double): Double =
+    GRID_STEPS_GRAMS.firstOrNull { axisMaxGrams / it <= MAX_GRID_LINES } ?: GRID_STEPS_GRAMS.last()
 
 private fun formatAxisGrams(grams: Double): String =
     if (grams >= 10 || grams == 0.0) "%.0f g".format(grams) else "%.1f g".format(grams)

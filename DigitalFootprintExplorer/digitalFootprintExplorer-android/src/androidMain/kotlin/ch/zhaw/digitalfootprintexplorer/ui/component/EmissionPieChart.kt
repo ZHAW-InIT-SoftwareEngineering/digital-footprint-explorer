@@ -23,9 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
-import ch.zhaw.digitalfootprintexplorer.ui.theme.pieChartAppUsageColor
-import ch.zhaw.digitalfootprintexplorer.ui.theme.pieChartBackgroundColor
-import ch.zhaw.digitalfootprintexplorer.ui.theme.pieChartDisplayColor
+import ch.zhaw.digitalfootprintexplorer.ui.theme.ChartColors
 import com.patrykandpatrick.vico.compose.common.Fill
 import com.patrykandpatrick.vico.compose.common.component.TextComponent
 import com.patrykandpatrick.vico.compose.pie.PieChart
@@ -66,15 +64,15 @@ fun EmissionPieChart(
         sliceProvider = PieChart.SliceProvider.series(
             listOf(
                 PieChart.Slice(
-                    fill = Fill(pieChartAppUsageColor),
+                    fill = Fill(ChartColors.appUsage),
                     label = PieChart.SliceLabel.Inside(labelComponent)
                 ),
                 PieChart.Slice(
-                    fill = Fill(pieChartDisplayColor),
+                    fill = Fill(ChartColors.display),
                     label = PieChart.SliceLabel.Inside(labelComponent)
                 ),
                 PieChart.Slice(
-                    fill = Fill(pieChartBackgroundColor),
+                    fill = Fill(ChartColors.background),
                     label = PieChart.SliceLabel.Inside(labelComponent)
                 )
             )

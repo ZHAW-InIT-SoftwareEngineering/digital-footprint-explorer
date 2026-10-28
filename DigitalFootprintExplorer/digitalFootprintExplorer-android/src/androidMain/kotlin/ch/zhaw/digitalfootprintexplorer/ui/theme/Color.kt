@@ -16,9 +16,6 @@
  */
 
 package ch.zhaw.digitalfootprintexplorer.ui.theme
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.graphics.Color
 
 val primaryLight = Color(0xFF136B55)
@@ -237,16 +234,11 @@ val surfaceContainerDarkHighContrast = Color(0xFF2C322F)
 val surfaceContainerHighDarkHighContrast = Color(0xFF363D3A)
 val surfaceContainerHighestDarkHighContrast = Color(0xFF424845)
 
-/** Chart colours derived from the Material 3 roles so they follow light/dark theme. */
 object ChartColors {
-    val appUsage: Color @Composable @ReadOnlyComposable get() = MaterialTheme.colorScheme.primary
-    val display: Color @Composable @ReadOnlyComposable get() = MaterialTheme.colorScheme.tertiary
-    val background: Color @Composable @ReadOnlyComposable get() = MaterialTheme.colorScheme.outline
+    val appUsage = Color(0xFF6200EE)
+    val display = Color(0xFF03DAC6)
+    val background = Color(0xFFBB86FC)
 }
-
-val pieChartAppUsageColor =  Color(0xFF6200EE)
-val pieChartDisplayColor = Color(0xFF03DAC6)
-val pieChartBackgroundColor = Color(0xFFBB86FC)
 
 
 

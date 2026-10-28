@@ -52,9 +52,9 @@ import kotlin.math.ceil
 import kotlin.math.roundToInt
 import kotlinx.datetime.LocalDate
 
-private val BAR_WIDTH = 28.dp
+private val BAR_WIDTH = 35.dp
 private val MIN_BAR_HEIGHT = 4.dp
-private val AXIS_WIDTH = 52.dp
+private val AXIS_WIDTH = 38.dp
 private const val AXIS_STEP_GRAMS = 25.0
 
 /** One bar of the [WeekBarChart]. A null [values] means no data was recorded for that day. */
@@ -139,9 +139,9 @@ fun WeekBarChart(
                     Column(
                         modifier = Modifier
                             .weight(1f)
-                            .clip(RoundedCornerShape(12.dp))
+                            .clip(RoundedCornerShape(4.dp))
                             .background(
-                                if (selected) MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
+                                if (selected) MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.8f)
                                 else Color.Transparent
                             )
                             .clickable(
@@ -185,9 +185,8 @@ fun WeekBarChart(
                         Text(
                             text = day.label,
                             style = MaterialTheme.typography.labelMedium,
-                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
-                            color = if (selected) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.onSurfaceVariant
+                            fontWeight = FontWeight.Normal,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }

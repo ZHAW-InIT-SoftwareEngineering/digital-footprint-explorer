@@ -355,7 +355,7 @@ private fun EmissionBreakdown(
                 Text(
                     text = "%.2f g CO₂e".format(it.totalKg * 1000),
                     style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary
+                    color = MaterialTheme.colorScheme.onBackground
                 )
             }
         }
@@ -364,18 +364,21 @@ private fun EmissionBreakdown(
             BreakdownValue(
                 label = stringResource(R.string.app_usage),
                 valueKg = summary?.appUsageKg,
+                totalKg = summary?.totalKg,
                 color = ChartColors.appUsage,
                 modifier = Modifier.weight(1f)
             )
             BreakdownValue(
                 label = stringResource(R.string.display),
                 valueKg = summary?.displayKg,
+                totalKg = summary?.totalKg,
                 color = ChartColors.display,
                 modifier = Modifier.weight(1f)
             )
             BreakdownValue(
                 label = stringResource(R.string.background),
                 valueKg = summary?.backgroundKg,
+                totalKg = summary?.totalKg,
                 color = ChartColors.background,
                 modifier = Modifier.weight(1f)
             )
@@ -387,39 +390,37 @@ private fun EmissionBreakdown(
 private fun BreakdownValue(
     label: String,
     valueKg: Double?,
+    totalKg: Double?,
     color: Color,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier
-                    .size(8.dp)
-                    .clip(CircleShape)
-                    .background(color)
-            )
-            Spacer(Modifier.width(6.dp))
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        Row(verticalAlignment = Alignment.Bottom) {
-            Text(
-                text = if (valueKg != null) "%.2f".format(valueKg * 1000) else "–",
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            if (valueKg != null) {
-                Text(
-                    text = " g",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(bottom = 3.dp)
-                )
-            }
-        }
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = color
+        )
+        val pct = if (valueKg != null && totalKg != null && totalKg > 0)
+            "%.0f%%".format(valueKg / totalKg * 100) else "–"
+        Text(
+            text = pct,
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onBackground
+        )
+//        Row(verticalAlignment = Alignment.Bottom) {
+//            Text(
+//                text = if (valueKg != null) "%.2f".format(valueKg * 1000) else "–",
+//                style = MaterialTheme.typography.labelSmall,
+//                color = MaterialTheme.colorScheme.onSurfaceVariant
+//            )
+//            if (valueKg != null) {
+//                Text(
+//                    text = " g",
+//                    style = MaterialTheme.typography.labelSmall,
+//                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+//                )
+//            }
+//        }
     }
 }
 

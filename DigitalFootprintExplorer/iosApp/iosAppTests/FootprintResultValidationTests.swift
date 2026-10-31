@@ -193,6 +193,70 @@ final class FootprintResultValidationTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: store.fileURL), file)
     }
 
+    // [15] Three hours can contain very different kinds of use. These separately worked-out
+    // amounts check that the real iPhone defaults and the shared calculation keep the same units.
+    func testThreeHourMixedUseMatchesIndependentDecimalOracleWithSharedDefaults() throws {
+        let usages = [FootprintCategory.video, .audio, .messaging].map { category in
+            var usage = SharedFootprintCalculator.exampleUsage(for: category)
+            usage.minutes = 60
+            return usage
+        }
+        let inputs = FootprintInputs(usages: usages, brightness: 0.5, gpsHours: 0, bluetoothHours: 0)
+        let actual = try SharedFootprintCalculator().calculate(inputs)
+        XCTAssertEqual(inputs.totalMinutes, 180)
+        XCTAssertEqual(actual.totalKg, 0.024604487556923077, accuracy: 1e-12)
+        XCTAssertEqual(actual.appUsageKg, 0.02456428242871795, accuracy: 1e-12)
+        XCTAssertEqual(actual.displayKg, 0.000040205128205128205, accuracy: 1e-12)
+        XCTAssertEqual(actual.backgroundKg, 0)
+        XCTAssertEqual(actual.categories.count, 3)
+        XCTAssertEqual(Set(actual.categories.map(\.category)), Set([.video, .audio, .messaging]))
+        XCTAssertEqual(actual.categories.reduce(0) { $0 + $1.deviceKg }, 0.00014071794871794872, accuracy: 1e-12)
+        XCTAssertEqual(actual.categories.reduce(0) { $0 + $1.networkKg }, 0.00545045648, accuracy: 1e-12)
+        XCTAssertEqual(actual.categories.reduce(0) { $0 + $1.backendKg }, 0.018973108, accuracy: 1e-12)
+        let expectedCategories: [(FootprintCategory, Double)] = [
+            (.video, 0.022765488547008547),
+            (.audio, 0.0014343247535042735),
+            (.messaging, 0.0003644691282051282)
+        ]
+        for (category, expected) in expectedCategories {
+            let saved = try XCTUnwrap(actual.categories.first { $0.category == category })
+            XCTAssertEqual(saved.totalKg, expected, accuracy: 1e-12)
+        }
+        XCTAssertNoThrow(try actual.validate())
+    }
+
+    // [16] Equal time does not mean equal traffic. Fixed answers also show that changing
+    // the connection assumption affects network energy without changing the device or server parts.
+    func testThreeHourCategoryAndNetworkScenariosMatchIndependentDecimalAnswers() throws {
+        func result(_ category: FootprintCategory, wifiShare: Double? = nil) throws -> FootprintResult {
+            var usage = SharedFootprintCalculator.exampleUsage(for: category)
+            usage.minutes = 180
+            if let wifiShare { usage.wifiShare = wifiShare }
+            return try SharedFootprintCalculator().calculate(FootprintInputs(usages: [usage],
+                brightness: 0.5, gpsHours: 0, bluetoothHours: 0))
+        }
+        let video = try result(.video)
+        let messaging = try result(.messaging)
+        let allWiFi = try result(.video, wifiShare: 1)
+        let allCellular = try result(.video, wifiShare: 0)
+        XCTAssertEqual(video.totalKg, 0.06833667076923077, accuracy: 1e-12)
+        XCTAssertEqual(messaging.totalKg, 0.0011336125128205128, accuracy: 1e-12)
+        XCTAssertEqual(allWiFi.totalKg, 0.05891103076923077, accuracy: 1e-12)
+        XCTAssertEqual(allCellular.totalKg, 0.10603923076923077, accuracy: 1e-12)
+        for candidate in [video, messaging, allWiFi, allCellular] {
+            XCTAssertEqual(candidate.displayKg, 0.000040205128205128205, accuracy: 1e-12)
+            XCTAssertEqual(candidate.backgroundKg, 0)
+            XCTAssertNoThrow(try candidate.validate())
+        }
+        let wifiParts = try XCTUnwrap(allWiFi.categories.first)
+        let cellularParts = try XCTUnwrap(allCellular.categories.first)
+        XCTAssertEqual(wifiParts.deviceKg, cellularParts.deviceKg, accuracy: 1e-12)
+        XCTAssertEqual(wifiParts.backendKg, 0.052899, accuracy: 1e-12)
+        XCTAssertEqual(cellularParts.backendKg, wifiParts.backendKg, accuracy: 1e-12)
+        XCTAssertEqual(wifiParts.networkKg, 0.0057708, accuracy: 1e-12)
+        XCTAssertEqual(cellularParts.networkKg, 0.052899, accuracy: 1e-12)
+    }
+
     private var calendar: Calendar {
         var value = Calendar(identifier: .gregorian)
         value.timeZone = TimeZone(identifier: "Europe/Zurich")!
@@ -211,7 +275,7 @@ final class FootprintResultValidationTests: XCTestCase {
     }
 }
 
-// [15] Return a balanced answer first, then a deliberately wrong total. This keeps the
+// [17] Return a balanced answer first, then a deliberately wrong total. This keeps the
 // save-safety test independent from failures in Apple's activity service.
 private final class BalanceProbeCalculator: FootprintCalculating {
     var returnBrokenTotal = false

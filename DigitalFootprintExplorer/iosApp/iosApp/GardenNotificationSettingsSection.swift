@@ -48,7 +48,7 @@ struct GardenNotificationSettingsSection: View {
             }
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier("settings.dailyGardenNotificationRow")
-            Text("A short update around 8:00 in your local time, after yesterday's estimate is ready. Some days may arrive later; days without usable activity stay quiet.")
+            Text("A gentle reminder around 8:00 in your local time, even when DFE is closed. Fresh estimates still depend on Apple's data and time to refresh.")
                 .font(.subheadline).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityIdentifier("settings.notificationTiming")

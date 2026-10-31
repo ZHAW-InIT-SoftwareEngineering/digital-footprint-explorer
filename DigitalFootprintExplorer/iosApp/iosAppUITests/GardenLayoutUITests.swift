@@ -168,4 +168,36 @@ final class GardenLayoutUITests: XCTestCase {
         AutomaticUITestSupport.reach(latest, in: app)
         AutomaticUITestSupport.assertNoManualEntry(in: app)
     }
+    // [10] The visible app time belongs to this saved day. Its explanation should stay
+    // readable at large text without suggesting that modelled traffic was measured.
+    func testImportedActivityAndModelLimitsRemainClearAtNormalAndLargestText() throws {
+        for largeText in [false, true] {
+            let app = AutomaticUITestSupport.open(fixture: true, largeText: largeText)
+            let activity = app.staticTexts["footprint.importedActivity"]
+            AutomaticUITestSupport.reach(activity, in: app)
+            XCTAssertEqual(activity.label, "Imported app activity: 1 h")
+            let details = app.buttons["today.dayDetails"]
+            AutomaticUITestSupport.reach(details, in: app)
+            details.tap()
+            let period = app.staticTexts["source.activityPeriod"]
+            XCTAssertTrue(period.waitForExistence(timeout: 8))
+            // [11] The navigation transition briefly exposes both scroll views. Find the
+            // detail by its content instead of keeping an index that can disappear mid-check.
+            let content = app.scrollViews.containing(.staticText, identifier: "source.activityPeriod").firstMatch
+            let navigation = app.navigationBars.containing(.button, identifier: "Today").firstMatch
+            XCTAssertTrue(content.waitForExistence(timeout: 8))
+            XCTAssertTrue(navigation.waitForExistence(timeout: 8))
+            AutomaticUITestSupport.reach(period, in: app, inside: content, below: navigation)
+            XCTAssertTrue(period.label.contains("can differ from the daily total in Screen Time"))
+            let limits = app.staticTexts["source.modelLimits"]
+            AutomaticUITestSupport.reach(limits, in: app, inside: content, below: navigation)
+            XCTAssertTrue(limits.label.contains("saved category assumptions"))
+            XCTAssertTrue(limits.label.contains("Background listening"))
+            AutomaticUITestSupport.assertNoManualEntry(in: app)
+            AutomaticUITestSupport.capture(largeText ? "Large-text imported activity and model limits" : "Imported activity and model limits")
+            try app.performAccessibilityAudit(for: [.textClipped, .hitRegion])
+            app.terminate()
+        }
+    }
+
 }

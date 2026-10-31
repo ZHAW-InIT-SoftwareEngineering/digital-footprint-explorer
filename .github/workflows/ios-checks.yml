@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [main]
   push:
-    branches: [main, feature/ios-garden-automatic-estimates]
+    branches: [main, feature/ios-garden-automatic-estimates, feature/ios-scheduled-morning-reminders]
   workflow_dispatch:
 
 # [01] PR code can read the checkout, but does not get a signing key or permission to change the repo.

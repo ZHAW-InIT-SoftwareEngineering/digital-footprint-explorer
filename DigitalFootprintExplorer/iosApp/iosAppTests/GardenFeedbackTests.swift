@@ -69,4 +69,57 @@ final class GardenFeedbackTests: XCTestCase {
         XCTAssertNil(defaults.object(forKey: AppAppearance.storageKey))
         XCTAssertEqual(defaults.string(forKey: "history-test-marker"), "retained")
     }
+    // [05] A readable activity total helps people compare the same day without changing the
+    // minutes that actually enter the calculation.
+    func testImportedActivitySummaryKeepsHoursMinutesAndSmallPositiveUseClear() {
+        XCTAssertEqual(summaryActivityTime(180), "3 h")
+        XCTAssertEqual(summaryActivityTime(95), "1 h 35 min")
+        XCTAssertEqual(summaryActivityTime(0), "0 min")
+        XCTAssertEqual(summaryActivityTime(0.1), "less than 1 min")
+        XCTAssertEqual(summaryActivityTime(.nan), "Unavailable")
+        XCTAssertEqual(summaryActivityTime(.infinity), "Unavailable")
+        XCTAssertEqual(summaryActivityTime(-1), "Unavailable")
+        XCTAssertEqual(summaryActivityTime(.greatestFiniteMagnitude), "Unavailable")
+    }
+
+
+    // [06] An older record can mix imported audio with assumed video time. Show only the
+    // part whose source is known, so those assumptions do not become Screen Time measurements.
+    func testImportedActivityCountUsesOnlyProvenCategoriesAndRejectsAmbiguousSources() {
+        let inputs = FootprintInputs(usages: [
+            CategoryUsage(category: .video, minutes: 60, gigabytesPerHour: 0.7, wifiShare: 0.8),
+            CategoryUsage(category: .audio, minutes: 15, gigabytesPerHour: 0.0432, wifiShare: 0.8)
+        ], brightness: 0.5, gpsHours: 0, bluetoothHours: 0)
+        let result = FootprintResult(totalKg: 0.01, appUsageKg: 0.01,
+            displayKg: 0, backgroundKg: 0, categories: [])
+        var record = FootprintRecord(day: "2026-10-20", inputs: inputs, result: result,
+            source: .screenTimeWithEstimates, calculatedAt: Date(timeIntervalSinceReferenceDate: 0),
+            isCompleted: true, garden: .stable, baselineKg: nil, automaticCategories: [.audio])
+        XCTAssertEqual(record.inputs.totalMinutes, 75)
+        XCTAssertEqual(importedActivityMinutes(record), 15)
+        record.automaticCategories = [.video, .audio]
+        XCTAssertEqual(importedActivityMinutes(record), 75)
+        record.automaticCategories = [.audio, .video, .audio]
+        XCTAssertEqual(importedActivityMinutes(record), 75)
+        record.automaticCategories = nil
+        XCTAssertNil(importedActivityMinutes(record))
+        record.automaticCategories = []
+        XCTAssertNil(importedActivityMinutes(record))
+        record.automaticCategories = [.audio]
+        record.source = .manual
+        XCTAssertNil(importedActivityMinutes(record))
+        record.source = .screenTimeWithEstimates
+        for invalid in [Double.nan, .infinity, -1] {
+            record.inputs = inputs
+            record.inputs.usages[1].minutes = invalid
+            XCTAssertNil(importedActivityMinutes(record))
+        }
+        record.inputs = inputs
+        record.automaticCategories = [.audio, .social]
+        XCTAssertNil(importedActivityMinutes(record))
+        record.automaticCategories = [.audio]
+        record.inputs.usages.append(inputs.usages[1])
+        XCTAssertNil(importedActivityMinutes(record))
+    }
+
 }

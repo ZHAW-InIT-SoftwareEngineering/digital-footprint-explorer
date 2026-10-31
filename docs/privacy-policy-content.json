@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "revision": "2026-10-30",
+  "revision": "2026-10-31",
   "title": "Privacy policy",
   "app_name": "Digital Footprint Explorer",
   "project_team": "School of Engineering ZHAW",
@@ -24,7 +24,7 @@
       "title": "Your Screen Time choice",
       "paragraphs": [
         "The app asks for Screen Time access only when you choose Enable automatic estimates and approve Apple's permission screen. If Apple grants expanded data access, automatic input starts without a second setup form or individual app choices. If access is unavailable or declined, new days stay pending.",
-        "When Apple allows data access, the app uses app usage durations for completed days. It matches app identifiers against a small set of local category rules. Apps without a rule stay under Other apps. This classification is an estimate of an app's purpose; it does not identify what you did inside it. The saved history contains category totals, not a list of individual apps, their identifiers or their names.",
+        "When Apple allows data access, the app uses app usage durations for completed days on this iPhone. It matches app identifiers against a small set of local category rules. Apps without a rule stay under Other apps. This classification is an estimate of an app's purpose; it does not identify what you did inside it. The saved history contains category totals, not a list of individual apps, their identifiers or their names.",
         "To avoid counting an app twice and to apply its category rule, the app briefly reads Apple's installed-app list on your iPhone. This lookup stays in memory. The list, names and individual app records are not saved or shared. No app identifiers are sent to an online service for classification.",
         "Website records and browsing details are not used or saved. Time spent in a browser can be included as app use, without reading the websites you visited.",
         "Earlier versions may keep a selection of apps or groups. That narrower setup stays in place until you choose the new all-app mode. New all-app input begins on the day you enable it and does not backfill earlier days.",
@@ -36,8 +36,8 @@
       "title": "How the data is used",
       "paragraphs": [
         "The app uses these inputs to calculate daily estimates, show your history and compare a day with up to seven earlier days. This comparison changes the garden shown in the app.",
-        "Updates can run when you open the app or when iOS gives it time in the background. iOS controls background timing, so a new estimate may not appear straight after midnight. Screen Time supplies app usage duration; the other inputs remain estimates.",
-        "If you turn on the optional Daily garden update, the app can also prepare a short local notification after a completed day's estimate is ready. The morning target is 08:00, but iOS may give the app time to update later."
+        "Updates can run when you open the app or when iOS gives it time in the background. iOS controls background timing, so a new estimate may not appear straight after midnight. Check the completed date shown with the result; it is not today's running total or Apple's weekly daily average across devices. Screen Time supplies available app usage duration; the other inputs remain estimates. If the source reports screen-on activity but no positive app time is available, that day stays pending rather than becoming zero app use. This check does not establish that every kind of activity was available. App activity returned by Apple can differ from the daily total shown in Screen Time, even for the same date and iPhone. Estimates cover the available app durations, not a verified total of every kind of phone activity.",
+        "If you turn on the optional Daily garden update, the app schedules a short local morning reminder. It can invite you back even when the app is closed. A reminder does not mean that a new estimate is ready."
       ]
     },
     {
@@ -46,7 +46,7 @@
       "paragraphs": [
         "Your daily history and settings are kept in the app's local storage. The history and widget files use iOS file protection. The app does not upload them to a project server, and it has no separate cloud account or sync service.",
         "Your appearance choice stays in the app's local settings and changes only the display. Garden messages follow the saved estimate and its comparison with earlier days; there is no name, goal or personal profile to fill in.",
-        "The optional notification setting and a small delivery log also stay in local storage. The log keeps saved-day and delivery dates, the time an update was prepared and the local time zone. These details help prevent repeat notifications; the log does not contain app names, app identifiers or usage times.",
+        "The optional notification setting and a small schedule and delivery log also stay in local storage. The log keeps delivery dates, scheduled times, local time zone information and, for a result-based message, the saved-day date. These details help prevent repeat notifications; the log does not contain app names, app identifiers or usage times.",
         "Your iPhone's backup settings may include app data in an Apple or computer backup. Those backups are managed outside this app. You can review and remove them through Apple's backup settings."
       ]
     },
@@ -64,11 +64,13 @@
       "title": "Optional garden updates",
       "paragraphs": [
         "Daily garden update is off by default. If you turn it on in Settings, the app asks for Apple's notification permission. This is separate from Screen Time access. The app does not ask for notification permission when you first open it.",
-        "An update can be prepared only after a fresh import has saved a valid estimate for yesterday with usable, non-zero Screen Time activity. The app checks the device's current local time and sends updates from 08:00 until before 20:00. It does not queue a future message before an estimate is ready. Missing activity, a zero-use day, unavailable access or a failed import of yesterday produces no update. A problem with an older pending day does not block an update for a valid saved yesterday.",
-        "The message describes the actual saved garden state and, when available, its change from an earlier completed day. It does not include app names, individual usage times or a carbon value. Tapping it opens Today. A local log helps limit updates to one for each saved day and one in each local delivery day.",
-        "iOS controls when the app can refresh in the background, so an update is not guaranteed at 08:00 or every day. Focus, Scheduled Summary and your notification settings can also delay or hide it. A new message does not prove that iOS updated the app at an exact time.",
+        "The app schedules one reminder per local day at around 08:00 for the next 30 mornings. iOS can display these saved reminders while DFE is closed, including after you remove it from multitasking. The app renews this schedule when you use it or when iOS gives it background time. If it cannot run for more than 30 days, the saved reminders end until the app can prepare more.",
+        "A general reminder invites you to explore your latest saved garden. Its wording varies with the local delivery date, without a personal profile or extra activity collection. It does not say that yesterday's estimate is ready or that your garden has changed. It can still appear when activity is missing, access is unavailable or there was no usable activity. Those cases do not become invented estimates.",
+        "Before a saved reminder is due, a fresh import may replace its message with a short summary of a valid, non-zero estimate for yesterday. The app can also update older wording in a known future reminder. Both changes use the same pending reminder and delivery time, rather than adding another. Once that day's reminder may have appeared, a later import does not send a second summary, even if you dismissed the first message.",
+        "A result-based message describes the actual saved garden and, when available, its change from an earlier completed day. Neither type includes app names, individual usage times or a carbon value. Tapping either opens Today. A local date log helps limit messages to one in each local delivery day.",
+        "Reminders use local calendar dates and times. The app checks the schedule again when it can run after a clock or time zone change. iOS, Focus, Scheduled Summary and notification settings can delay or hide a message, so an exact 08:00 delivery or a message every day is not guaranteed. A message does not prove that Screen Time, the garden or the widgets refreshed. Removing DFE from multitasking normally stops fresh background calculations until you open it again.",
         "These are local notifications prepared on your iPhone. They do not use an app server, remote push notifications or a data upload. Depending on your iOS settings, a garden message may appear on the Lock Screen or in Notification Center, where someone who can see your phone may read it.",
-        "You can turn Daily garden update off in the app or manage notification permission in iPhone settings. Turning it off in the app cancels this feature's pending messages, but keeps its delivery dates to avoid repeats. Messages already shown in Notification Center remain until you clear them there. Turning notifications off does not disconnect Screen Time or delete your saved estimates."
+        "You can turn Daily garden update off in the app or manage notification permission in iPhone settings. Turning it off in the app cancels this feature's pending messages, but keeps its delivery dates to avoid repeats. Messages already shown in Notification Center remain until you clear them there. Turning notifications off does not disconnect Screen Time or delete your saved estimates. Disconnecting Screen Time leaves the separate reminder choice unchanged; turn Daily garden update off too if you do not want reminders."
       ]
     },
     {
@@ -109,8 +111,9 @@
       "id": "estimates",
       "title": "Understanding the estimates",
       "paragraphs": [
-        "The results are model estimates for awareness and comparison. They are not measured carbon emissions or a direct reading of phone energy use.",
-        "App categories and starting traffic rates are assumptions. An app can support several types of activity, so a category rule cannot measure the share of video, messages or calls inside it. The calculation method is explained in Settings."
+        "The results are model estimates for awareness and comparison. They are not measured carbon emissions or a direct reading of phone energy use. The garden compares a result with up to seven earlier saved days; green does not establish a small environmental impact in absolute terms.",
+        "App categories and category-average traffic rates are assumptions. An app can support several types of activity, so a category rule cannot measure the share of video, messages or calls inside it. The imported durations do not establish all background music listening, call type, video quality or actual network traffic. Website records are excluded. The calculation method is explained in Settings.",
+        "Automatic input keeps the calculation settings from your saved routine, including valid zero traffic assumptions. New days use the settings that apply to their date; saved days keep their own settings. Starting automatic input does not silently replace those assumptions or recalculate earlier days with new defaults."
       ]
     },
     {

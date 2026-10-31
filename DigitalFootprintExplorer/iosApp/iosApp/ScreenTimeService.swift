@@ -342,10 +342,357 @@ struct ScreenTimeDayValidation {
     }
 }
 
+// [68] A full date is not enough when Apple reports activity but no usable app time.
+// Keep that day pending; filling every category with zero would hide the missing coverage.
+struct ScreenTimeAllActivityCoverage {
+    static func requireUsableSegment(_ segment: DateInterval, for requested: DateInterval,
+                                     activitySeconds: Double, applicationRowCount: Int,
+                                     hasPositiveApplicationDuration: Bool) throws {
+        guard ScreenTimeDayValidation.isCompleteSegment(segment, for: requested) else {
+            throw ScreenTimeImportError.incompleteData
+        }
+        guard activitySeconds.isFinite, activitySeconds >= 0,
+              activitySeconds <= requested.duration + 0.001, applicationRowCount >= 0 else {
+            throw ScreenTimeImportError.invalidDuration
+        }
+        // [69] Screen-on time may include websites or system activity. Do not spread any
+        // remainder across apps; only explicit app rows or a genuine zero support this input.
+        guard activitySeconds == 0 || (applicationRowCount > 0 && hasPositiveApplicationDuration) else {
+            throw ScreenTimeImportError.incompleteData
+        }
+    }
+}
+
+#if DEBUG
+// [70] These broad bands can locate missing coverage without saving a person's usage time.
+enum ScreenTimeCoverageBand: String, Codable {
+    case zero, underQuarter, underHalf, similar, over
+
+    static func compare(appSeconds: Double, screenOnSeconds: Double) -> Self? {
+        guard appSeconds.isFinite, appSeconds >= 0, screenOnSeconds.isFinite, screenOnSeconds >= 0 else { return nil }
+        if appSeconds == 0 { return .zero }
+        if screenOnSeconds == 0 { return .over }
+        if appSeconds < screenOnSeconds / 4 { return .underQuarter }
+        if appSeconds < screenOnSeconds / 2 { return .underHalf }
+        return appSeconds <= screenOnSeconds + 0.001 ? .similar : .over
+    }
+}
+
+// [71] Only fixed labels, dates, counts and yes/no checks can reach the local receipt.
+// App identities, exact durations and calculation settings have no fields in this record.
+struct ScreenTimeCoverageSnapshot: Codable {
+    let queryId: String
+    let capturedAt: Date
+    let queryDay: String
+    let queryTimeZone: String
+    let activityScope: String
+    var dataSource = "live"
+    var deviceFilter = "not_built"
+    var userFilter = "not_built"
+    var applicationFilterEmpty: Bool?
+    var categoryFilterEmpty: Bool?
+    var webDomainFilterEmpty: Bool?
+    var responseCount = 0
+    var deviceCount = 0
+    var segmentCount = 0
+    var matchingSegmentCount = 0
+    var applicationRowCount = 0
+    var positiveApplicationRowCount = 0
+    var uniqueContributionCount: Int?
+    var sourceQueryDay: String?
+    var sourceQueryDaysMatchRequested: Bool?
+    var sourceFreshThroughDay: Bool?
+    var matchingSegmentsComplete: Bool?
+    var rawAppsVsScreenOn: ScreenTimeCoverageBand?
+    var uniqueAppsVsScreenOn: ScreenTimeCoverageBand?
+    var returnedAllModelCategories: Bool?
+    var appSecondsToReturnedMinutesConserved: Bool?
+    var savedInputsMatchReturned: Bool?
+    var savedRecordDayMatchesQuery: Bool?
+    var savedRecordSourceIsScreenTime: Bool?
+    var savedRecordContainsAllModelCategories: Bool?
+    var savedPositiveUsageHasZeroTrafficAssumption: Bool?
+    var outcome = "started"
+}
+
+// [72] A matching overall total can hide time moving between categories.
+// Compare those inputs here and keep only the answer in the technical note.
+enum ScreenTimeCoverageConservation {
+    static func secondsMatchMinutes(_ seconds: Double, minutes: [String: Double]) -> Bool {
+        guard seconds.isFinite, seconds >= 0,
+              minutes.values.allSatisfy({ $0.isFinite && $0 >= 0 }) else { return false }
+        let total = minutes.values.reduce(0, +) * 60
+        return total.isFinite && abs(total - seconds) <= max(0.001, seconds * 1e-10)
+    }
+
+    static func savedInputsMatch(_ returned: [String: Double], usages: [CategoryUsage]) -> Bool {
+        guard Set(usages.map { $0.category.rawValue }).count == usages.count,
+              Set(returned.keys) == Set(usages.map { $0.category.rawValue }) else { return false }
+        return usages.allSatisfy { usage in
+            guard let expected = returned[usage.category.rawValue], expected.isFinite, expected >= 0,
+                  usage.minutes.isFinite, usage.minutes >= 0 else { return false }
+            return abs(expected - usage.minutes) <= max(0.001 / 60, expected * 1e-10)
+        }
+    }
+}
+
+// [73] Exact sums exist only while this import is running. They are deliberately not Codable.
+// Comparing the returned rows, unique apps and saved inputs shows where a discrepancy begins.
+struct ScreenTimeCoverageAccumulator {
+    private var report: ScreenTimeCoverageSnapshot
+    private var rawAppSeconds = 0.0
+    private var screenOnSeconds = 0.0
+    private var uniqueAppSeconds: Double?
+    private var validAppSeconds = true
+    private var validScreenSeconds = true
+
+    init(day: String, timeZone: String, scope: String, capturedAt: Date = Date(), queryId: String = UUID().uuidString) {
+        report = ScreenTimeCoverageSnapshot(queryId: queryId, capturedAt: capturedAt,
+            queryDay: day, queryTimeZone: timeZone, activityScope: scope)
+    }
+
+    mutating func describeFilter(currentDeviceDefault: Bool, defaultUser: Bool,
+                                 applicationsEmpty: Bool, categoriesEmpty: Bool, webDomainsEmpty: Bool) {
+        report.deviceFilter = currentDeviceDefault ? "current_device_default" : "explicit"
+        report.userFilter = defaultUser ? "default" : "explicit"
+        report.applicationFilterEmpty = applicationsEmpty
+        report.categoryFilterEmpty = categoriesEmpty
+        report.webDomainFilterEmpty = webDomainsEmpty
+    }
+
+    mutating func observeResponse(freshThroughDay: Bool, deviceCount: Int) {
+        report.responseCount += 1
+        report.deviceCount = deviceCount
+        report.sourceFreshThroughDay = (report.sourceFreshThroughDay ?? true) && freshThroughDay
+    }
+
+    mutating func observeSegment(sourceDay: String, matchesRequestedDay: Bool,
+                                 complete: Bool, activitySeconds: Double) {
+        report.segmentCount += 1
+        if report.sourceQueryDay == nil { report.sourceQueryDay = sourceDay }
+        report.sourceQueryDaysMatchRequested = (report.sourceQueryDaysMatchRequested ?? true) && matchesRequestedDay
+        guard matchesRequestedDay else { return }
+        report.matchingSegmentCount += 1
+        report.matchingSegmentsComplete = (report.matchingSegmentsComplete ?? true) && complete
+        if activitySeconds.isFinite, activitySeconds >= 0 { screenOnSeconds += activitySeconds }
+        else { validScreenSeconds = false }
+    }
+
+    mutating func observeApplication(seconds: Double) {
+        report.applicationRowCount += 1
+        guard seconds.isFinite, seconds >= 0 else { validAppSeconds = false; return }
+        if seconds > 0 { report.positiveApplicationRowCount += 1 }
+        rawAppSeconds += seconds
+    }
+
+    mutating func collected(uniqueSeconds: [Double], minutes: [String: Double]) {
+        report.uniqueContributionCount = uniqueSeconds.count
+        let uniqueTotal = uniqueSeconds.reduce(0, +)
+        uniqueAppSeconds = uniqueTotal
+        report.returnedAllModelCategories = Set(minutes.keys) == Set(FootprintCategory.allCases.map(\.rawValue))
+        report.appSecondsToReturnedMinutesConserved = ScreenTimeCoverageConservation.secondsMatchMinutes(
+            uniqueTotal, minutes: minutes)
+        report.outcome = "collected"
+    }
+
+    mutating func stopped(_ error: Error) {
+        switch error {
+        case is CancellationError: report.outcome = "cancelled"
+        case ScreenTimeImportError.permissionRequired: report.outcome = "permission_required"
+        case ScreenTimeImportError.invalidDuration: report.outcome = "invalid_duration"
+        case ScreenTimeImportError.noData: report.outcome = "no_data"
+        case ScreenTimeImportError.multipleDevices: report.outcome = "multiple_devices"
+        case ScreenTimeImportError.incompleteData: report.outcome = "incomplete_data"
+        case ScreenTimeImportError.unmappedSelection: report.outcome = "unmapped_selection"
+        case ScreenTimeImportError.conflictingSelection: report.outcome = "conflicting_selection"
+        case ScreenTimeImportError.selectionChanged: report.outcome = "selection_changed"
+        default: report.outcome = "system_error"
+        }
+    }
+
+    func snapshot() -> ScreenTimeCoverageSnapshot {
+        var result = report
+        if report.matchingSegmentCount > 0, validAppSeconds, validScreenSeconds {
+            result.rawAppsVsScreenOn = .compare(appSeconds: rawAppSeconds, screenOnSeconds: screenOnSeconds)
+            if let uniqueAppSeconds {
+                result.uniqueAppsVsScreenOn = .compare(appSeconds: uniqueAppSeconds, screenOnSeconds: screenOnSeconds)
+            }
+        }
+        return result
+    }
+}
+
+// [74] Update the same query after saving and keep only twenty recent attempts.
+struct ScreenTimeCoverageJournal: Codable {
+    var schemaVersion = 1
+    var debugOnly = true
+    var updatedAt: Date
+    var receipts: [ScreenTimeCoverageSnapshot] = []
+
+    mutating func append(_ receipt: ScreenTimeCoverageSnapshot) {
+        receipts.removeAll { $0.queryId == receipt.queryId }
+        receipts.append(receipt)
+        if receipts.count > 20 { receipts.removeFirst(receipts.count - 20) }
+        updatedAt = receipt.capturedAt
+    }
+}
+
+// [77] Compare only Apple's official grouping and cache choices for the same completed day.
+enum ScreenTimeCoverageProbeVariant: String, CaseIterable, Codable {
+    case dailyCached = "daily_cached", hourlyCached = "hourly_cached"
+    case dailyLive = "daily_live", hourlyLive = "hourly_live"
+    case dailyLiveOriginalEndpoint = "daily_live_original_endpoint"
+    var hourly: Bool { self == .hourlyCached || self == .hourlyLive }
+    var cached: Bool { self == .dailyCached || self == .hourlyCached }
+    var originalEndpoint: Bool { self == .dailyLiveOriginalEndpoint }
+}
+
+struct ScreenTimeProbeIntervalCoverage: Codable {
+    let uniqueIntervalCount: Int
+    let duplicateIntervalCount: Int
+    let intervalsWithinRequestedDay: Bool
+    let coversRequestedDay: Bool
+    let overlappingIntervals: Bool
+
+    // [78] Count the returned intervals rather than assuming every day has twenty-four hours.
+    static func evaluate(_ intervals: [DateInterval], requested: DateInterval) -> Self {
+        let unique = Array(Set(intervals)).sorted { $0.start < $1.start }
+        let inside = unique.filter { interval in
+            interval.duration.isFinite && interval.duration > 0
+                && interval.start >= requested.start.addingTimeInterval(-0.001)
+                && interval.end <= requested.end.addingTimeInterval(0.001)
+        }
+        let within = inside.count == unique.count
+        var cursor = requested.start
+        var gap = false
+        var overlap = false
+        for interval in inside {
+            if interval.start.timeIntervalSince(cursor) > 0.001 { gap = true }
+            if cursor.timeIntervalSince(interval.start) > 0.001 { overlap = true }
+            cursor = max(cursor, interval.end)
+        }
+        return Self(uniqueIntervalCount: unique.count, duplicateIntervalCount: intervals.count - unique.count,
+            intervalsWithinRequestedDay: within,
+            coversRequestedDay: !inside.isEmpty && !gap && abs(cursor.timeIntervalSince(requested.end)) <= 0.001,
+            overlappingIntervals: overlap)
+    }
+}
+
+// [79] The same app can be used in several hours. Only repeated rows within the SAME
+// interval are duplicates; merging different hours would throw away real time.
+struct ScreenTimeSegmentedCoverageLedger<Token: Hashable> {
+    private let knownBundles: [Token: String]
+    private var segments: [DateInterval: ScreenTimeContributionLedger<Token>] = [:]
+    init(knownBundles: [Token: String] = [:]) { self.knownBundles = knownBundles }
+    mutating func record(interval: DateInterval, token: Token?, bundle: String?, seconds: Double) throws {
+        var ledger = segments[interval] ?? ScreenTimeContributionLedger(knownBundles: knownBundles)
+        try ledger.record(token: token, bundleIdentifier: bundle, categoryID: FootprintCategory.other.rawValue,
+            seconds: seconds, isExplicit: true)
+        segments[interval] = ledger
+    }
+    func durations() throws -> [Double] {
+        try segments.values.flatMap { try $0.contributions().map(\.seconds) }
+    }
+}
+
+struct ScreenTimeCoverageProbeVariantReport: Codable {
+    let variant: ScreenTimeCoverageProbeVariant
+    let coverage: ScreenTimeCoverageSnapshot
+    let intervalCoverage: ScreenTimeProbeIntervalCoverage
+    var screenOnReferenceDeduplicatedByInterval = true
+}
+
+struct ScreenTimeCoverageProbeReport: Codable {
+    var schemaVersion = 1
+    var debugOnly = true
+    let capturedAt: Date
+    let queryDay: String
+    let queryTimeZone: String
+    var cacheMayAlreadyBeWarm = true
+    var productionHistorySaved = false
+    var variants: [ScreenTimeCoverageProbeVariantReport] = []
+    var dailyCachedMatchesDailyLive: Bool?
+    var hourlyCachedMatchesHourlyLive: Bool?
+    var hourlyLiveMatchesDailyLive: Bool?
+    var hourlyLiveVsDailyLive: ScreenTimeCoverageBand?
+    var originalEndpointMatchesAdjustedDailyLive: Bool?
+    var sameDeviceAcrossVariants: Bool?
+    var outcome = "running"
+}
+
+@MainActor
+enum ScreenTimeCoverageDiagnostics {
+    static let relativePath = "DFEScreenTimeCoverageDiagnostics/coverage-v1.json"
+    static let alternativeLaunchArgument = "-dfe-coverage-alternatives"
+    static let alternativesRelativePath = "DFEScreenTimeCoverageDiagnostics/alternatives-v1.json"
+
+    // [80] This separate one-shot file cannot alter history, widget summaries or pending notices.
+    static func recordAlternatives(_ report: ScreenTimeCoverageProbeReport) {
+        guard BackgroundUpdateDiagnostics.isAllowed else { return }
+        do {
+            let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
+            let file = caches.appendingPathComponent(alternativesRelativePath)
+            let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .iso8601
+            encoder.keyEncodingStrategy = .convertToSnakeCase
+            encoder.outputFormatting = [.sortedKeys]
+            try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try encoder.encode(report).write(to: file, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+        } catch { }
+    }
+
+    // [75] Normal development imports can leave a small technical trail. Tests cannot touch
+    // this receipt, and a failed diagnostic must never change someone's imported result.
+    static func record(_ receipt: ScreenTimeCoverageSnapshot) {
+        guard BackgroundUpdateDiagnostics.isAllowed else { return }
+        do {
+            let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
+            let file = caches.appendingPathComponent(relativePath)
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            decoder.keyDecodingStrategy = .convertFromSnakeCase
+            var journal = (try? Data(contentsOf: file)).flatMap { try? decoder.decode(ScreenTimeCoverageJournal.self, from: $0) }
+                ?? ScreenTimeCoverageJournal(updatedAt: receipt.capturedAt)
+            if journal.schemaVersion != 1 || !journal.debugOnly {
+                journal = ScreenTimeCoverageJournal(updatedAt: receipt.capturedAt)
+            }
+            journal.append(receipt)
+            let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .iso8601
+            encoder.keyEncodingStrategy = .convertToSnakeCase
+            encoder.outputFormatting = [.sortedKeys]
+            try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try encoder.encode(journal).write(to: file, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+        } catch { }
+    }
+
+    // [76] Compare private values on the phone. Only pass/fail checks and the presence
+    // of a saved zero traffic assumption leave this comparison.
+    static func recordSave(_ receipt: ScreenTimeCoverageSnapshot?, returned: [String: Double],
+                           record: FootprintRecord?, saveFailed: Bool = false) {
+        guard var receipt else { return }
+        receipt.outcome = saveFailed ? "save_failed" : (record == nil ? "no_saved_record" : "saved")
+        if let record, !saveFailed {
+            receipt.savedInputsMatchReturned = ScreenTimeCoverageConservation.savedInputsMatch(returned, usages: record.inputs.usages)
+            receipt.savedRecordDayMatchesQuery = record.day == receipt.queryDay
+            receipt.savedRecordSourceIsScreenTime = record.source == .screenTimeWithEstimates
+            receipt.savedRecordContainsAllModelCategories = Set(record.automaticCategories ?? []) == Set(FootprintCategory.allCases)
+            receipt.savedPositiveUsageHasZeroTrafficAssumption = record.inputs.usages.contains {
+                $0.minutes > 0 && $0.gigabytesPerHour == 0
+            }
+        }
+        self.record(receipt)
+    }
+}
+#endif
+
 struct ScreenTimeDailyUsage {
     let day: Date
     /// [24] Only confirmed categories appear here; a saved zero is different from missing activity.
     let minutesByCategory: [String: Double]
+    #if DEBUG
+    var coverageDiagnostic: ScreenTimeCoverageSnapshot? = nil
+    #endif
 }
 
 struct ScreenTimeApplicationUsage {
@@ -859,8 +1206,21 @@ final class ScreenTimeService: ObservableObject {
                 try aggregation.requireCurrent(store.aggregationCalendar)
                 guard calendar.isDate(usage.day, inSameDayAs: day) else { throw FootprintError.invalidDay }
                 let wasMissing = !store.records.contains { $0.day == dayCalendar.key(day) }
-                try store.importAutomaticUsage(day: usage.day, minutesByCategory: usage.minutesByCategory, now: now)
-                guard store.records.first(where: { $0.day == dayCalendar.key(day) })?.source == .screenTimeWithEstimates else { return nil }
+                do {
+                    try store.importAutomaticUsage(day: usage.day, minutesByCategory: usage.minutesByCategory, now: now)
+                } catch {
+                    #if DEBUG
+                    ScreenTimeCoverageDiagnostics.recordSave(usage.coverageDiagnostic,
+                        returned: usage.minutesByCategory, record: nil, saveFailed: true)
+                    #endif
+                    throw error
+                }
+                let savedRecord = store.records.first(where: { $0.day == dayCalendar.key(day) })
+                #if DEBUG
+                ScreenTimeCoverageDiagnostics.recordSave(usage.coverageDiagnostic,
+                    returned: usage.minutesByCategory, record: savedRecord)
+                #endif
+                guard savedRecord?.source == .screenTimeWithEstimates else { return nil }
                 lastImportDate = now
                 return ScreenTimeDayImportReceipt(day: usage.day, created: wasMissing)
             }, onError: { [self] error in
@@ -1041,63 +1401,248 @@ final class ScreenTimeService: ObservableObject {
     // It does not bypass Apple's permission, device or regional restrictions.
     private func collectAllActivityDay(_ date: Date, calendar: Calendar, revision: Int) async throws -> ScreenTimeDailyUsage {
         guard let interval = calendar.dateInterval(of: .day, for: date) else { throw ScreenTimeImportError.noData }
-        var knownBundles: [ApplicationToken: String] = [:]
-        // [64] With expanded permission, Apple allows this local app-ID lookup.
-        // Do not save or send the installed-app list, or guess what happened inside an app.
-        for app in try await FamilyActivityData.shared.installedApplications {
-            try Task.checkCancellation()
-            guard let token = app.token, let bundle = app.bundleIdentifier, !bundle.isEmpty else { continue }
-            guard knownBundles[token] == nil || knownBundles[token] == bundle else {
-                throw ScreenTimeImportError.unmappedSelection
-            }
-            knownBundles[token] = bundle
-        }
-        try Task.checkCancellation()
-        refreshAuthorization()
-        guard state.canImport else { throw ScreenTimeImportError.permissionRequired }
-        guard revision == selectionRevision else { throw ScreenTimeImportError.selectionChanged }
-        let filter = ScreenTimeQueryScope.filter(interval: interval, applications: [], categories: [])
-        var ledger = ScreenTimeContributionLedger<ApplicationToken>(knownBundles: knownBundles)
-        var devices = Set<DeviceActivityData.Device>()
-        var sawSegment = false
-        for try await data in DeviceActivityData.activityData(filteredBy: filter, using: .live) {
-            try Task.checkCancellation()
-            devices.insert(data.device)
-            guard devices.count == 1 else { throw ScreenTimeImportError.multipleDevices }
-            // [65] Apple must have updated the source through the end of the day before we call that day complete.
-            guard data.lastUpdatedDate >= interval.end else { throw ScreenTimeImportError.incompleteData }
-            for await segment in data.activitySegments {
+        #if DEBUG
+        var coverageAudit = ScreenTimeCoverageAccumulator(day: FootprintCalendar(calendar: calendar).key(interval.start),
+            timeZone: calendar.timeZone.identifier, scope: activityScope.rawValue)
+        #endif
+        do {
+            var knownBundles: [ApplicationToken: String] = [:]
+            // [64] With expanded permission, Apple allows this local app-ID lookup.
+            // Do not save or send the installed-app list, or guess what happened inside an app.
+            for app in try await FamilyActivityData.shared.installedApplications {
                 try Task.checkCancellation()
-                guard calendar.isDate(segment.dateInterval.start, inSameDayAs: interval.start) else { continue }
-                guard ScreenTimeDayValidation.isCompleteSegment(segment.dateInterval, for: interval) else {
-                    throw ScreenTimeImportError.incompleteData
+                guard let token = app.token, let bundle = app.bundleIdentifier, !bundle.isEmpty else { continue }
+                guard knownBundles[token] == nil || knownBundles[token] == bundle else {
+                    throw ScreenTimeImportError.unmappedSelection
                 }
-                sawSegment = true
-                for await group in segment.categories {
-                    for await activity in group.applications {
-                        try Task.checkCancellation()
-                        let token = activity.application.token
-                        let bundle = activity.application.bundleIdentifier.flatMap { $0.isEmpty ? nil : $0 }
-                            ?? token.flatMap { knownBundles[$0] }
-                        let category = AutomaticActivityClassification.category(bundleIdentifier: bundle)
-                        // [66] Use individual app durations only. Adding group totals or website rows would count some activity twice.
-                        try ledger.record(token: token, bundleIdentifier: bundle,
-                            categoryID: category.rawValue, seconds: activity.totalActivityDuration, isExplicit: true)
+                knownBundles[token] = bundle
+            }
+            try Task.checkCancellation()
+            refreshAuthorization()
+            guard state.canImport else { throw ScreenTimeImportError.permissionRequired }
+            guard revision == selectionRevision else { throw ScreenTimeImportError.selectionChanged }
+            let filter = ScreenTimeQueryScope.filter(interval: interval, applications: [], categories: [])
+            #if DEBUG
+            coverageAudit.describeFilter(currentDeviceDefault: filter.devices == nil, defaultUser: filter.users == nil,
+                applicationsEmpty: filter.applications.isEmpty, categoriesEmpty: filter.categories.isEmpty,
+                webDomainsEmpty: filter.webDomains.isEmpty)
+            #endif
+            var ledger = ScreenTimeContributionLedger<ApplicationToken>(knownBundles: knownBundles)
+            var devices = Set<DeviceActivityData.Device>()
+            var sawSegment = false
+            for try await data in DeviceActivityData.activityData(filteredBy: filter, using: .live) {
+                try Task.checkCancellation()
+                devices.insert(data.device)
+                #if DEBUG
+                coverageAudit.observeResponse(freshThroughDay: data.lastUpdatedDate >= interval.end,
+                    deviceCount: devices.count)
+                #endif
+                guard devices.count == 1 else { throw ScreenTimeImportError.multipleDevices }
+                // [65] Apple must have updated the source through the end of the day before we call that day complete.
+                guard data.lastUpdatedDate >= interval.end else { throw ScreenTimeImportError.incompleteData }
+                for await segment in data.activitySegments {
+                    try Task.checkCancellation()
+                    let matchesRequestedDay = calendar.isDate(segment.dateInterval.start, inSameDayAs: interval.start)
+                    #if DEBUG
+                    coverageAudit.observeSegment(sourceDay: FootprintCalendar(calendar: calendar).key(segment.dateInterval.start),
+                        matchesRequestedDay: matchesRequestedDay,
+                        complete: ScreenTimeDayValidation.isCompleteSegment(segment.dateInterval, for: interval),
+                        activitySeconds: segment.totalActivityDuration)
+                    #endif
+                    guard matchesRequestedDay else { continue }
+                    var applicationRowCount = 0
+                    var hasPositiveApplicationDuration = false
+                    for await group in segment.categories {
+                        for await activity in group.applications {
+                            try Task.checkCancellation()
+                            applicationRowCount += 1
+                            let token = activity.application.token
+                            let bundle = activity.application.bundleIdentifier.flatMap { $0.isEmpty ? nil : $0 }
+                                ?? token.flatMap { knownBundles[$0] }
+                            let category = AutomaticActivityClassification.category(bundleIdentifier: bundle)
+                            // [66] Use individual app durations only. Adding group totals or website rows would count some activity twice.
+                            let seconds = activity.totalActivityDuration
+                            #if DEBUG
+                            coverageAudit.observeApplication(seconds: seconds)
+                            #endif
+                            try ledger.record(token: token, bundleIdentifier: bundle,
+                                categoryID: category.rawValue, seconds: seconds, isExplicit: true)
+                            hasPositiveApplicationDuration = hasPositiveApplicationDuration || seconds > 0
+                        }
+                    }
+                    try ScreenTimeAllActivityCoverage.requireUsableSegment(segment.dateInterval, for: interval,
+                        activitySeconds: segment.totalActivityDuration, applicationRowCount: applicationRowCount,
+                        hasPositiveApplicationDuration: hasPositiveApplicationDuration)
+                    sawSegment = true
+                }
+            }
+            guard sawSegment else { throw ScreenTimeImportError.noData }
+            // [67] Start every category at zero only after a complete segment was returned.
+            // Before that point, missing activity remains unknown.
+            var minutes = Dictionary(uniqueKeysWithValues: FootprintCategory.allCases.map { ($0.rawValue, 0.0) })
+            let contributions = try ledger.contributions()
+            for row in contributions { minutes[row.categoryID, default: 0] += row.seconds / 60 }
+            let total = minutes.values.reduce(0, +)
+            guard total.isFinite, total <= interval.duration / 60 + 0.001 else {
+                throw ScreenTimeImportError.invalidDuration
+            }
+            #if DEBUG
+            coverageAudit.collected(uniqueSeconds: contributions.map(\.seconds), minutes: minutes)
+            let diagnostic = coverageAudit.snapshot()
+            ScreenTimeCoverageDiagnostics.record(diagnostic)
+            return ScreenTimeDailyUsage(day: interval.start, minutesByCategory: minutes, coverageDiagnostic: diagnostic)
+            #else
+            return ScreenTimeDailyUsage(day: interval.start, minutesByCategory: minutes)
+            #endif
+        } catch {
+            #if DEBUG
+            coverageAudit.stopped(error)
+            ScreenTimeCoverageDiagnostics.record(coverageAudit.snapshot())
+            #endif
+            throw error
+        }
+    }
+    #endif
+
+    #if DEBUG
+    // [81] An explicit development launch compares authorized API answers without saving
+    // activity or changing permission. Ordinary launches never take this path.
+    func captureAlternativeCoverage(store: FootprintStore, now: Date = Date()) async {
+        guard BackgroundUpdateDiagnostics.isAllowed else { return }
+        let calendar = store.aggregationCalendar
+        let today = calendar.startOfDay(for: now)
+        guard let yesterday = calendar.date(byAdding: .day, value: -1, to: today),
+              let interval = calendar.dateInterval(of: .day, for: yesterday) else { return }
+        var report = ScreenTimeCoverageProbeReport(capturedAt: now,
+            queryDay: FootprintCalendar(calendar: calendar).key(yesterday), queryTimeZone: calendar.timeZone.identifier)
+        refreshAuthorization()
+        guard activityScope == .allAuthorizedApps, state.canImport, store.usesAutomaticInput,
+              let archiveStart = store.automaticStartDate,
+              let optInStart = ScreenTimeScopeStart.importStart(scope: activityScope, archiveStart: archiveStart,
+                allActivityStartDay: defaults.string(forKey: allActivityStartKey), calendar: calendar),
+              optInStart <= yesterday else {
+            report.outcome = "no_eligible_authorized_day"
+            ScreenTimeCoverageDiagnostics.recordAlternatives(report)
+            return
+        }
+        #if SCREEN_TIME_ENABLED
+        guard #available(iOS 26.4, *) else { return }
+        do {
+            var knownBundles: [ApplicationToken: String] = [:]
+            for app in try await FamilyActivityData.shared.installedApplications {
+                try Task.checkCancellation()
+                guard let token = app.token, let bundle = app.bundleIdentifier, !bundle.isEmpty else { continue }
+                guard knownBundles[token] == nil || knownBundles[token] == bundle else {
+                    throw ScreenTimeImportError.unmappedSelection
+                }
+                knownBundles[token] = bundle
+            }
+            var results: [ScreenTimeCoverageProbeVariant: (seconds: Double?, device: DeviceActivityData.Device?)] = [:]
+            // [82] Cached answers come first. Earlier normal imports may already have warmed
+            // Apple's cache, so this comparison is not presented as a clean-cache experiment.
+            for variant in ScreenTimeCoverageProbeVariant.allCases {
+                try Task.checkCancellation()
+                let result = await readCoverageVariant(variant, interval: interval, calendar: calendar, knownBundles: knownBundles)
+                report.variants.append(result.report)
+                results[variant] = (result.seconds, result.device)
+                ScreenTimeCoverageDiagnostics.recordAlternatives(report)
+            }
+            func equal(_ lhs: ScreenTimeCoverageProbeVariant, _ rhs: ScreenTimeCoverageProbeVariant) -> Bool? {
+                guard let left = results[lhs]?.seconds, let right = results[rhs]?.seconds else { return nil }
+                return abs(left - right) <= max(0.001, max(left, right) * 1e-10)
+            }
+            report.dailyCachedMatchesDailyLive = equal(.dailyCached, .dailyLive)
+            report.hourlyCachedMatchesHourlyLive = equal(.hourlyCached, .hourlyLive)
+            report.hourlyLiveMatchesDailyLive = equal(.hourlyLive, .dailyLive)
+            report.originalEndpointMatchesAdjustedDailyLive = equal(.dailyLiveOriginalEndpoint, .dailyLive)
+            if let hourly = results[.hourlyLive]?.seconds, let daily = results[.dailyLive]?.seconds {
+                report.hourlyLiveVsDailyLive = .compare(appSeconds: hourly, screenOnSeconds: daily)
+            }
+            let devices = results.values.compactMap(\.device)
+            report.sameDeviceAcrossVariants = devices.count == ScreenTimeCoverageProbeVariant.allCases.count
+                ? Set(devices).count == 1 : nil
+            report.outcome = report.variants.allSatisfy { $0.coverage.outcome == "collected" } ? "completed" : "partial"
+        } catch is CancellationError { report.outcome = "cancelled" }
+        catch { report.outcome = "identity_lookup_or_query_setup_failed" }
+        #else
+        report.outcome = "unsupported_build"
+        #endif
+        ScreenTimeCoverageDiagnostics.recordAlternatives(report)
+    }
+
+    #if SCREEN_TIME_ENABLED
+    @available(iOS 26.4, *)
+    private func readCoverageVariant(_ variant: ScreenTimeCoverageProbeVariant, interval: DateInterval,
+                                     calendar: Calendar, knownBundles: [ApplicationToken: String]) async
+        -> (report: ScreenTimeCoverageProbeVariantReport, seconds: Double?, device: DeviceActivityData.Device?) {
+        var audit = ScreenTimeCoverageAccumulator(day: FootprintCalendar(calendar: calendar).key(interval.start),
+            timeZone: calendar.timeZone.identifier, scope: activityScope.rawValue)
+        var intervals: [DateInterval] = []
+        var screenByInterval: [DateInterval: Double] = [:]
+        var ledger = ScreenTimeSegmentedCoverageLedger<ApplicationToken>(knownBundles: knownBundles)
+        var devices = Set<DeviceActivityData.Device>()
+        var total: Double?
+        do {
+            // [83] Apple rounds hourly/daily filter endpoints to the requested unit.
+            // Compare the last instant of yesterday with a separate original-endpoint control.
+            let query = variant.originalEndpoint ? interval
+                : DateInterval(start: interval.start, end: interval.end.addingTimeInterval(-0.001))
+            let filter = DeviceActivityFilter(segment: variant.hourly ? .hourly(during: query) : .daily(during: query))
+            audit.describeFilter(currentDeviceDefault: filter.devices == nil, defaultUser: filter.users == nil,
+                applicationsEmpty: filter.applications.isEmpty, categoriesEmpty: filter.categories.isEmpty,
+                webDomainsEmpty: filter.webDomains.isEmpty)
+            for try await data in DeviceActivityData.activityData(filteredBy: filter, using: variant.cached ? .cached : .live) {
+                try Task.checkCancellation()
+                devices.insert(data.device)
+                audit.observeResponse(freshThroughDay: data.lastUpdatedDate >= interval.end, deviceCount: devices.count)
+                guard devices.count == 1 else { throw ScreenTimeImportError.multipleDevices }
+                for await segment in data.activitySegments {
+                    try Task.checkCancellation()
+                    let part = segment.dateInterval
+                    let within = part.duration > 0 && part.start >= interval.start.addingTimeInterval(-0.001)
+                        && part.end <= interval.end.addingTimeInterval(0.001)
+                    let seconds = segment.totalActivityDuration
+                    guard seconds.isFinite, seconds >= 0 else { throw ScreenTimeImportError.invalidDuration }
+                    let previous = screenByInterval[part]
+                    audit.observeSegment(sourceDay: FootprintCalendar(calendar: calendar).key(part.start),
+                        matchesRequestedDay: within, complete: within,
+                        activitySeconds: previous == nil ? seconds : 0)
+                    intervals.append(part)
+                    guard within else { continue }
+                    if let previous, abs(previous - seconds) > 0.001 { throw ScreenTimeImportError.invalidDuration }
+                    screenByInterval[part] = seconds
+                    for await group in segment.categories {
+                        for await activity in group.applications {
+                            try Task.checkCancellation()
+                            let duration = activity.totalActivityDuration
+                            audit.observeApplication(seconds: duration)
+                            try ledger.record(interval: part, token: activity.application.token,
+                                bundle: activity.application.bundleIdentifier, seconds: duration)
+                        }
                     }
                 }
             }
+            // [84] Keep the observed app rows available for this diagnostic comparison,
+            // even when empty or missing hours prevent us from proving full-day coverage.
+            let unique = try ledger.durations()
+            let sum = unique.reduce(0, +)
+            guard sum.isFinite else { throw ScreenTimeImportError.invalidDuration }
+            audit.collected(uniqueSeconds: unique, minutes: [FootprintCategory.other.rawValue: sum / 60])
+            total = sum
+            let coverage = ScreenTimeProbeIntervalCoverage.evaluate(intervals, requested: interval)
+            guard coverage.coversRequestedDay, !coverage.overlappingIntervals else {
+                throw ScreenTimeImportError.incompleteData
+            }
+        } catch {
+            audit.stopped(error)
         }
-        guard sawSegment else { throw ScreenTimeImportError.noData }
-        // [67] Start every category at zero only after a complete segment was returned.
-        // Before that point, missing activity remains unknown.
-        var minutes = Dictionary(uniqueKeysWithValues: FootprintCategory.allCases.map { ($0.rawValue, 0.0) })
-        for row in try ledger.contributions() { minutes[row.categoryID, default: 0] += row.seconds / 60 }
-        let total = minutes.values.reduce(0, +)
-        guard total.isFinite, total <= interval.duration / 60 + 0.001 else {
-            throw ScreenTimeImportError.invalidDuration
-        }
-        return ScreenTimeDailyUsage(day: interval.start, minutesByCategory: minutes)
+        var snapshot = audit.snapshot()
+        snapshot.dataSource = variant.cached ? "cached" : "live"
+        let coverage = ScreenTimeProbeIntervalCoverage.evaluate(intervals, requested: interval)
+        return (ScreenTimeCoverageProbeVariantReport(variant: variant, coverage: snapshot, intervalCoverage: coverage),
+            total, devices.count == 1 ? devices.first : nil)
     }
+    #endif
     #endif
 
 }

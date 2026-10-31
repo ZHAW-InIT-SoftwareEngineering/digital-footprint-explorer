@@ -134,8 +134,8 @@ final class SettingsLayoutUITests: XCTestCase {
         reach(notificationTiming)
         XCTAssertFalse(notificationTiming.label.isEmpty)
         XCTAssertTrue(notificationTiming.label.contains("around 8:00"))
-        XCTAssertTrue(notificationTiming.label.contains("later"))
-        XCTAssertTrue(notificationTiming.label.contains("stay quiet"))
+        XCTAssertTrue(notificationTiming.label.contains("closed"))
+        XCTAssertTrue(notificationTiming.label.contains("Fresh estimates"))
         XCTAssertEqual(notificationToggle.value as? String, "0")
         XCTAssertFalse(app.alerts.firstMatch.exists)
         XCTAssertFalse(XCUIApplication(bundleIdentifier: "com.apple.springboard").alerts.firstMatch.exists,

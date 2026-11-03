@@ -368,11 +368,30 @@ private struct FootprintSummary: View {
                 .accessibilityIdentifier("footprint.total")
             Text("Estimated carbon footprint").font(.subheadline).foregroundStyle(.primary)
                 .accessibilityHidden(true)
+            if record.source == .screenTimeWithEstimates {
+                // [20] Show the app time behind this saved estimate, so a weekly Screen Time
+                // average is not mistaken for the input to a different completed day.
+                Group {
+                    if let imported = importedActivityMinutes(record) {
+                        Text("Imported app activity: \(summaryActivityTime(imported))")
+                    } else {
+                        Text("Activity used for this estimate: \(summaryActivityTime(record.inputs.totalMinutes))")
+                    }
+                }.font(.footnote).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("footprint.importedActivity")
+            }
             Text(gardenMessage).font(.subheadline)
                 .foregroundStyle(.secondary).multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityLabel("Garden: \(record.garden.title). \(gardenMessage)")
                 .accessibilityIdentifier("garden.state")
+            if showsGarden, !showsComparison, record.baselineKg != nil {
+                Text("Your garden follows changes in your own estimates.")
+                    .font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("garden.comparisonBasis")
+            }
             if showsComparison, let baseline = record.baselineKg {
                 Text("Your earlier daily average: \(summaryGrams(baseline)).")
                     .font(.footnote).foregroundStyle(.primary).multilineTextAlignment(.center)
@@ -389,6 +408,31 @@ func summaryGrams(_ kg: Double) -> String {
     "\((kg * 1000).formatted(.number.precision(.significantDigits(1...3)))) g CO₂e"
 }
 
+// [22] Earlier selected-app records can also contain routine estimates. Count only the
+// categories marked as imported; missing source information is not evidence of measured time.
+func importedActivityMinutes(_ record: FootprintRecord) -> Double? {
+    guard record.source == .screenTimeWithEstimates,
+          let imported = record.automaticCategories, !imported.isEmpty else { return nil }
+    let categories = Set(imported)
+    let values = record.inputs.usages.filter { categories.contains($0.category) }
+    guard values.count == categories.count, Set(values.map(\.category)) == categories,
+          values.allSatisfy({ $0.minutes.isFinite && $0.minutes >= 0 }) else { return nil }
+    let total = values.reduce(0) { $0 + $1.minutes }
+    return total.isFinite ? total : nil
+}
+
+// [21] Keep the displayed activity readable without changing the saved minutes used by the model.
+func summaryActivityTime(_ minutes: Double) -> String {
+    guard minutes.isFinite, minutes >= 0, minutes < Double(Int.max) / 2 else { return "Unavailable" }
+    if minutes == 0 { return "0 min" }
+    let wholeMinutes = Int(minutes.rounded())
+    if wholeMinutes == 0 { return "less than 1 min" }
+    let hours = wholeMinutes / 60
+    let remaining = wholeMinutes % 60
+    if hours == 0 { return "\(remaining) min" }
+    return remaining == 0 ? "\(hours) h" : "\(hours) h \(remaining) min"
+}
+
 private struct SourceCard: View {
     let source: FootprintSource
     var measuredCategories: [FootprintCategory] = []
@@ -397,6 +441,16 @@ private struct SourceCard: View {
             Label(source.title, systemImage: source == .routineEstimate ? "clock.arrow.circlepath" : "info.circle")
                 .font(.subheadline.weight(.semibold))
             Text(source.explanation).font(.footnote).foregroundStyle(.primary)
+            if source == .screenTimeWithEstimates {
+                Text("Apple's available app time can differ from the daily total in Screen Time. This estimate covers the app activity provided for the saved date on this iPhone.")
+                    .font(.footnote).foregroundStyle(.primary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("source.activityPeriod")
+                Text("Traffic and power use follow saved category assumptions. Background listening, video quality and calls within an app may not be fully reflected.")
+                    .font(.footnote).foregroundStyle(.primary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("source.modelLimits")
+            }
             if Set(measuredCategories) == Set(FootprintCategory.allCases) {
                 Text("All model categories use imported app time. Apps without a local category rule stay under Other apps.")
                     .font(.caption).foregroundStyle(.primary)

@@ -63,6 +63,10 @@ final class AppServices {
     // [05] Read the latest saved history before importing. Only a saved result may
     // feed the garden, widget or morning notice.
     func performRefresh(trigger: AppRefreshTrigger) async throws {
+        #if DEBUG
+        // [14] The one-shot comparison reads Apple's answers without refreshing normal history.
+        if ProcessInfo.processInfo.arguments.contains(ScreenTimeCoverageDiagnostics.alternativeLaunchArgument) { return }
+        #endif
         var result: ScreenTimeRefreshResult?
         #if DEBUG
         var outcome: String?
@@ -133,12 +137,30 @@ final class ApplicationDelegate: NSObject, UIApplicationDelegate {
         // [10] Separate interface tests leave the system's real background requests and notices untouched.
         if UITestIsolation(arguments: ProcessInfo.processInfo.arguments).isActive { return true }
         #endif
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains(ScreenTimeCoverageDiagnostics.alternativeLaunchArgument) {
+            if BackgroundUpdateDiagnostics.isAllowed {
+                Task { @MainActor in await services.screenTime.captureAlternativeCoverage(store: services.store) }
+            }
+            return true
+        }
+        #endif
         let notificationDelegate = GardenNotificationDelegate {
             services.navigation.openWidgetURL(URL(string: DailyGardenNotificationPlan.gardenURL)!)
         }
         gardenNotificationDelegate = notificationDelegate
         UNUserNotificationCenter.current().delegate = notificationDelegate
         services.background.register()
+        #if DEBUG
+        // [12] A named development launch can prepare one labelled delivery check without
+        // keeping a debugger attached. Ordinary launches never request this test reminder.
+        if ProcessInfo.processInfo.arguments.contains("-dfe-force-quit-reminder-test") {
+            Task { @MainActor in
+                await services.notifications.scheduleForceQuitReminderTest()
+                await services.notifications.captureTechnicalState()
+            }
+        }
+        #endif
         return true
     }
 }

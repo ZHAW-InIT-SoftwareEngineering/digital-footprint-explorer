@@ -48,6 +48,14 @@
     </section>
 
     <section class="card">
+      <h2>Understanding your daily estimate</h2>
+      <p>Apple's returned app activity can differ from the daily Screen Time total, even for the same day and iPhone. The estimate uses the available app durations. It does not fill a difference with invented app use or treat the result as a complete measurement of your phone's impact.</p>
+      <p>Today shows the actual completed date beside your result. Compare its imported app time with that date on the same iPhone in Apple's daily Screen Time report. Today's changing total, a weekly daily average or activity shared across devices can describe a different period. The garden compares the estimate with up to seven earlier saved days; a greener garden is a relative change, not proof of a small measured impact.</p>
+      <p>Known app identifiers use local category rules; unknown apps keep their time under Other apps. Traffic rates are category averages. The app cannot tell whether WhatsApp time was messaging or a call, which video quality you used, or how much data actually travelled. Imported activity also does not establish every hour of background music listening. Website records are excluded, while browser app time can still be included.</p>
+      <p>Automatic setup keeps the saved routine's calculation settings, including valid zero traffic assumptions. It replaces daily minutes with Apple's available app time, rather than silently changing those settings or rewriting earlier estimates. If Apple reports screen-on activity but no positive app time is available, the day stays pending; this check does not prove that all other activity was exposed. See How the estimate works in Settings for the model and its limits.</p>
+    </section>
+
+    <section class="card">
       <h2>A little space for your day</h2>
       <p>There is no garden name, goal or personal profile to fill in. Once a daily estimate is available, the garden and its message reflect that result compared with up to seven earlier days. The first result is a starting point, and a pending day is never treated as zero.</p>
       <p>A lower estimate brings a greener garden; a higher estimate changes its appearance too. One day is only part of the picture. The garden is a visual guide to estimated emissions, not a measurement of damage or recovery in the environment.</p>
@@ -66,12 +74,14 @@
     </section>
 
     <section class="card">
-      <!-- [05] A target time is not a delivery promise. These notes keep the local notification and system limits clear. -->
+      <!-- [05] A saved reminder can appear without the app running. A fresh estimate still needs permitted execution. -->
       <h2>Optional garden updates</h2>
-      <p>In Settings, under A morning moment, turn on Daily garden update if you would like a short local notice. It is off by default and asks for Apple's notification permission only when you enable it.</p>
-      <p>The morning target is 08:00 in your local time. After a fresh import saves a valid, non-zero estimate for yesterday, the app can request one update from 08:00 until before 20:00. An older missing day does not block that update while Screen Time access remains available. Missing activity, a zero-use day or a failed import of yesterday stays quiet.</p>
-      <p>An update can be prepared after opening the app, too. DFE asks iOS to show a banner and a Notification Center entry for its daily update while the app is open. iOS, Focus, Scheduled Summary and your notification settings still decide when or whether it appears, so there is no guaranteed 08:00 message or daily delivery.</p>
-      <p>These notifications are prepared on your iPhone, with no remote push service or activity upload. Turn Daily garden update off in Settings whenever you like. This does not disconnect Screen Time. If a notice does not appear, check this choice and the app's notification settings in iPhone Settings.</p>
+      <p>In Settings, under A morning moment, turn on Daily garden update if you would like a short local reminder. It is off by default and asks for Apple's notification permission only when you enable it.</p>
+      <p>DFE saves one reminder for each of the next 30 mornings, around 08:00 in your local time. iOS can show these reminders while the app is closed, including after you remove it from multitasking. Opening DFE, or background time granted by iOS, renews the schedule. If DFE cannot run for more than 30 days, the saved reminders end until it can prepare more.</p>
+      <p>A general reminder invites you to explore your latest saved garden. The wording varies with its local delivery date, without a personal profile or extra activity collection. It does not claim that yesterday's estimate is ready. Missing activity, a zero-use day or unavailable Screen Time access can still have this reminder; the app does not turn those cases into invented results.</p>
+      <p>If a fresh import provides a valid estimate for yesterday before a reminder is due, the app may replace that pending message with a summary of your saved garden. It keeps the same reminder. Older wording can also be updated in a known future request, without changing its ID or delivery time. Once the day's reminder may have appeared, a later import does not send another summary, even if you dismissed the first message. Tapping either message opens Today.</p>
+      <p>The reminder itself does not refresh Screen Time, the garden or the widgets. Removing DFE from multitasking normally stops fresh background calculations until you open it again. iOS, Focus, Scheduled Summary and notification settings can delay or hide a reminder, so delivery at exactly 08:00 or every day is not guaranteed. The schedule uses local calendar times and is checked again when DFE can run after a clock or time zone change.</p>
+      <p>These notifications stay on your iPhone, with no remote push service or activity upload. Turn Daily garden update off to cancel its pending messages. This does not disconnect Screen Time. Disconnecting Screen Time leaves the separate reminder choice unchanged, so turn the reminder off too if you do not want it. If no reminder appears, check this choice and DFE's notification settings in iPhone Settings.</p>
     </section>
 
     <section class="card">

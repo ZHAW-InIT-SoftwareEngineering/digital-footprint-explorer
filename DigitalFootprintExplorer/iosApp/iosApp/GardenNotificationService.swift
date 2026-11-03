@@ -19,8 +19,8 @@ import Foundation
 import Combine
 import UserNotifications
 
-// [01] Send a local iPhone notice only after its daily estimate exists.
-// No server or remote delivery service is needed for this route.
+// [01] iOS holds the dated reminders, so their delivery does not depend on DFE staying open.
+// A reminder invites a visit; only a fresh saved result can describe yesterday's garden.
 private actor SystemGardenNotificationClient: GardenNotificationClient {
     let center: UNUserNotificationCenter
     init(center: UNUserNotificationCenter) { self.center = center }
@@ -38,19 +38,43 @@ private actor SystemGardenNotificationClient: GardenNotificationClient {
             deliveredIdentifiers: delivered.filter { $0.hasPrefix(DailyGardenNotificationPlan.prefix) })
     }
     func add(_ plan: DailyGardenNotificationPlan) async throws {
+        let request = GardenNotificationRequestBuilder.make(plan)
+        // [17] If eight o'clock passed while we were preparing a replacement, leave the
+        // existing morning card alone rather than turning an old request into another immediate alert.
+        if let trigger = request.trigger as? UNCalendarNotificationTrigger,
+           trigger.nextTriggerDate() == nil { throw GardenNotificationRequestError.deliveryWindowPassed }
+        try await center.add(request)
+    }
+
+    func remove(identifiers: [String]) async {
+        center.removePendingNotificationRequests(withIdentifiers: identifiers)
+    }
+}
+
+private enum GardenNotificationRequestError: Error { case deliveryWindowPassed }
+
+// [18] Keep the native request in one place so tests can check the same calendar trigger
+// that iOS receives. No network service or activity details are needed for a reminder.
+enum GardenNotificationRequestBuilder {
+    static func make(_ plan: DailyGardenNotificationPlan) -> UNNotificationRequest {
         let content = UNMutableNotificationContent()
         content.title = plan.title
         content.body = plan.body
         content.sound = .default
         content.threadIdentifier = "dfe.garden.daily"
         content.userInfo = ["gardenURL": DailyGardenNotificationPlan.gardenURL,
-            "deliveryDay": plan.deliveryDay, "recordDay": plan.recordDay, "timeZone": plan.timeZoneIdentifier]
-        // [03] The content already exists and the current local time is eligible.
-        // No future placeholder can become stale while the app is suspended.
-        try await center.add(UNNotificationRequest(identifier: plan.identifier, content: content, trigger: nil))
-    }
-    func remove(identifiers: [String]) async {
-        center.removePendingNotificationRequests(withIdentifiers: identifiers)
+            "deliveryDay": plan.deliveryDay, "recordDay": plan.recordDay,
+            "timeZone": plan.timeZoneIdentifier, "noticeKind": plan.kind.rawValue]
+        let trigger: UNNotificationTrigger?
+        if plan.scheduledForMorning || plan.kind == .reminder {
+            var calendar = Calendar(identifier: .gregorian)
+            calendar.timeZone = TimeZone(identifier: plan.timeZoneIdentifier) ?? .autoupdatingCurrent
+            // [19] Leave the trigger's time zone unset: its dated eight o'clock follows
+            // the iPhone's local clock, including daylight-saving changes.
+            let fields = calendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: plan.deliverAt)
+            trigger = UNCalendarNotificationTrigger(dateMatching: fields, repeats: false)
+        } else { trigger = nil }
+        return UNNotificationRequest(identifier: plan.identifier, content: content, trigger: trigger)
     }
 }
 
@@ -79,7 +103,7 @@ final class GardenNotificationService: ObservableObject {
     private let coordinator: DailyGardenNotificationCoordinator
     private let center: UNUserNotificationCenter
     private let isolated: Bool
-    private enum ErrorSource { case preference, setting, scheduling, reset }
+    private enum ErrorSource { case preference, setting, scheduling, reminders, reset }
     private var errorSource: ErrorSource?
     #if DEBUG
     private var lastTechnicalSubmission: String?
@@ -117,7 +141,8 @@ final class GardenNotificationService: ObservableObject {
         #endif
     }
 
-    // [07] Read the current choice when returning to Settings; permission may have changed outside the app.
+    // [07] Read the current choice and renew the next thirty mornings when DFE gets time.
+    // Permission may have changed outside the app; reading it never opens another permission prompt.
     func refreshPreference() async {
         do {
             enabled = try await coordinator.isEnabled()
@@ -127,10 +152,23 @@ final class GardenNotificationService: ObservableObject {
                 authorizationDenied = status == .denied
             }
             clearError(from: .preference)
+            if enabled {
+                let result = try await coordinator.prepareMorningReminders(now: Date())
+                if result == .schedulingFailed {
+                    showError("Some morning reminders could not be prepared. Please try again.", from: .reminders)
+                } else if result == .scheduled || result == .alreadyReserved {
+                    clearError(from: .reminders)
+                }
+            }
         } catch {
             enabled = false
             showError("Daily garden updates could not be read. Your estimates are safe.", from: .preference)
         }
+        #if DEBUG
+        // [21] Keep a current technical receipt after renewal, so device checks can verify
+        // the queued dates and wording variety without reading anyone's usage or notice text.
+        await captureTechnicalState()
+        #endif
     }
 
     /// [08] Permission is requested only after the person chooses the Settings toggle.
@@ -149,7 +187,7 @@ final class GardenNotificationService: ObservableObject {
                 }
             }
             try await coordinator.setEnabled(requested)
-            if !requested { clearError(from: .scheduling) }
+            if !requested { clearError(from: .scheduling); clearError(from: .reminders) }
             clearError(from: .setting)
             await refreshPreference()
         } catch {
@@ -174,7 +212,7 @@ final class GardenNotificationService: ObservableObject {
             automaticAccessReady: store.usesAutomaticInput && automaticAccessReady,
             now: now, recordCalendar: store.aggregationCalendar, deliveryCalendar: FootprintCalendar.localCalendar)
         do {
-            let result = try await coordinator.submit(plan)
+            let result = try await coordinator.submit(plan, now: now, calendar: FootprintCalendar.localCalendar)
             #if DEBUG
             lastTechnicalSubmission = String(describing: result)
             #endif
@@ -194,18 +232,49 @@ final class GardenNotificationService: ObservableObject {
         let candidate = DailyGardenNotificationPlan.make(records: store.records,
             automaticAccessReady: store.usesAutomaticInput && automaticAccessReady,
             now: now, recordCalendar: store.aggregationCalendar, deliveryCalendar: FootprintCalendar.localCalendar)
-        return (try? await coordinator.needsRetry(for: candidate)) ?? false
+        return (try? await coordinator.needsRetry(for: candidate, now: now, calendar: FootprintCalendar.localCalendar)) ?? false
     }
 
     #if DEBUG
+    // [20] A clearly labelled development reminder lets the owner close DFE and check
+    // native delivery today. It uses the real request builder, but never reserves a production day.
+    @discardableResult
+    func scheduleForceQuitReminderTest() async -> Bool {
+        guard !isolated, BackgroundUpdateDiagnostics.isAllowed,
+              (try? await coordinator.isEnabled()) == true else { return false }
+        let status = await center.notificationSettings().authorizationStatus
+        guard status == .authorized || status == .provisional else { return false }
+        let now = Date()
+        let plan = DailyGardenNotificationPlan(kind: .reminder, scheduledForMorning: true,
+            deliveryDay: "test-force-quit", recordDay: "", title: "DFE Reminder Test",
+            body: "This reminder was prepared before DFE closed. Tap to open your garden.",
+            deliverAt: now.addingTimeInterval(120), timeZoneIdentifier: TimeZone.autoupdatingCurrent.identifier)
+        do {
+            try await center.add(GardenNotificationRequestBuilder.make(plan))
+            let receipt: [String: String] = ["prepared_at": ISO8601DateFormatter().string(from: now),
+                "scheduled_for": ISO8601DateFormatter().string(from: plan.deliverAt),
+                "identifier": plan.identifier, "purpose": "Explicit force-quit delivery test; not a daily estimate"]
+            let cache = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
+            let file = cache.appendingPathComponent("DFENotificationDiagnostics/force-quit-test-v1.json")
+            try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try JSONSerialization.data(withJSONObject: receipt, options: [.sortedKeys])
+                .write(to: file, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+            return true
+        } catch { return false }
+    }
+
     /// [11] Read-only system state for a connected development session. It never
     /// adds, cancels or reveals notification text, app identities or usage.
     @discardableResult
     func captureTechnicalState(now: Date = Date()) async -> Bool {
         guard !isolated, BackgroundUpdateDiagnostics.isAllowed else { return false }
         let settings = await center.notificationSettings()
-        let pending = await center.pendingNotificationRequests().map(\.identifier)
-            .filter { $0.hasPrefix(DailyGardenNotificationPlan.prefix) }
+        let pendingRequests = await center.pendingNotificationRequests()
+            .filter { $0.identifier.hasPrefix(DailyGardenNotificationPlan.prefix) }
+        let pending = pendingRequests.map(\.identifier)
+        let copyCount = Set(pendingRequests.filter {
+            !GardenNotificationTechnicalSnapshot.deliveryDays(from: [$0.identifier]).isEmpty
+        }.map { $0.content.title + "\n" + $0.content.body }).count
         let delivered = await center.deliveredNotifications().map { $0.request.identifier }
             .filter { $0.hasPrefix(DailyGardenNotificationPlan.prefix) }
         let preference = try? await coordinator.isEnabled()
@@ -219,6 +288,7 @@ final class GardenNotificationService: ObservableObject {
             alertStyle: GardenNotificationTechnicalSnapshot.alertStyleLabel(settings.alertStyle),
             previews: GardenNotificationTechnicalSnapshot.previewLabel(settings.showPreviewsSetting),
             pendingCount: pending.count, deliveredCount: delivered.count,
+            pendingDistinctCopyCount: copyCount,
             pendingDeliveryDays: GardenNotificationTechnicalSnapshot.deliveryDays(from: pending),
             deliveredDeliveryDays: GardenNotificationTechnicalSnapshot.deliveryDays(from: delivered),
             lastSubmission: lastTechnicalSubmission)
@@ -301,6 +371,7 @@ struct GardenNotificationTechnicalSnapshot: Codable {
     let previews: String
     let pendingCount: Int
     let deliveredCount: Int
+    let pendingDistinctCopyCount: Int
     let pendingDeliveryDays: [String]
     let deliveredDeliveryDays: [String]
     let lastSubmission: String?

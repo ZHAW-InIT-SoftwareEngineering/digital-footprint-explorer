@@ -150,6 +150,37 @@ class DisplayBrightnessObserver(private val context: Context) {
         )
     }
 
+    /**
+     * Returns the [DisplayInput] for [fromMs]..[toMs] without touching the stored state, so the
+     * data still belongs to the next [collectAndReset]. Includes the currently open interval.
+     * Falls back to the default brightness for the whole window when nothing was tracked.
+     */
+    fun peek(fromMs: Long, toMs: Long): DisplayInput {
+        val now = System.currentTimeMillis()
+        val raw = prefs.getString(KEY_INTERVALS, "") ?: ""
+        val intervals = parseAndClip(raw, fromMs, toMs).toMutableList()
+
+        val openStart = maxOf(intervalStartMs, fromMs)
+        val openEnd = minOf(now, toMs)
+        if (openEnd > openStart) {
+            intervals += BrightnessInterval(
+                normalizedBrightness = currentBrightness,
+                durationH = (openEnd - openStart) / MILLIS_PER_HOUR
+            )
+        }
+
+        return DisplayInput(
+            intervals = intervals.ifEmpty {
+                listOf(
+                    BrightnessInterval(
+                        normalizedBrightness = DEFAULT_BRIGHTNESS,
+                        durationH = (toMs - fromMs) / MILLIS_PER_HOUR
+                    )
+                )
+            }
+        )
+    }
+
     private fun keepIntervalsAfter(raw: String, boundaryMs: Long): String {
         if (raw.isBlank()) return ""
 

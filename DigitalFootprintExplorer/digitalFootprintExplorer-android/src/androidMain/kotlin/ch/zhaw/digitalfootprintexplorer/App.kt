@@ -31,7 +31,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoGraph
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
@@ -216,7 +216,7 @@ fun App() {
                                 onClick = { selectedTab = 1 },
                                 icon = {
                                     Icon(
-                                        Icons.Default.AutoGraph,
+                                        Icons.Default.BarChart,
                                         contentDescription = stringResource(R.string.statistics)
                                     )
                                 },

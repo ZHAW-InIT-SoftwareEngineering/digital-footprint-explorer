@@ -64,4 +64,37 @@
     <string name="info_disclaimer_description">Disclaimer anzeigen</string>
     <string name="info_zhaw_logo_description">ZHAW Logo</string>
     <string name="info_zhaw_project_description">Diese App wurde im Rahmen einer Bachelorarbeit an der ZHAW entwickelt.</string>
+    <string name="display">Display</string>
+    <string name="history_title">Wochenbericht</string>
+    <string name="history_whole_week">Ganze Woche</string>
+    <string name="history_previous_week">Vorherige Woche</string>
+    <string name="history_next_week">Nächste Woche</string>
+    <string name="history_swipe_hint">Wischen, um die Woche zu wechseln. Tag antippen für die Tagesanalyse</string>
+    <string name="history_no_data">Für diesen Zeitraum sind keine Daten vorhanden.</string>
+    <string name="history_categories">App-Nutzung nach Kategorie</string>
+    <string name="history_updated">Aktualisiert: %1$s Uhr</string>
+    <string name="history_total">Total</string>
+    <string name="history_today_so_far">%1$s (bisher)</string>
+    <string name="history_daily_average">Tagesdurchschnitt</string>
+    <string name="history_vs_last_week">%1$s vs. Vorwoche</string>
+    <string name="history_no_comparison">Kein Vergleich mit der Vorwoche möglich</string>
+    <string-array name="weekday_short_names">
+        <item>Mo</item>
+        <item>Di</item>
+        <item>Mi</item>
+        <item>Do</item>
+        <item>Fr</item>
+        <item>Sa</item>
+        <item>So</item>
+    </string-array>
+    <string name="category_video_streaming">Video-Streaming</string>
+    <string name="category_audio_streaming">Audio-Streaming</string>
+    <string name="category_social_media">Social Media</string>
+    <string name="category_messaging">Messaging</string>
+    <string name="category_artificial_intelligence">Künstliche Intelligenz</string>
+    <string name="category_e_mail">E-Mail</string>
+    <string name="category_video_call">Videoanrufe</string>
+    <string name="category_gaming">Gaming</string>
+    <string name="category_navigation">Navigation</string>
+    <string name="category_miscellaneous">Sonstiges</string>
 </resources>

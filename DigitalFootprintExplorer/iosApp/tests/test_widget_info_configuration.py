@@ -104,6 +104,39 @@ class WidgetInfoConfigurationTests(unittest.TestCase):
         self.assertEqual(names, {'iosAppTests', 'iosAppUITests'})
         self.assertTrue(all(item.attrib.get('skipped') == 'NO' for item in testables))
 
+    # [05] A warm local build can hide a missing framework. Both users of Shared need the same producer first.
+    def test_app_and_widget_wait_for_one_shared_framework_producer(self):
+        project = (IOS_ROOT / 'iosApp.xcodeproj/project.pbxproj').read_text()
+        producer_id = 'DFE000000000000000000130'
+        phase_id = '30F37E60F75DDBAEADE13C7E'
+        producer = settings(producer_id)
+        self.assertEqual(value(producer, 'isa'), 'PBXAggregateTarget')
+        self.assertIn(phase_id, producer)
+        self.assertEqual(project.count(':shared:embedAndSignAppleFrameworkForXcode'), 1)
+        for target_id, dependency_id in (
+            ('F2331A42642BB616260C67E2', 'DFE000000000000000000136'),
+            ('DFE000000000000000000108', 'DFE000000000000000000137'),
+        ):
+            target = settings(target_id)
+            self.assertIn(dependency_id, target)
+            self.assertNotIn(phase_id, target, 'Two Gradle producers could write the same framework at once.')
+            self.assertTrue(value(settings(dependency_id), 'target').startswith(producer_id))
+        self.assertIn('DFE000000000000000000110', settings('F2331A42642BB616260C67E2'))
+        configuration_list = settings('DFE000000000000000000131')
+        for identifier, name, kotlin_type in (
+            ('DFE000000000000000000132', 'Debug', 'Debug'),
+            ('DFE000000000000000000133', 'Release', 'Release'),
+            ('DFE000000000000000000134', 'ScreenTimeDebug', 'Debug'),
+            ('DFE000000000000000000135', 'ScreenTimeRelease', 'Release'),
+        ):
+            with self.subTest(configuration=name):
+                self.assertIn(identifier, configuration_list)
+                configuration = settings(identifier)
+                self.assertEqual(value(configuration, 'name'), name)
+                self.assertEqual(value(configuration, 'KOTLIN_FRAMEWORK_BUILD_TYPE'), kotlin_type)
+                self.assertEqual(value(configuration, 'ENABLE_USER_SCRIPT_SANDBOXING'), 'NO')
+                self.assertEqual(value(configuration, 'FRAMEWORKS_FOLDER_PATH'), '$(TARGET_NAME)/Frameworks')
+
 
 if __name__ == '__main__':
     unittest.main()

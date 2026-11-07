@@ -11,6 +11,20 @@
 		DFE000000000000000000112 /* Shared garden assets in Resources */ = {isa = PBXBuildFile; fileRef = DFE000000000000000000113 /* Shared garden assets */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXAggregateTarget section */
+		DFE000000000000000000130 /* SharedFrameworkProducer */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = DFE000000000000000000131 /* Build configuration list for PBXAggregateTarget "SharedFrameworkProducer" */;
+			buildPhases = (
+				30F37E60F75DDBAEADE13C7E /* Compile Kotlin Framework */,
+			);
+			dependencies = (
+			);
+			name = SharedFrameworkProducer;
+			productName = SharedFrameworkProducer;
+		};
+/* End PBXAggregateTarget section */
+
 /* Begin PBXContainerItemProxy section */
 		DFE000000000000000000017 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -32,6 +46,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = DFE000000000000000000108;
 			remoteInfo = GardenWidget;
+		};
+		DFE000000000000000000138 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 06217D302ADDD51FA38E60D1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = DFE000000000000000000130;
+			remoteInfo = SharedFrameworkProducer;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -226,6 +247,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				DFE000000000000000000137 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				DFE000000000000000000101 /* GardenWidget */,
@@ -240,7 +262,6 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 739EBB14C0F0161F51DF3FA8 /* Build configuration list for PBXNativeTarget "iosApp" */;
 			buildPhases = (
-				30F37E60F75DDBAEADE13C7E /* Compile Kotlin Framework */,
 				B0FB53BF4D4DB05D51E09E2E /* Sources */,
 				777D4A825D7AA51E67C1F7F6 /* Frameworks */,
 				028A1912568E442F7738CC6C /* Resources */,
@@ -250,6 +271,7 @@
 			);
 			dependencies = (
 				DFE000000000000000000110 /* PBXTargetDependency */,
+				DFE000000000000000000136 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				4089A98A4390BC63C941E6A6 /* iosApp */,
@@ -308,6 +330,7 @@
 				DFE00000000000000000000B /* iosAppTests */,
 				DFE00000000000000000000C /* iosAppUITests */,
 				DFE000000000000000000108 /* GardenWidget */,
+				DFE000000000000000000130 /* SharedFrameworkProducer */,
 			);
 		};
 /* End PBXProject section */
@@ -345,7 +368,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-/* [01] Build the neighbouring shared model so iOS uses the same calculation rules as Android. */
+/* [01] Build the shared calculation once, before either the app or widget needs it on a clean checkout. */
 		30F37E60F75DDBAEADE13C7E /* Compile Kotlin Framework */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
@@ -413,6 +436,16 @@
 			isa = PBXTargetDependency;
 			target = DFE000000000000000000108 /* GardenWidget */;
 			targetProxy = DFE000000000000000000111 /* PBXContainerItemProxy */;
+		};
+		DFE000000000000000000136 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = DFE000000000000000000130 /* SharedFrameworkProducer */;
+			targetProxy = DFE000000000000000000138 /* PBXContainerItemProxy */;
+		};
+		DFE000000000000000000137 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = DFE000000000000000000130 /* SharedFrameworkProducer */;
+			targetProxy = DFE000000000000000000138 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -1079,6 +1112,66 @@
 			};
 			name = ScreenTimeRelease;
 		};
+		DFE000000000000000000132 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = arm64;
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGN_ENTITLEMENTS = "";
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				/* [02] Kotlin needs a framework destination even for static code; keep it outside app bundles. */
+				FRAMEWORKS_FOLDER_PATH = "$(TARGET_NAME)/Frameworks";
+				KOTLIN_FRAMEWORK_BUILD_TYPE = Debug;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+			};
+			name = Debug;
+		};
+		DFE000000000000000000133 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = arm64;
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGN_ENTITLEMENTS = "";
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				/* [02] Kotlin needs a framework destination even for static code; keep it outside app bundles. */
+				FRAMEWORKS_FOLDER_PATH = "$(TARGET_NAME)/Frameworks";
+				KOTLIN_FRAMEWORK_BUILD_TYPE = Release;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+			};
+			name = Release;
+		};
+		DFE000000000000000000134 /* ScreenTimeDebug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = arm64;
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGN_ENTITLEMENTS = "";
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				/* [02] Kotlin needs a framework destination even for static code; keep it outside app bundles. */
+				FRAMEWORKS_FOLDER_PATH = "$(TARGET_NAME)/Frameworks";
+				KOTLIN_FRAMEWORK_BUILD_TYPE = Debug;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+			};
+			name = ScreenTimeDebug;
+		};
+		DFE000000000000000000135 /* ScreenTimeRelease */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = arm64;
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGN_ENTITLEMENTS = "";
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				/* [02] Kotlin needs a framework destination even for static code; keep it outside app bundles. */
+				FRAMEWORKS_FOLDER_PATH = "$(TARGET_NAME)/Frameworks";
+				KOTLIN_FRAMEWORK_BUILD_TYPE = Release;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+			};
+			name = ScreenTimeRelease;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -1133,6 +1226,17 @@
 				DFE00000000000000000010B /* Release */,
 				DFE00000000000000000010C /* ScreenTimeDebug */,
 				DFE00000000000000000010D /* ScreenTimeRelease */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		DFE000000000000000000131 /* Build configuration list for PBXAggregateTarget "SharedFrameworkProducer" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DFE000000000000000000132 /* Debug */,
+				DFE000000000000000000133 /* Release */,
+				DFE000000000000000000134 /* ScreenTimeDebug */,
+				DFE000000000000000000135 /* ScreenTimeRelease */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

@@ -15,3 +15,10 @@ TEAM_ID = YOUR_TEAM_ID
 // DFE_SUPPORT_URL = https:/$()/approved-host/support
 // [05] Check App Store Connect for the next unused build number before preparing an upload.
 // CURRENT_PROJECT_VERSION = 1
+
+// [06] A local device test may choose the widget's own approved development profile.
+// DFE_WIDGET_CODE_SIGN_STYLE = Manual
+// DFE_WIDGET_PROFILE_SPECIFIER = YOUR_APPROVED_WIDGET_PROFILE
+// DFE_WIDGET_CODE_SIGN_IDENTITY = Apple Development
+// [07] Supply a checked source fingerprint when preparing evidence for a candidate.
+// DFE_SOURCE_REVISION = VERIFIED_SOURCE_FINGERPRINT

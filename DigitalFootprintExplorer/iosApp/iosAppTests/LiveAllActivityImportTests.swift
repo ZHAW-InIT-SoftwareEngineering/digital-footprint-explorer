@@ -130,11 +130,13 @@ final class LiveAllActivityImportTests: XCTestCase {
 
         // [07] Use the same activity request as the real app, so made-up minutes cannot make this
         // check pass.
+        let importStartedAt = Date()
         do { try await service.refreshCompletedDays(store: store, now: now) }
         catch {
             XCTFail("The live import ended with an error. No private API details were recorded.")
             return
         }
+        let importFinishedAt = Date()
         guard let record = store.records.first else {
             // [08] Keep the failure reason useful without copying Apple's text, which may include
             // private details.
@@ -161,8 +163,10 @@ final class LiveAllActivityImportTests: XCTestCase {
                       "The import must save only the requested completed day.")
         XCTAssertTrue(record.source == .screenTimeWithEstimates && record.isCompleted,
                       "A routine estimate cannot count as a successful live import.")
-        XCTAssertTrue(service.lastImportDate == now && service.lastError == nil,
-                      "The live import must finish without a notice.")
+        // [15] The saved time belongs to the completed work, rather than the earlier calculation date.
+        let completedAt = try XCTUnwrap(service.lastImportDate)
+        XCTAssertTrue(completedAt >= importStartedAt && completedAt <= importFinishedAt && service.lastError == nil,
+                      "The live import must record its completion within this request and finish without a notice.")
         XCTAssertTrue(Set(record.automaticCategories ?? []) == mappedCategories,
                       "All model categories must receive measured time or a genuine measured zero.")
         let actualMinutes = Dictionary(uniqueKeysWithValues: record.inputs.usages.map {

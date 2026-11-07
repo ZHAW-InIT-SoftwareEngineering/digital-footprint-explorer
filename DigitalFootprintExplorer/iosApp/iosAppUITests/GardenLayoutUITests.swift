@@ -115,6 +115,10 @@ final class GardenLayoutUITests: XCTestCase {
         let instruction = content.staticTexts["widget-help.quickStart"]
         AutomaticUITestSupport.reach(instruction, in: app, inside: content, below: bar)
         XCTAssertTrue(instruction.label.contains("Home Screen"))
+        let sharing = content.staticTexts["widget-help.sharedData"]
+        AutomaticUITestSupport.reach(sharing, in: app, inside: content, below: bar)
+        XCTAssertTrue(sharing.label.contains("calculation inputs and category totals"))
+        XCTAssertTrue(sharing.label.contains("no app names or full history"))
         AutomaticUITestSupport.capture("Optional Home Screen widget setup")
         bar.buttons["Done"].tap()
         XCTAssertTrue(app.navigationBars["Today"].waitForExistence(timeout: 8))
@@ -198,6 +202,54 @@ final class GardenLayoutUITests: XCTestCase {
             try app.performAccessibilityAudit(for: [.textClipped, .hitRegion])
             app.terminate()
         }
+    }
+
+    // [12] A dry legacy garden and a lush completed garden both need the saved date and automatic waiting note.
+    func testSavedPeriodAndPendingNoteRemainForDryAndLushGardens() {
+        for legacyToday in [false, true] {
+            let app = AutomaticUITestSupport.open(fixture: true, legacyToday: legacyToday)
+            XCTAssertTrue(app.staticTexts["footprint.total"].waitForExistence(timeout: 8))
+            let period = app.staticTexts["today.periodLabel"].firstMatch
+            let date = app.staticTexts["today.recordDate"].firstMatch
+            AutomaticUITestSupport.reach(period, in: app)
+            XCTAssertEqual(period.label, legacyToday ? "Saved today" : "Latest completed day")
+            XCTAssertFalse(date.label.isEmpty)
+            let state = app.staticTexts["garden.state"]
+            let pending = app.staticTexts["today.automaticPending"]
+            AutomaticUITestSupport.reach(pending, in: app)
+            XCTAssertEqual(pending.label, "Let your next day take shape")
+            XCTAssertGreaterThanOrEqual(pending.frame.minY - state.frame.maxY, 26)
+            let explanation = app.staticTexts["today.pendingExplanation"]
+            AutomaticUITestSupport.reach(explanation, in: app)
+            XCTAssertTrue(explanation.label.contains("Today's estimate waits until this day ends"))
+            XCTAssertFalse(app.buttons["today.automaticSetup"].exists)
+            AutomaticUITestSupport.assertNoManualEntry(in: app)
+            AutomaticUITestSupport.capture(legacyToday ? "Dry garden with saved date and automatic pending note"
+                : "Lush garden with completed date and automatic pending note")
+            app.terminate()
+        }
+    }
+
+    // [13] The longer legacy-day overview must remain readable when dark mode and the largest text are combined.
+    func testDryGardenPendingNoteFitsAtLargestTextInDarkMode() throws {
+        let app = AutomaticUITestSupport.open(fixture: true, legacyToday: true, largeText: true, dark: true)
+        let period = app.staticTexts["today.periodLabel"].firstMatch
+        AutomaticUITestSupport.reach(period, in: app)
+        XCTAssertEqual(period.label, "Saved today")
+        let pending = app.staticTexts["today.automaticPending"]
+        let explanation = app.staticTexts["today.pendingExplanation"]
+        AutomaticUITestSupport.reach(pending, in: app)
+        XCTAssertEqual(pending.label, "Let your next day take shape")
+        AutomaticUITestSupport.reach(explanation, in: app)
+        XCTAssertTrue(explanation.label.contains("Missing activity stays pending"))
+        XCTAssertGreaterThan(explanation.frame.height, 0)
+        AutomaticUITestSupport.capture("Largest-text dark dry garden with complete pending explanation")
+        try app.performAccessibilityAudit(for: [.textClipped, .hitRegion])
+        let details = app.buttons["today.dayDetails"]
+        AutomaticUITestSupport.reach(details, in: app)
+        XCTAssertTrue(details.isHittable)
+        XCTAssertGreaterThanOrEqual(details.frame.height, 44)
+        AutomaticUITestSupport.assertNoManualEntry(in: app)
     }
 
 }

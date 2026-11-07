@@ -169,15 +169,6 @@ struct ScreenTimeImportPolicy {
     }
 }
 
-#if SCREEN_TIME_ENABLED
-struct ScreenTimeQueryScope {
-    static func filter(interval: DateInterval, applications: Set<ApplicationToken>,
-                       categories: Set<ActivityCategoryToken>) -> DeviceActivityFilter {
-        // [13] Use Apple's current-person and current-device defaults, without requesting another person's activity.
-        DeviceActivityFilter(segment: .daily(during: interval), applications: applications, categories: categories)
-    }
-}
-#endif
 
 struct ScreenTimeImportScope {
     static func recognizedTokens<Token: Hashable>(token: Token?, bundleIdentifier: String?,
@@ -213,155 +204,6 @@ struct ScreenTimeImportScope {
     }
 }
 
-/// [17] Count an app once, even if it appears in several chosen groups.
-/// Only Apple-provided identities can connect those rows; matching names are not enough.
-struct ScreenTimeContributionLedger<Token: Hashable> {
-    struct Contribution {
-        let tokens: Set<Token>
-        let bundleIdentifier: String?
-        let categoryID: String
-        let seconds: Double
-        let sourceSeconds: Double
-        let isExplicit: Bool
-    }
-
-    private enum Alias: Hashable {
-        case token(Token), bundle(String)
-    }
-    private struct Entry {
-        var tokens: Set<Token>
-        var bundleIdentifier: String?
-        var groupDestinations: Set<String>
-        var explicitDestinations: Set<String>
-        var seconds: Double
-        var sourceSeconds: Double
-        var minimumSeconds: Double
-        var minimumSourceSeconds: Double
-    }
-    private let knownBundles: [Token: String]
-    private var entries: [Int: Entry] = [:]
-    private var aliases: [Alias: Int] = [:]
-    private var nextID = 0
-
-    init(knownBundles: [Token: String] = [:]) {
-        self.knownBundles = knownBundles.filter { !$0.value.isEmpty }
-    }
-
-    // [18] Join rows only when Apple gives a matching identity, like checking two tickets
-    // belong to the same booking. Conflicting times stop the import instead of choosing a guess.
-    mutating func record(token: Token?, bundleIdentifier: String?, categoryID: String,
-                         seconds: Double, sourceSeconds: Double? = nil, isExplicit: Bool) throws {
-        let sourceSeconds = sourceSeconds ?? seconds
-        guard seconds.isFinite, seconds >= 0, sourceSeconds.isFinite, sourceSeconds >= 0 else {
-            throw ScreenTimeImportError.invalidDuration
-        }
-        let suppliedBundle = bundleIdentifier.flatMap { $0.isEmpty ? nil : $0 }
-        let knownBundle = token.flatMap { knownBundles[$0] }
-        if let suppliedBundle, let knownBundle, suppliedBundle != knownBundle {
-            throw ScreenTimeImportError.unmappedSelection
-        }
-        let bundle = suppliedBundle ?? knownBundle
-        guard token != nil || bundle != nil else { throw ScreenTimeImportError.unmappedSelection }
-        var incomingAliases = Set<Alias>()
-        if let token { incomingAliases.insert(.token(token)) }
-        if let bundle { incomingAliases.insert(.bundle(bundle)) }
-        let matchingIDs = Set(incomingAliases.compactMap { aliases[$0] })
-        var merged = Entry(tokens: Set(token.map { [$0] } ?? []), bundleIdentifier: bundle,
-            groupDestinations: isExplicit ? [] : [categoryID],
-            explicitDestinations: isExplicit ? [categoryID] : [],
-            seconds: seconds, sourceSeconds: sourceSeconds,
-            minimumSeconds: seconds, minimumSourceSeconds: sourceSeconds)
-        for id in matchingIDs {
-            guard let previous = entries[id] else { throw ScreenTimeImportError.unmappedSelection }
-            guard max(previous.sourceSeconds, merged.sourceSeconds) - min(previous.minimumSourceSeconds, merged.minimumSourceSeconds) <= 0.001,
-                  max(previous.seconds, merged.seconds) - min(previous.minimumSeconds, merged.minimumSeconds) <= 0.001 else {
-                throw ScreenTimeImportError.invalidDuration
-            }
-            if let previousBundle = previous.bundleIdentifier, let bundle, previousBundle != bundle {
-                throw ScreenTimeImportError.unmappedSelection
-            }
-            merged.tokens.formUnion(previous.tokens)
-            merged.bundleIdentifier = merged.bundleIdentifier ?? previous.bundleIdentifier
-            merged.groupDestinations.formUnion(previous.groupDestinations)
-            merged.explicitDestinations.formUnion(previous.explicitDestinations)
-            merged.seconds = max(merged.seconds, previous.seconds)
-            merged.sourceSeconds = max(merged.sourceSeconds, previous.sourceSeconds)
-            merged.minimumSeconds = min(merged.minimumSeconds, previous.minimumSeconds)
-            merged.minimumSourceSeconds = min(merged.minimumSourceSeconds, previous.minimumSourceSeconds)
-        }
-        // [19] Wait for all rows before choosing a category.
-        // An explicit app choice then wins over a group choice, whichever arrived first.
-        let id = matchingIDs.min() ?? nextID
-        if matchingIDs.isEmpty { nextID += 1 }
-        for oldID in matchingIDs { entries.removeValue(forKey: oldID) }
-        entries[id] = merged
-        for token in merged.tokens { aliases[.token(token)] = id }
-        if let bundle = merged.bundleIdentifier { aliases[.bundle(bundle)] = id }
-    }
-
-    func contributions(requireResolvedPartials: Bool = true) throws -> [Contribution] {
-        if requireResolvedPartials,
-           entries.values.contains(where: { $0.bundleIdentifier == nil }),
-           entries.values.contains(where: { $0.bundleIdentifier != nil }) {
-            // [20] Two different kinds of app ID may describe the same app.
-            // Without Apple's link between them, leave the day pending rather than risk counting it twice.
-            throw ScreenTimeImportError.unmappedSelection
-        }
-        return try entries.values.map { entry in
-            let destinations = entry.explicitDestinations.isEmpty
-                ? entry.groupDestinations : entry.explicitDestinations
-            guard destinations.count == 1, let categoryID = destinations.first else {
-                throw ScreenTimeImportError.conflictingSelection
-            }
-            return Contribution(tokens: entry.tokens, bundleIdentifier: entry.bundleIdentifier,
-                categoryID: categoryID, seconds: entry.seconds, sourceSeconds: entry.sourceSeconds,
-                isExplicit: !entry.explicitDestinations.isEmpty)
-        }.sorted {
-            if $0.categoryID != $1.categoryID { return $0.categoryID < $1.categoryID }
-            if $0.seconds != $1.seconds { return $0.seconds < $1.seconds }
-            return $0.sourceSeconds < $1.sourceSeconds
-        }
-    }
-
-    // [21] Add only the checked, non-repeated app contributions, so group overlap does not inflate a category.
-    func secondsByCategory() throws -> [String: Double] {
-        var result: [String: Double] = [:]
-        for contribution in try contributions() {
-            result[contribution.categoryID, default: 0] += contribution.seconds
-        }
-        return result
-    }
-}
-
-// [22] A complete daily estimate needs the exact requested day, including a clock-change day.
-struct ScreenTimeDayValidation {
-    static func isCompleteSegment(_ segment: DateInterval, for requested: DateInterval) -> Bool {
-        // [23] Reject activity that crosses the requested day; guessing how to split it could distort the estimate.
-        abs(segment.start.timeIntervalSince(requested.start)) <= 0.001
-            && abs(segment.end.timeIntervalSince(requested.end)) <= 0.001
-    }
-}
-
-// [68] A full date is not enough when Apple reports activity but no usable app time.
-// Keep that day pending; filling every category with zero would hide the missing coverage.
-struct ScreenTimeAllActivityCoverage {
-    static func requireUsableSegment(_ segment: DateInterval, for requested: DateInterval,
-                                     activitySeconds: Double, applicationRowCount: Int,
-                                     hasPositiveApplicationDuration: Bool) throws {
-        guard ScreenTimeDayValidation.isCompleteSegment(segment, for: requested) else {
-            throw ScreenTimeImportError.incompleteData
-        }
-        guard activitySeconds.isFinite, activitySeconds >= 0,
-              activitySeconds <= requested.duration + 0.001, applicationRowCount >= 0 else {
-            throw ScreenTimeImportError.invalidDuration
-        }
-        // [69] Screen-on time may include websites or system activity. Do not spread any
-        // remainder across apps; only explicit app rows or a genuine zero support this input.
-        guard activitySeconds == 0 || (applicationRowCount > 0 && hasPositiveApplicationDuration) else {
-            throw ScreenTimeImportError.incompleteData
-        }
-    }
-}
 
 #if DEBUG
 // [70] These broad bands can locate missing coverage without saving a person's usage time.
@@ -732,27 +574,30 @@ struct ScreenTimeAllocation {
     }
 }
 
-enum ScreenTimeImportError: LocalizedError {
-    case permissionRequired, noSelection, invalidDuration, noData, multipleDevices, incompleteData, unmappedSelection, conflictingSelection, selectionChanged
-    var errorDescription: String? {
-        switch self {
-        case .permissionRequired: "Usage import needs Screen Time data access. New automatic days stay pending."
-        case .noSelection: "Complete automatic setup before importing usage time."
-        case .invalidDuration: "Screen Time returned an invalid usage duration. Your saved entries have been kept."
-        case .noData: "Screen Time has not returned a complete record for this day. Your saved entries have been kept."
-        case .multipleDevices: "Screen Time returned more than one phone. These times were not combined; your saved entries have been kept."
-        case .incompleteData: "Screen Time's data has not been updated through the end of this day. Your saved entries have been kept."
-        case .unmappedSelection: "Screen Time could not confirm the identity of some app activity. This day stays pending and your saved entries have been kept."
-        case .conflictingSelection: "Some activity has conflicting categories. This day stays pending and your saved entries have been kept."
-        case .selectionChanged: "Automatic setup changed during the import. The earlier response was not saved; the app can try again."
-        }
-    }
-}
 
 @MainActor
-// [28] This is the only route from Apple activity to the app's daily inputs.
-// Check live access, complete days and stable setup before any result reaches history.
+// [28] The host checks live access, complete days and a stable setup before changing history.
+// Widget imports use the shared checks and return through a separate protected handoff.
 final class ScreenTimeService: ObservableObject {
+    // [90] The app invalidates the widget's saved ticket before changing consent or local setup.
+    // These hooks stay empty in isolated service tests.
+    var beforeWidgetAccessEnds: (() throws -> Void)?
+
+    var widgetAutomaticStartDay: String? {
+        guard activityScope == .allAuthorizedApps,
+              let day = defaults.string(forKey: allActivityStartKey),
+              FootprintCalendar(calendar: FootprintCalendar.localCalendar).date(day) != nil else { return nil }
+        return day
+    }
+
+    var widgetAutomaticAccessDecision: Bool? {
+        // [92] An older automatic archive is not proof of the later all-app consent boundary.
+        guard widgetAutomaticStartDay != nil else { return false }
+        #if SCREEN_TIME_ENABLED
+        if AuthorizationCenter.shared.authorizationStatus == .notDetermined { return nil }
+        #endif
+        return state.canImport
+    }
     @Published private(set) var state: ScreenTimeState = .unavailable
     @Published private(set) var isRequesting = false
     @Published private(set) var isImporting = false
@@ -954,6 +799,9 @@ final class ScreenTimeService: ObservableObject {
         guard !uiTestIsolation.isActive else { return }
         #endif
         #if SCREEN_TIME_ENABLED
+        // [91] A storage problem must never prevent the person from withdrawing Apple's permission.
+        do { try beforeWidgetAccessEnds?() }
+        catch { lastError = "The widget could not be paused. Screen Time disconnection will still be requested." }
         do {
             try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
                 AuthorizationCenter.shared.revokeAuthorization { result in continuation.resume(with: result) }
@@ -970,7 +818,10 @@ final class ScreenTimeService: ObservableObject {
             #if DEBUG
             recordScopeMutation(.disconnectSucceeded)
             #endif
-        } catch { lastError = "Screen Time could not be disconnected. \(error.localizedDescription)" }
+        } catch {
+            lastError = "Screen Time could not be disconnected. \(error.localizedDescription)"
+            refreshAuthorization()
+        }
         refreshAuthorization()
         #endif
     }
@@ -978,6 +829,11 @@ final class ScreenTimeService: ObservableObject {
     /// [41] Clears local app choices after the person's confirmed Delete action.
     /// System permission is removed only through the separate Disconnect action.
     func resetLocalData() {
+        do { try beforeWidgetAccessEnds?() }
+        catch {
+            lastError = "The widget setup could not be cleared. Your saved data is kept."
+            return
+        }
         selectionRevision &+= 1
         defaults.removeObject(forKey: selectionKey)
         defaults.removeObject(forKey: historyKey)
@@ -1016,6 +872,10 @@ final class ScreenTimeService: ObservableObject {
         activityScope = .allAuthorizedApps
         selectionRevision &+= 1
         lastError = nil
+        #if DFE_WIDGET_AUTOMATIC_IMPORT
+        try store.configureWidgetAutomaticInput(enabled: true, earliestDay: startDay,
+            allowResumingAfterWithdrawal: true)
+        #endif
         #if DEBUG
         recordScopeMutation(.allActivitySetup)
         #endif
@@ -1087,14 +947,15 @@ final class ScreenTimeService: ObservableObject {
     /// An update can finish without importing anything when one of those is missing.
     @discardableResult
     func refreshAutomaticDays(store: FootprintStore, now: Date = Date(),
-                              backfillLimit: Int = ScreenTimeImportPlan.foregroundBackfillLimit) async throws -> ScreenTimeRefreshResult {
+                              backfillLimit: Int = ScreenTimeImportPlan.foregroundBackfillLimit,
+                              origin: AutomaticUpdateOrigin = .foreground) async throws -> ScreenTimeRefreshResult {
         try Task.checkCancellation()
         refreshAuthorization()
         guard store.usesAutomaticInput else { return ScreenTimeRefreshResult() }
         guard hasSavedAutomaticSetup(store: store), state.canImport else {
             return ScreenTimeRefreshResult(stoppedForAccess: true)
         }
-        return try await refreshCompletedDays(store: store, now: now, backfillLimit: backfillLimit)
+        return try await refreshCompletedDays(store: store, now: now, backfillLimit: backfillLimit, origin: origin)
     }
 
     /// [47] Share an update only for the same local day, time zone and setup.
@@ -1107,9 +968,12 @@ final class ScreenTimeService: ObservableObject {
     /// so an interruption does not lose good days or overwrite earlier manual corrections.
     @discardableResult
     func refreshCompletedDays(store: FootprintStore, now: Date = Date(),
-                              backfillLimit: Int = ScreenTimeImportPlan.foregroundBackfillLimit) async throws -> ScreenTimeRefreshResult {
+                              backfillLimit: Int = ScreenTimeImportPlan.foregroundBackfillLimit,
+                              origin: AutomaticUpdateOrigin = .foreground) async throws -> ScreenTimeRefreshResult {
         try await Self.refreshCoordinator.perform(key: refreshKey, context: refreshContext(store: store, now: now)) { [self] in
-            try await performCompletedDays(store: store, now: now, backfillLimit: backfillLimit)
+            // [65] Keep the origin of the work that actually runs. An open screen waiting for
+            // background work must not relabel that save as a foreground import.
+            try await performCompletedDays(store: store, now: now, backfillLimit: backfillLimit, origin: origin)
         }
     }
 
@@ -1138,7 +1002,8 @@ final class ScreenTimeService: ObservableObject {
 
     // [51] Take one view of the day and setup for the whole update, then check it again before saving.
     // This prevents a reconnect or time-zone change from accepting a response that belongs to the old setup.
-    private func performCompletedDays(store: FootprintStore, now: Date, backfillLimit: Int) async throws -> ScreenTimeRefreshResult {
+    private func performCompletedDays(store: FootprintStore, now: Date, backfillLimit: Int,
+                                      origin: AutomaticUpdateOrigin) async throws -> ScreenTimeRefreshResult {
         #if DEBUG
         // [52] A test screen left open across midnight must still avoid reading real activity.
         if uiTestIsolation.isActive { return ScreenTimeRefreshResult() }
@@ -1207,7 +1072,7 @@ final class ScreenTimeService: ObservableObject {
                 guard calendar.isDate(usage.day, inSameDayAs: day) else { throw FootprintError.invalidDay }
                 let wasMissing = !store.records.contains { $0.day == dayCalendar.key(day) }
                 do {
-                    try store.importAutomaticUsage(day: usage.day, minutesByCategory: usage.minutesByCategory, now: now)
+                    try store.importAutomaticUsage(day: usage.day, minutesByCategory: usage.minutesByCategory, now: now, origin: origin)
                 } catch {
                     #if DEBUG
                     ScreenTimeCoverageDiagnostics.recordSave(usage.coverageDiagnostic,
@@ -1221,7 +1086,7 @@ final class ScreenTimeService: ObservableObject {
                     returned: usage.minutesByCategory, record: savedRecord)
                 #endif
                 guard savedRecord?.source == .screenTimeWithEstimates else { return nil }
-                lastImportDate = now
+                lastImportDate = Date()
                 return ScreenTimeDayImportReceipt(day: usage.day, created: wasMissing)
             }, onError: { [self] error in
                 lastError = error.localizedDescription

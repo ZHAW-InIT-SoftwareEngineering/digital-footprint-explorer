@@ -21,6 +21,8 @@ FAMILY_KEY = 'com.apple.developer.family-controls'
 USAGE_KEY = FAMILY_KEY + '.app-and-website-usage'
 GROUP_KEY = 'com.apple.security.application-groups'
 TEAM_KEY = 'com.apple.developer.team-identifier'
+WIDGET_AUTOMATIC_KEY = 'DFEWidgetAutomaticImportEnabled'
+SOURCE_REVISION_KEY = 'DFESourceRevision'
 PREVIEW_MARKER = b'-ui-automatic-preview'
 
 PREVIEW_MARKERS = (
@@ -36,6 +38,7 @@ PREVIEW_MARKERS = (
     b'-ui-large-text', b'-ui-extra-large-text', b'Completed refreshes:',
     b'-ui-testing', b'-reset-ui-state', b'dfe-ui-testing.json', b'dfe-unit-host-',
     b'dfe.isolated-ui-screen-time', b'dfe.isolated-unit-screen-time.',
+    b'ProbeRefreshIntent', b'Check widget access', b'WidgetActivityProbeDriver', b'widget-activity-probe-',
 )
 
 
@@ -90,6 +93,46 @@ def identity_matches(entitlements, identifier):
 def groups_match(entitlements):
     groups = entitlements.get(GROUP_KEY)
     return isinstance(groups, list) and groups == [GROUP_ID]
+
+
+# [20] Reading protected activity from a widget is a separate, explicit build choice.
+# Both labels must agree; a string such as "true" cannot quietly turn that access on.
+def widget_automatic_mode(info, widget_info):
+    host = info.get(WIDGET_AUTOMATIC_KEY, False)
+    widget = widget_info.get(WIDGET_AUTOMATIC_KEY, False)
+    matches = isinstance(host, bool) and isinstance(widget, bool) and host is widget
+    return matches, matches and host is True
+
+
+# [22] A new importer needs its own source label. Matching placeholders cannot identify the code being tested.
+def source_identity_matches(info, widget_info, required):
+    if not required:
+        return True
+
+    def usable(value):
+        if not isinstance(value, str) or not value or value != value.strip() or len(value) > 256:
+            return False
+        if any(character.isspace() or ord(character) < 32 for character in value):
+            return False
+        lowered = value.casefold()
+        placeholders = {
+            'unavailable', 'unknown', 'missing', 'placeholder', 'source_revision',
+            'dfe_source_revision', 'verified_source_fingerprint',
+        }
+        return (lowered not in placeholders and not lowered.startswith('your_')
+                and '$(' not in value and '${' not in value)
+
+    host = info.get(SOURCE_REVISION_KEY)
+    widget = widget_info.get(SOURCE_REVISION_KEY)
+    return usable(host) and usable(widget) and host == widget
+
+
+# [21] The older widget reads only a saved garden. The new route needs both protected rights,
+# but only when both targets explicitly declare that route.
+def widget_protected_access_matches(entitlements, enabled):
+    if enabled:
+        return entitlements.get(FAMILY_KEY) is True and entitlements.get(USAGE_KEY) is True
+    return FAMILY_KEY not in entitlements and USAGE_KEY not in entitlements
 
 
 # [09] A Store build needs a current Store profile. A phone-testing profile is not enough, even with an empty device list.
@@ -262,10 +305,13 @@ def inspect_bundle(app, *, version='1.0', archive=None, project_root=None):
     widget = widgets[0]
     info = read_plist(app / 'Info.plist')
     widget_info = read_plist(widget / 'Info.plist')
+    automatic_mode_matches, widget_automatic_enabled = widget_automatic_mode(info, widget_info)
     build = info.get('CFBundleVersion', '')
     common = {
         'host_identifier': info.get('CFBundleIdentifier') == APP_ID,
         'widget_identifier': widget_info.get('CFBundleIdentifier') == WIDGET_ID,
+        'widget_automatic_import_configuration_matches': automatic_mode_matches,
+        'source_identity_matches': source_identity_matches(info, widget_info, widget_automatic_enabled),
         'version_matches': info.get('CFBundleShortVersionString') == widget_info.get('CFBundleShortVersionString') == version,
         'build_matches': bool(re.fullmatch(r'[1-9]\d*(\.\d+){0,2}', str(build))) and build == widget_info.get('CFBundleVersion'),
         'host_privacy_manifest': privacy_manifest_matches(read_plist(app / 'PrivacyInfo.xcprivacy'), True),
@@ -300,15 +346,19 @@ def inspect_bundle(app, *, version='1.0', archive=None, project_root=None):
         'signed_host_identity': identity_matches(app_entitlements, APP_ID),
         'signed_widget_identity': identity_matches(widget_entitlements, WIDGET_ID),
         'debugger_disabled': app_entitlements.get('get-task-allow') is False and widget_entitlements.get('get-task-allow') is False,
-        'widget_has_no_screen_time_keys': FAMILY_KEY not in widget_entitlements and USAGE_KEY not in widget_entitlements,
+        'widget_protected_access_matches_mode': widget_protected_access_matches(widget_entitlements, widget_automatic_enabled),
         'host_distribution_profile': distribution_profile_matches(app_profile, APP_ID, True),
         'host_certificate_matches_profile': signing_certificate_matches_profile(app, app_profile),
-        'widget_distribution_profile': distribution_profile_matches(widget_profile, WIDGET_ID, False),
+        'widget_distribution_profile': distribution_profile_matches(widget_profile, WIDGET_ID, widget_automatic_enabled),
         'widget_certificate_matches_profile': signing_certificate_matches_profile(widget, widget_profile),
     }
+    if not widget_automatic_enabled:
+        store['widget_has_no_screen_time_keys'] = widget_protected_access_matches(widget_entitlements, False)
     preparation_ok = all(common.values())
     return {
         'version': info.get('CFBundleShortVersionString'), 'build': build,
+        'widget_automatic_import_enabled': widget_automatic_enabled,
+        'source_revision': info.get(SOURCE_REVISION_KEY),
         'preparation_ok': preparation_ok,
         'store_static_checks_passed': preparation_ok and all(store.values()),
         'bundle_checks': common, 'store_checks': store,
@@ -319,6 +369,7 @@ def inspect_bundle(app, *, version='1.0', archive=None, project_root=None):
             'Checks profile contents and the public signing-leaf match, not Apple approval or certificate trust/revocation.',
             'Checks the known DEBUG fixture, isolation and diagnostic markers in both executables, not all possible debug code.',
             'Does not replace Xcode Organizer validation.',
+            'Checks matching configured source labels for the automatic widget, not the underlying source fingerprint.',
         ],
     }
 

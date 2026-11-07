@@ -35,6 +35,11 @@ final class AppServices {
         store = suppliedStore ?? FootprintStore()
         screenTime = suppliedScreenTime ?? ScreenTimeService()
         notifications = GardenNotificationService(store: store)
+        #if DFE_WIDGET_AUTOMATIC_IMPORT
+        screenTime.beforeWidgetAccessEnds = { [weak store] in
+            store?.blockWidgetAutomaticInput()
+        }
+        #endif
         #if DEBUG
         let args = ProcessInfo.processInfo.arguments
         if args.contains("-ui-testing"), args.contains("-ui-automatic-preview"),
@@ -98,11 +103,17 @@ final class AppServices {
         }
         // [07] Older routines stay readable, but this interface creates automatic days only.
         screenTime.refreshAuthorization()
+        #if DFE_WIDGET_AUTOMATIC_IMPORT
+        // [15] Only a confirmed all-app connection enables independent widget reads.
+        // The widget still asks Apple's API; this shared ticket cannot grant protected access.
+        try store.configureWidgetAutomaticInput(enabled: screenTime.widgetAutomaticAccessDecision,
+            earliestDay: screenTime.widgetAutomaticStartDay)
+        #endif
         if store.usesAutomaticInput {
             do {
                 let backfillLimit = AppRefreshBackfillPolicy.limit(
                     isApplicationActive: UIApplication.shared.applicationState == .active)
-                result = try await screenTime.refreshAutomaticDays(store: store, backfillLimit: backfillLimit)
+                result = try await screenTime.refreshAutomaticDays(store: store, backfillLimit: backfillLimit, origin: .foreground)
             } catch is CancellationError {
                 #if DEBUG
                 outcome = "cancelled"
@@ -131,6 +142,9 @@ final class AppServices {
 final class ApplicationDelegate: NSObject, UIApplicationDelegate {
     private var gardenNotificationDelegate: GardenNotificationDelegate?
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+        #if DFE_WIDGET_AUTOMATIC_IMPORT
+        WidgetAutomaticReceiptMirror.copyIfPresent()
+        #endif
         // [09] iOS requires registration before application launch finishes.
         let services = AppServices.shared
         #if DEBUG

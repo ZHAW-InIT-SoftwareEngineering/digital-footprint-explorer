@@ -352,7 +352,8 @@ final class BackgroundScheduler {
                     if let screenTime {
                         // [22] Background time is limited, so both routes focus on yesterday.
                         // When the person opens the app, it can also revisit older missing days.
-                        result = try await screenTime.refreshAutomaticDays(store: store, backfillLimit: 0)
+                        result = try await screenTime.refreshAutomaticDays(store: store, backfillLimit: 0,
+                            origin: kind == .refresh ? .backgroundRefresh : .backgroundProcessing)
                     } else {
                         result = ScreenTimeRefreshResult(stoppedForAccess: true)
                     }

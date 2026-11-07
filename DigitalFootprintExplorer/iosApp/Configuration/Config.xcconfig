@@ -8,7 +8,7 @@ DFE_APP_GROUP_IDENTIFIER = group.$(DFE_APP_BUNDLE_IDENTIFIER)
 CODE_SIGN_ENTITLEMENTS = Configuration/App.entitlements
 // [02] Keep version and build values together; a release still needs an unused build number in App Store
 // Connect.
-CURRENT_PROJECT_VERSION = 1
+CURRENT_PROJECT_VERSION = 3
 MARKETING_VERSION = 1.0
 // [03] These pages are included in the same repository change. Check the public deployment before
 // uploading a release; a configured address does not mean that the page is already live.
@@ -17,5 +17,11 @@ DFE_SUPPORT_URL = https:/$()/zhaw-init-softwareengineering.github.io/digital-foo
 // [04] The shared model sits beside iosApp and builds for the selected device or simulator.
 FRAMEWORK_SEARCH_PATHS = $(inherited) $(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)
 OTHER_LDFLAGS = $(inherited) -framework Shared -lsqlite3
+// [06] The automatic widget uses its own approved profile. Personal signing overrides stay local.
+DFE_WIDGET_CODE_SIGN_STYLE = Automatic
+DFE_WIDGET_CODE_SIGN_IDENTITY = Apple Development
+DFE_WIDGET_PROFILE_SPECIFIER =
+// [07] Release preparation supplies the checked source identity; missing evidence stays unavailable.
+DFE_SOURCE_REVISION = unavailable
 // [05] Personal signing choices can override this shared setup locally without entering the repository.
 #include? "Local.xcconfig"

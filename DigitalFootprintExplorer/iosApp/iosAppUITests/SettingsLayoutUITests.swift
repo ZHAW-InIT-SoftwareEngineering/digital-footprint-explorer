@@ -40,6 +40,50 @@ final class SettingsLayoutUITests: XCTestCase {
         try checkSettingsLayout(largeText: true)
     }
 
+    // [09] A beta check should stay readable and share only its small technical report.
+    func testAutomaticUpdateChecksAndSafeCopyAreReadable() throws {
+        try checkAutomaticUpdateChecks(largeText: false)
+    }
+
+    func testAutomaticUpdateChecksRemainReadableAtLargestText() throws {
+        try checkAutomaticUpdateChecks(largeText: true)
+    }
+
+    private func checkAutomaticUpdateChecks(largeText: Bool) throws {
+        let app = XCUIApplication()
+        app.launchArguments = ["-ui-testing", "-ui-automatic-preview", "-ui-disconnect-preview",
+                               "-reset-ui-state", "-ui-reset-appearance", "-ui-example-history"]
+            + (largeText ? ["-ui-extra-large-text"] : [])
+        app.launch()
+        app.tabBars.buttons["Settings"].tap()
+        let settings = AutomaticUITestSupport.element("settings.form", in: app)
+        let navigation = app.navigationBars["Settings"]
+        XCTAssertTrue(navigation.waitForExistence(timeout: 8))
+        func reach(_ element: XCUIElement) {
+            AutomaticUITestSupport.reach(element, in: app, inside: settings, below: navigation, verticalMargin: 8)
+        }
+        let connection = AutomaticUITestSupport.element("screen-time.management", in: settings)
+        reach(connection)
+        connection.tap()
+        let checks = AutomaticUITestSupport.element("screen-time.updateChecks", in: settings)
+        reach(checks)
+        checks.tap()
+        XCTAssertFalse(settings.staticTexts["Last import"].exists,
+                       "A transient planning time must not appear as a verified save")
+        let copy = settings.buttons["screen-time.copyUpdateChecks"]
+        reach(copy)
+        XCTAssertGreaterThanOrEqual(copy.frame.height, 44)
+        XCTAssertTrue(copy.isHittable)
+        copy.tap()
+        let confirmation = settings.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Checks copied.")).firstMatch
+        XCTAssertTrue(confirmation.waitForExistence(timeout: 5))
+        reach(confirmation)
+        XCTAssertTrue(confirmation.isHittable)
+        AutomaticUITestSupport.assertNoManualEntry(in: app)
+        AutomaticUITestSupport.capture(largeText ? "AX5 automatic update checks" : "Automatic update checks and safe copy")
+        try auditSettings(app)
+    }
+
     private func checkSettingsLayout(largeText: Bool) throws {
         let app = XCUIApplication()
         // [04] Show a test-only connection using separate storage, without changing the owner's

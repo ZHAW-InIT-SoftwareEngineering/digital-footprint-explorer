@@ -37,6 +37,7 @@ class ReleaseChecksTests(unittest.TestCase):
         self.info = {
             'CFBundleIdentifier': release.APP_ID, 'CFBundleShortVersionString': '1.0',
             'CFBundleVersion': '1', 'CFBundleExecutable': 'DFE',
+            'DFESourceRevision': 'sha256:' + 'a' * 64,
             'DFEAppGroupIdentifier': release.GROUP_ID, 'UIDeviceFamily': [1],
             'MinimumOSVersion': '26.4', 'ITSAppUsesNonExemptEncryption': False,
             'DFEPrivacyPolicyURL': 'https://zhaw-init-softwareengineering.github.io/digital-footprint-explorer/privacy-policy.html',
@@ -318,6 +319,84 @@ class ReleaseChecksTests(unittest.TestCase):
         self.widget_entitlements['get-task-allow'] = True
         self.assertFalse(self.inspect()['store_checks']['debugger_disabled'])
 
+    # [33] A widget importer must declare its own route and carry its own approved Store profile.
+    def test_explicit_widget_import_route_accepts_its_own_valid_rights_and_profile(self):
+        self.info[release.WIDGET_AUTOMATIC_KEY] = True
+        self.widget_info[release.WIDGET_AUTOMATIC_KEY] = True
+        self.write_bundle()
+        self.widget_entitlements = self.entitlements(release.WIDGET_ID, True)
+        self.profiles[str(self.widget)] = self.profile(self.widget_entitlements,
+            self.signing_certificates[str(self.widget)])
+        result = self.inspect()
+        self.assertTrue(result['preparation_ok'])
+        self.assertTrue(result['store_static_checks_passed'])
+        self.assertTrue(result['widget_automatic_import_enabled'])
+        self.assertTrue(result['store_checks']['widget_protected_access_matches_mode'])
+        self.assertTrue(result['store_checks']['widget_distribution_profile'])
+        # A host profile with the same rights is still the wrong identity for the widget.
+        self.profiles[str(self.widget)] = deepcopy(self.profiles[str(self.app)])
+        self.assertFalse(self.inspect()['store_checks']['widget_distribution_profile'])
+
+    # [34] Declaring the new route cannot replace either Apple right or turn phone-test signing into Store signing.
+    def test_widget_import_route_rejects_missing_rights_and_development_profile(self):
+        self.info[release.WIDGET_AUTOMATIC_KEY] = True
+        self.widget_info[release.WIDGET_AUTOMATIC_KEY] = True
+        self.write_bundle()
+        baseline = self.entitlements(release.WIDGET_ID, True)
+        for key in (release.FAMILY_KEY, release.USAGE_KEY):
+            with self.subTest(missing_signed_right=key):
+                self.widget_entitlements = deepcopy(baseline)
+                self.widget_entitlements.pop(key)
+                self.profiles[str(self.widget)] = self.profile(baseline,
+                    self.signing_certificates[str(self.widget)])
+                result = self.inspect()
+                self.assertFalse(result['store_checks']['widget_protected_access_matches_mode'])
+                self.assertFalse(result['store_static_checks_passed'])
+            with self.subTest(missing_profile_right=key):
+                self.widget_entitlements = deepcopy(baseline)
+                incomplete = deepcopy(baseline)
+                incomplete.pop(key)
+                self.profiles[str(self.widget)] = self.profile(incomplete,
+                    self.signing_certificates[str(self.widget)])
+                self.assertFalse(self.inspect()['store_checks']['widget_distribution_profile'])
+        self.widget_entitlements = deepcopy(baseline)
+        self.profiles[str(self.widget)] = self.profile(baseline,
+            self.signing_certificates[str(self.widget)])
+        self.profiles[str(self.widget)]['ProvisionedDevices'] = ['synthetic-device']
+        self.assertFalse(self.inspect()['store_checks']['widget_distribution_profile'])
+        self.widget_entitlements['get-task-allow'] = True
+        self.assertFalse(self.inspect()['store_checks']['debugger_disabled'])
+
+    # [35] A host/widget disagreement or a non-Boolean flag must fail before Store signing is considered.
+    def test_widget_import_flags_must_match_and_be_actual_booleans(self):
+        for host, widget in ((True, False), (False, True), (True, 'true'), (1, True), (False, 0)):
+            with self.subTest(host=host, widget=widget):
+                self.info[release.WIDGET_AUTOMATIC_KEY] = host
+                self.widget_info[release.WIDGET_AUTOMATIC_KEY] = widget
+                self.write_bundle()
+                result = self.inspect()
+                self.assertFalse(result['bundle_checks']['widget_automatic_import_configuration_matches'])
+                self.assertFalse(result['preparation_ok'])
+                self.assertFalse(result['store_static_checks_passed'])
+
+    # [36] Giving the old cache-only widget both protected rights must still be rejected.
+    def test_legacy_widget_rejects_protected_rights_even_with_a_matching_profile(self):
+        self.widget_entitlements = self.entitlements(release.WIDGET_ID, True)
+        self.profiles[str(self.widget)] = self.profile(self.widget_entitlements,
+            self.signing_certificates[str(self.widget)])
+        for explicit_false in (False, True):
+            with self.subTest(explicit_false=explicit_false):
+                if explicit_false:
+                    self.info[release.WIDGET_AUTOMATIC_KEY] = False
+                    self.widget_info[release.WIDGET_AUTOMATIC_KEY] = False
+                    self.write_bundle()
+                result = self.inspect()
+                self.assertFalse(result['widget_automatic_import_enabled'])
+                self.assertFalse(result['store_checks']['widget_has_no_screen_time_keys'])
+                self.assertFalse(result['store_checks']['widget_protected_access_matches_mode'])
+                self.assertFalse(result['store_checks']['widget_distribution_profile'])
+                self.assertFalse(result['store_static_checks_passed'])
+
     # [29] Draft links and private addresses would leave customers without useful support or privacy information.
     def test_https_urls_reject_unpublished_placeholders_and_nonpublic_addresses(self):
         invalid = ['', 'http://zhaw.ch', 'https://example.com/policy', 'https://sub.example.org/',
@@ -364,6 +443,56 @@ class ReleaseChecksTests(unittest.TestCase):
             self.assertEqual(release.main(), 0)
         with patch('sys.argv', ['check-ios-release.py', '--archive', str(self.archive), '--require-store']), patch('builtins.print'):
             self.assertEqual(release.main(), 2)
+
+    # [37] A local source fingerprint and a committed revision are both useful, when both bundles carry the same value.
+    def test_automatic_widget_accepts_matching_hash_and_git_source_labels(self):
+        self.info[release.WIDGET_AUTOMATIC_KEY] = True
+        self.widget_info[release.WIDGET_AUTOMATIC_KEY] = True
+        for revision in ('sha256:' + 'a' * 64, '312922853d923e0b8fa4bb3bc1a7bc0d870c202b'):
+            with self.subTest(revision=revision):
+                self.info[release.SOURCE_REVISION_KEY] = revision
+                self.widget_info[release.SOURCE_REVISION_KEY] = revision
+                self.write_bundle()
+                report = self.inspect()
+                self.assertTrue(report['bundle_checks']['source_identity_matches'])
+                self.assertTrue(report['preparation_ok'])
+                self.assertEqual(report['source_revision'], revision)
+
+    # [38] Two matching defaults are not proof of which source produced an automatic widget.
+    def test_automatic_widget_rejects_missing_placeholder_or_mismatched_source_labels(self):
+        self.info[release.WIDGET_AUTOMATIC_KEY] = True
+        self.widget_info[release.WIDGET_AUTOMATIC_KEY] = True
+        valid = 'sha256:' + 'a' * 64
+        invalid_pairs = (
+            (None, valid), (valid, None), ('', ''), (' ', ' '),
+            ('unavailable', 'unavailable'), ('UNKNOWN', 'UNKNOWN'),
+            ('$(DFE_SOURCE_REVISION)', '$(DFE_SOURCE_REVISION)'), ('${SOURCE_REVISION}', '${SOURCE_REVISION}'),
+            ('YOUR_SOURCE_REVISION', 'YOUR_SOURCE_REVISION'),
+            ('VERIFIED_SOURCE_FINGERPRINT', 'VERIFIED_SOURCE_FINGERPRINT'),
+            (True, True), (1, 1), (valid, 'sha256:' + 'b' * 64),
+            (valid + '\n', valid + '\n'),
+        )
+        for host, widget in invalid_pairs:
+            with self.subTest(host=host, widget=widget):
+                for info, revision in ((self.info, host), (self.widget_info, widget)):
+                    if revision is None:
+                        info.pop(release.SOURCE_REVISION_KEY, None)
+                    else:
+                        info[release.SOURCE_REVISION_KEY] = revision
+                self.write_bundle()
+                report = self.inspect()
+                self.assertFalse(report['bundle_checks']['source_identity_matches'])
+                self.assertFalse(report['preparation_ok'])
+
+    # [39] Older cache-only versions did not have this source field. Their earlier checks must remain usable.
+    def test_legacy_cache_only_widget_does_not_require_the_new_source_label(self):
+        self.info.pop(release.SOURCE_REVISION_KEY)
+        self.widget_info.pop(release.SOURCE_REVISION_KEY)
+        self.write_bundle()
+        report = self.inspect()
+        self.assertFalse(report['widget_automatic_import_enabled'])
+        self.assertTrue(report['bundle_checks']['source_identity_matches'])
+        self.assertTrue(report['preparation_ok'])
 
 
 if __name__ == '__main__':

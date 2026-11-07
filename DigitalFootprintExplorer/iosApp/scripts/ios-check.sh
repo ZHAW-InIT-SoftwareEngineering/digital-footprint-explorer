@@ -36,3 +36,6 @@ xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp-ScreenTime -configura
   -skip-testing:iosAppTests/LiveScreenTimeImportTests \
   -skip-testing:iosAppTests/LiveAllActivityImportTests test
 echo "Test results: $result_bundle"
+# [07] A green Xcode exit must not hide skipped feature checks or an empty controlled suite.
+xcrun xcresulttool get test-results summary --path "$result_bundle" --compact \
+  | python3 "$ios_dir/scripts/check-controlled-test-summary.py"

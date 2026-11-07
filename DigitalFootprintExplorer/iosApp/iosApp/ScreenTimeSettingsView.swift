@@ -105,6 +105,19 @@ struct ScreenTimeSettingsView: View {
                 .accessibilityIdentifier("settings.automaticSetup")
             }
 
+            #if DFE_WIDGET_AUTOMATIC_IMPORT
+            // [12] A failed disconnect keeps widget reads paused. Let the person resume explicitly
+            // instead of quietly undoing their choice during the next refresh.
+            if connected && store.widgetAutomaticUpdatesPaused {
+                Button(action: showSetup) {
+                    SettingsActionLabel("Resume widget updates", symbol: "arrow.triangle.2.circlepath")
+                }
+                .foregroundStyle(FootprintAppearance.accent)
+                .accessibilityHint("Review automatic access. Your saved results stay available.")
+                .accessibilityIdentifier("screen-time.resumeWidgetUpdates")
+            }
+            #endif
+
             if connected || setupSaved || service.state == .reportOnly {
                 DisclosureGroup(isExpanded: $showDetails) {
                     connectionDetails.padding(.top, 12)
@@ -129,13 +142,7 @@ struct ScreenTimeSettingsView: View {
                  : "Your saved activity choices are kept. Review the connection to include all available app activity.")
                 .accessibilityIdentifier("screen-time.allActivity")
             Text("Completed days update when the app opens and when iOS allows background work. Missing or incomplete days stay pending.")
-            if let date = service.lastImportDate {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Last import").fontWeight(.medium)
-                    Text(date.formatted(date: .abbreviated, time: .shortened))
-                }
-                .accessibilityElement(children: .combine)
-            }
+            AutomaticUpdateChecksView(store: store, verification: store.importVerification)
             if canDisconnect {
                 Divider()
                 Button(role: .destructive) {
@@ -222,5 +229,153 @@ struct ScreenTimeSettingsView: View {
         .foregroundStyle(.primary)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Screen Time notice. \(error)")
+    }
+}
+
+// [09] Keep saved checks behind the connection details. They explain what ran on this
+// iPhone without exposing app choices, usage amounts or the garden's calculation inputs.
+private struct AutomaticUpdateChecksView: View {
+    @ObservedObject var store: FootprintStore
+    @ObservedObject var verification: AutomaticUpdateVerification
+    @State private var expanded = false
+    @State private var copyMessage: String?
+
+    var body: some View {
+        DisclosureGroup(isExpanded: $expanded) {
+            VStack(alignment: .leading, spacing: 18) {
+                importDetails
+                Divider()
+                sharedDetails
+                Button {
+                    copyChecks()
+                } label: {
+                    SettingsActionLabel("Copy update checks", symbol: "doc.on.doc")
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(FootprintAppearance.accent)
+                .accessibilityIdentifier("screen-time.copyUpdateChecks")
+                if let copyMessage {
+                    Text(copyMessage).font(.footnote).foregroundStyle(.secondary)
+                }
+                Text("These checks stay on this iPhone. Times use your current time zone. A widget data read does not tell us exactly when iOS displayed it.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.top, 12)
+        } label: {
+            SettingsActionLabel("Automatic update checks", symbol: "clock.arrow.circlepath")
+                .accessibilityIdentifier("screen-time.updateChecks")
+        }
+    }
+
+    @ViewBuilder private var importDetails: some View {
+        if verification.persistenceFailed {
+            Text("The import check could not be saved. Your daily results are kept separately.")
+                .foregroundStyle(.secondary)
+        }
+        if let check = store.latestVerifiedAutomaticSave {
+            checkRow("Completed day", detail: check.day)
+            checkRow("Last verified import", detail: timestamp(check.lastObservedAt) + " · " + origin(check.lastOrigin))
+            checkRow("App at saved time", detail: completion(check.lastCompletionState))
+            checkRow("Recorded by", detail: "DFE " + check.lastProducer.appVersion + " (" + check.lastProducer.appBuild + ")"
+                     + (check.lastProducer.isDebug ? " · Development check" : " · Release check")
+                     + (check.lastProducer.isSimulator ? " · Simulator" : " · iPhone"))
+            if check.initialSaveObserved {
+                checkRow("First save for this day", detail: timestamp(check.firstObservedAt) + " · " + completion(check.firstCompletionState))
+                if check.firstProducer.isDebug || check.firstProducer.isSimulator {
+                    Text("That first saved check came from a development run.").foregroundStyle(.secondary)
+                }
+            } else {
+                Text("The first import time for this older day was not recorded. The time above belongs to a later verified save.")
+                    .foregroundStyle(.secondary)
+            }
+        } else {
+            Text("No verified import has been recorded for this day yet. Older saved days keep their results, with no guessed import time.")
+                .foregroundStyle(.secondary)
+        }
+    }
+
+    @ViewBuilder private var sharedDetails: some View {
+        if store.widgetCheckSaveFailed {
+            Text("The local copy of the widget check could not be saved.").foregroundStyle(.secondary)
+        }
+        if let check = store.widgetVerification {
+            let current = check.status == .verified && check.day == store.latest?.day && check.receiptStored
+            checkRow("Shared garden data", detail: current ? "Verified for " + (check.day ?? "this day") : sharedStatus(check))
+            checkRow("Checked on this iPhone", detail: timestamp(check.checkedAt))
+        } else {
+            checkRow("Shared garden data", detail: store.widgetStorageAvailable
+                     ? "Not verified on this device yet" : "Shared storage is unavailable")
+        }
+        ForEach(["small", "medium"], id: \.self) { family in
+            let check = store.widgetReadChecks.first { $0.family == family }
+            let title = family == "small" ? "Small widget data read" : "Medium widget data read"
+            if let check {
+                let current = check.status == .verified && check.day == store.latest?.day
+                checkRow(title, detail: current
+                    ? (check.day ?? "") + " · " + timestamp(check.readAt)
+                    : "Waiting for the latest saved day")
+            } else {
+                checkRow(title, detail: "Waiting for iOS to read the widget data")
+            }
+        }
+    }
+
+    private func checkRow(_ title: String, detail: String) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text(title).fontWeight(.medium)
+            Text(detail).foregroundStyle(.secondary)
+        }
+        .accessibilityElement(children: .combine)
+        .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private func timestamp(_ date: Date) -> String { date.formatted(date: .abbreviated, time: .standard) }
+    private func origin(_ value: AutomaticUpdateOrigin) -> String {
+        value == .foreground ? "Started while open" : "Started by background work"
+    }
+    private func completion(_ value: AutomaticUpdateCompletionState) -> String {
+        switch value {
+        case .active: return "App open"
+        case .inactive: return "App inactive"
+        case .background: return "App in background"
+        case .unknown: return "Not recorded"
+        }
+    }
+    // [10] Copy only the fixed support fields. The full history and widget values are never part of this report.
+    private func copyChecks() {
+        let report = AutomaticUpdateSupportReport(capturedAt: Date(),
+            producer: .current, latestSavedDay: store.latest?.day,
+            verifiedSave: store.latestVerifiedAutomaticSave,
+            importCheckSaveFailed: verification.persistenceFailed,
+            publication: store.widgetVerification, widgetReads: store.widgetReadChecks,
+            widgetCheckSaveFailed: store.widgetCheckSaveFailed)
+        do {
+            let encoder = JSONEncoder()
+            encoder.dateEncodingStrategy = .millisecondsSince1970
+            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+            let data = try encoder.encode(report)
+            guard let text = String(data: data, encoding: .utf8) else { return }
+            // [11] Keep these copied checks off nearby devices and remove them after a short handover.
+            UIPasteboard.general.setObjects([text], localOnly: true,
+                                           expirationDate: Date().addingTimeInterval(300))
+            copyMessage = "Checks copied. They contain dates and status, with no app usage amounts."
+        } catch {
+            copyMessage = "The update checks could not be copied."
+        }
+    }
+    private func sharedStatus(_ value: WidgetPublicationVerification) -> String {
+        if value.status == .empty { return "No saved garden yet" }
+        if value.status == .unavailable { return "Shared storage is unavailable" }
+        guard value.receiptStored else { return "The data was checked, but its check could not be saved" }
+        switch value.status {
+        case .verified: return "Waiting for the latest saved day"
+        case .empty: return "No saved garden yet"
+        case .unavailable: return "Shared storage is unavailable"
+        case .unreadable: return "Shared data could not be read"
+        case .mismatch: return "Shared data needs another check"
+        case .writeFailed: return "Shared data could not be saved"
+        }
     }
 }

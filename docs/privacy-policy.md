@@ -2,7 +2,7 @@
 
 ## Privacy policy
 
-Last updated: 31 October 2026
+Last updated: 7 November 2026
 
 Digital Footprint Explorer helps you understand an estimated carbon footprint of your phone use. Your settings, calculations and history are processed on your iPhone. You do not need an app account.
 
@@ -44,15 +44,23 @@ Your appearance choice stays in the app's local settings and changes only the di
 
 The optional notification setting and a small schedule and delivery log also stay in local storage. The log keeps delivery dates, scheduled times, local time zone information and, for a result-based message, the saved-day date. These details help prevent repeat notifications; the log does not contain app names, app identifiers or usage times.
 
+The app also keeps small local update checks: the completed-day date, the time a successful save was observed, whether the app was open or in the background, and the app build. It keeps up to 32 completed-day checks. These checks contain no app names, app identifiers, usage amounts or footprint values. A day imported before these checks were added keeps its original import time unknown.
+
 Your iPhone's backup settings may include app data in an Apple or computer backup. Those backups are managed outside this app. You can review and remove them through Apple's backup settings.
 
 ### What the widget can show
 
-The app shares a small local summary with its own Home Screen widget: the date, total estimate, garden state, estimate source, calculation time and whether the day is complete. The widget does not receive your app choices, detailed inputs or full history.
+DFE and its own widget share a protected local summary: the date, total estimate, garden state, estimate source, calculation time and whether the day is complete. With automatic setup enabled, they also share the setup date, time zone, calculation assumptions and up to eight recent totals for the seven-day garden comparison. The widget does not receive your individual app choices, app names or full history.
+
+When Apple permits access, the widget can request the previous completed day's app activity and run the same local calculation without opening DFE. It keeps category totals and their calculation inputs in a protected pending record before updating the garden. DFE adds that record to its private history when it next runs. Up to 32 pending days can wait there; a full or unreadable file stops new saves rather than discarding earlier work. No app identifiers or individual app records are saved in this shared file.
+
+iOS decides when a widget gets another update. The widget can run separately after you remove DFE from multitasking, but this does not guarantee a new estimate at 08:00 or at any fixed interval. Unavailable permission, incomplete activity or a failed update keeps the last valid saved garden and its date.
 
 Anyone who can see your Home Screen may see the widget's summary. You can remove the widget at any time. Removing it does not delete your history in the app.
 
 The optional widget guide can ask iOS whether this app's own widget is configured. This only helps with setup. The status is not saved or sent to the project team, and it does not identify where the widget was placed.
+
+The app checks that its shared garden file can be read back. Each widget size can also keep a small local record of its latest data read. These records contain dates, app build and fixed status words, without the garden value or detailed inputs. A data read does not establish exactly when iOS displayed the widget.
 
 ### Optional garden updates
 
@@ -66,7 +74,7 @@ Before a saved reminder is due, a fresh import may replace its message with a sh
 
 A result-based message describes the actual saved garden and, when available, its change from an earlier completed day. Neither type includes app names, individual usage times or a carbon value. Tapping either opens Today. A local date log helps limit messages to one in each local delivery day.
 
-Reminders use local calendar dates and times. The app checks the schedule again when it can run after a clock or time zone change. iOS, Focus, Scheduled Summary and notification settings can delay or hide a message, so an exact 08:00 delivery or a message every day is not guaranteed. A message does not prove that Screen Time, the garden or the widgets refreshed. Removing DFE from multitasking normally stops fresh background calculations until you open it again.
+Reminders use local calendar dates and times. The app checks the schedule again when it can run after a clock or time zone change. iOS, Focus, Scheduled Summary and notification settings can delay or hide a message, so an exact 08:00 delivery or a message every day is not guaranteed. A message does not prove that Screen Time, the garden or the widgets refreshed. Removing DFE from multitasking normally stops background launches of the main app. Its widget may update separately when iOS allows it; a reminder alone does not prove that this happened.
 
 These are local notifications prepared on your iPhone. They do not use an app server, remote push notifications or a data upload. Depending on your iOS settings, a garden message may appear on the Lock Screen or in Notification Center, where someone who can see your phone may read it.
 
@@ -82,7 +90,9 @@ Disconnecting does not erase Apple's own Screen Time records. Deleting data in t
 
 You can review saved estimates in History. The current interface does not provide manual entry or correction. Earlier saved entries stay readable. Local history is kept until you choose to delete it; there is no automatic age limit for saved entries.
 
-Choose Delete all entries in Settings to remove the routine, history, saved app choices and shared widget summary. This also resets your appearance choice, turns Daily garden update off, clears its local delivery log and cancels its pending messages. This cannot be undone in the app. Messages already shown in Notification Center are not removed by this reset; you can clear them there.
+Choose Delete all entries in Settings to remove the routine, history, saved app choices, pending widget records and shared widget summary. This also resets your appearance choice, turns Daily garden update off, clears its local delivery log and the automatic-update checks and cancels its pending messages. This cannot be undone in the app. Messages already shown in Notification Center are not removed by this reset; you can clear them there.
+
+A small disabled setup marker stays in shared storage so an update that was already running cannot restore deleted data. Disconnecting Screen Time also blocks new widget imports; saved estimates remain available.
 
 Delete all entries does not revoke Apple's Screen Time or notification permission. Use Disconnect Screen Time to remove activity access, and iPhone notification settings to change notification permission.
 
@@ -93,6 +103,8 @@ Deleting entries does not remove files you previously shared, copies held by oth
 The current interface does not offer a history export. Screen Time-derived history also remains blocked from export in the storage layer, including after any correction made by an older version.
 
 Earlier versions allowed manual history files to be shared. Deleting local data cannot recall those files or remove copies held by other people.
+
+For support, you can choose Copy update checks inside Connection details. It copies only the small technical checks described above, so you can decide whether to share them. It does not copy your history, activity amounts or garden values, and the app does not send the report automatically.
 
 ### Advertising and tracking
 

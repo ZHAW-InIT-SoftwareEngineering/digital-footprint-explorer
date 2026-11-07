@@ -188,6 +188,23 @@ private struct WelcomeScreen: View {
     }
 }
 
+// [23] The date and waiting message describe the saved period, regardless of the garden artwork.
+// A legacy entry saved today must not hide the unfinished automatic day or look like a completed import.
+struct TodayPresentation: Equatable {
+    let periodTitle: String?
+    let showsPendingMessage: Bool
+
+    init(record: FootprintRecord?, today: String, usesAutomaticInput: Bool) {
+        if let record {
+            if record.isCompleted && record.day < today { periodTitle = "Latest completed day" }
+            else if record.day == today { periodTitle = "Saved today" }
+            else { periodTitle = "Saved day" }
+        } else { periodTitle = nil }
+        let hasSavedToday = record.map { $0.day == today } ?? false
+        showsPendingMessage = usesAutomaticInput || !hasSavedToday
+    }
+}
+
 private struct TodayScreen: View {
     @ObservedObject var store: FootprintStore
     @ObservedObject var screenTime: ScreenTimeService
@@ -196,6 +213,9 @@ private struct TodayScreen: View {
     private var todayRecord: FootprintRecord? { store.records.first { $0.day == store.today } }
     // [11] While today is unfinished, keep the latest saved garden visible with its actual date.
     private var displayedRecord: FootprintRecord? { todayRecord ?? store.latest }
+    private var presentation: TodayPresentation {
+        TodayPresentation(record: displayedRecord, today: store.today, usesAutomaticInput: store.usesAutomaticInput)
+    }
     // [12] Waiting for the first usable day should not ask the person to complete setup again.
     private var needsAutomaticSetup: Bool { !screenTime.hasSavedAutomaticSetup(store: store) }
 
@@ -208,19 +228,21 @@ private struct TodayScreen: View {
                     TodayWelcome()
                     if let record = displayedRecord {
                         VStack(spacing: 12) {
-                            if todayRecord == nil {
-                                ViewThatFits(in: .horizontal) {
-                                    HStack(spacing: 12) {
-                                        Text("Latest completed day").foregroundStyle(.secondary)
-                                        Spacer(minLength: 8)
-                                        Text(dayLabel(record.day)).fontWeight(.semibold)
-                                    }
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text("Latest completed day").foregroundStyle(.secondary)
-                                        Text(dayLabel(record.day)).fontWeight(.semibold)
-                                    }.frame(maxWidth: .infinity, alignment: .leading)
-                                }.font(.subheadline).padding(.bottom, 8)
-                            }
+                            ViewThatFits(in: .horizontal) {
+                                HStack(spacing: 12) {
+                                    Text(presentation.periodTitle ?? "Saved day").foregroundStyle(.secondary)
+                                        .accessibilityIdentifier("today.periodLabel")
+                                    Spacer(minLength: 8)
+                                    Text(dayLabel(record.day)).fontWeight(.semibold)
+                                        .accessibilityIdentifier("today.recordDate")
+                                }
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(presentation.periodTitle ?? "Saved day").foregroundStyle(.secondary)
+                                        .accessibilityIdentifier("today.periodLabel")
+                                    Text(dayLabel(record.day)).fontWeight(.semibold)
+                                        .accessibilityIdentifier("today.recordDate")
+                                }.frame(maxWidth: .infinity, alignment: .leading)
+                            }.font(.subheadline).padding(.bottom, 8)
                             FootprintSummary(record: record, gardenHeight: gardenHeight,
                                              showsComparison: false, gardenWidth: TodayGardenLayout.maximumWidth)
                         }
@@ -249,7 +271,7 @@ private struct TodayScreen: View {
                             .accessibilityIdentifier("today.automaticSetup")
                             .padding(.top, 12).padding(.bottom, 12)
                     }
-                    if todayRecord == nil {
+                    if presentation.showsPendingMessage {
                         VStack(alignment: .leading, spacing: 8) {
                             Label(store.usesAutomaticInput ? "Let your next day take shape" : "Let your garden follow your day",
                                   systemImage: store.usesAutomaticInput ? "clock" : "leaf")
@@ -258,6 +280,7 @@ private struct TodayScreen: View {
                             Text(store.usesAutomaticInput
                                  ? "Today's estimate waits until this day ends and Apple provides usable activity. Missing activity stays pending."
                                  : "Allow Screen Time once to start automatic estimates. No app-by-app selection or daily forms.")
+                                .accessibilityIdentifier("today.pendingExplanation")
                                 .font(.footnote).foregroundStyle(.secondary)
                                 .fixedSize(horizontal: false, vertical: true)
                         }.padding(.top, needsAutomaticSetup ? 0 : 12)

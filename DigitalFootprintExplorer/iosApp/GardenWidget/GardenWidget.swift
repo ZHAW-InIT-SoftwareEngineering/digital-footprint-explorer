@@ -37,12 +37,42 @@ struct GardenWidgetProvider: TimelineProvider {
         let data: WidgetSnapshotReadResult = context.isPreview ? .saved(.preview(on: now)) : WidgetSnapshotStorage.configured().read()
         completion(GardenWidgetEntry(date: now, data: data, isPreview: context.isPreview))
     }
-    // [04] Read the summary the app already saved; the widget never requests protected activity itself.
+    // [04] Real timelines may import a completed day; gallery previews only read a saved summary.
     func getTimeline(in context: Context, completion: @escaping (Timeline<GardenWidgetEntry>) -> Void) {
+        #if DFE_WIDGET_AUTOMATIC_IMPORT
+        // [09] A widget can collect its own completed day without starting the main app.
+        // Publish only after the shared mailbox has kept a valid, still-authorised result.
+        if !context.isPreview {
+            WidgetAutomaticImporter.run {
+                completeTimeline(in: context, completion: completion)
+            }
+            return
+        }
+        #endif
+        completeTimeline(in: context, completion: completion)
+    }
+
+    private func completeTimeline(in context: Context, completion: @escaping (Timeline<GardenWidgetEntry>) -> Void) {
         let now = Date()
-        let entry = GardenWidgetEntry(date: now, data: WidgetSnapshotStorage.configured().read())
-        // [05] Midnight changes the date label, not the saved result. WidgetKit sets the schedule.
+        let storage = WidgetSnapshotStorage.configured()
+        let data = storage.read()
+        let family: String? = switch context.family {
+        case .systemSmall: "small"
+        case .systemMedium: "medium"
+        default: nil
+        }
+        // [07] This proves only that a real timeline request read the shared data, not when iOS displayed it.
+        if let family {
+            _ = try? WidgetStorageVerificationStore(directory: storage.directory)
+                .recordTimelineRead(family: family, result: data, at: Date(), isPreview: context.isPreview)
+        }
+        let entry = GardenWidgetEntry(date: now, data: data)
+        // [05] Ask for the next useful check. WidgetKit chooses when it actually runs.
+        #if DFE_WIDGET_AUTOMATIC_IMPORT
+        let nextDay = WidgetAutomaticImporter.nextRefreshDate(now: now)
+        #else
         let nextDay = Calendar.current.date(byAdding: .day, value: 1, to: Calendar.current.startOfDay(for: now)) ?? now.addingTimeInterval(86_400)
+        #endif
         completion(Timeline(entries: [entry], policy: .after(nextDay)))
     }
 }

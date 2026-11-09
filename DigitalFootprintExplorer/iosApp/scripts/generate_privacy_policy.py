@@ -80,10 +80,17 @@ def outputs(document, *, include_web=False):
   </main>
 
   <footer class="footer">
-    <div class="container">
-      <p class="muted">© 2026 Zurich University of Applied Sciences (ZHAW) · {html.escape(document['app_name'])}</p>
-      <p><a href="mailto:{html.escape(document['contact_email'])}">Email the {html.escape(document['contact_name'])}</a></p>
-      <p><a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub hosting privacy</a></p>
+    <div class="container footer-inner reading-width">
+      <div>
+        <strong class="footer-name">{html.escape(document['app_name'])}</strong>
+        <p class="muted">© 2026 Zurich University of Applied Sciences (ZHAW)</p>
+      </div>
+      <nav class="footer-links" aria-label="Footer navigation">
+        <a href="index.html">Project</a>
+        <a href="support-ios.html">iOS support</a>
+        <a href="mailto:{html.escape(document['contact_email'])}">Email the {html.escape(document['contact_name'])}</a>
+        <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub hosting privacy</a>
+      </nav>
     </div>
   </footer>
 </body>

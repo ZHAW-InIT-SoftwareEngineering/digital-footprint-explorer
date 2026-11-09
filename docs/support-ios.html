@@ -44,7 +44,7 @@
       <h2>Why has no daily result appeared yet?</h2>
       <p>Automatic estimates cover days from your setup date after each day has ended. Today's usage is still changing, so it is not imported as a completed day. Your first result can appear after a completed day has usable data.</p>
       <p>Apple may still be preparing that day's data. iOS also decides when the app can update in the background, so updates may take time. A pending result does not mean that your usage was zero. Check Screen Time in Settings and open the app again later.</p>
-      <p>For App Store customers, Apple's expanded access requires both an iPhone located in the EU and an Apple Account set to an EU country or region. Development access used for tests in Switzerland is separate. It does not allow us to promise the same access to customers in Switzerland. If access is unavailable, the app explains the reason and leaves new results pending; it does not offer manual input.</p>
+      <p>For App Store customers, Apple's expanded access requires both an iPhone located in the EU and an Apple Account set to an EU country or region. We tested with development access in Switzerland. Access for App Store customers in Switzerland is still awaiting confirmation. If access is unavailable, the app shows that status and leaves new results pending. See <a href="https://developer.apple.com/documentation/familycontrols/authorizationstatus/approvedwithdataaccess">Apple's Screen Time access requirements</a>.</p>
     </section>
 
     <section class="card">
@@ -74,6 +74,13 @@
       <p>With automatic estimates enabled and Apple's required access, the widget can request the previous completed day's available app activity without opening DFE. It uses the same calculation and saves a protected pending result before updating the garden. DFE checks and adds that result to its private history when it next runs. The shared file contains the setup and category totals needed for this work, without app names or individual app records.</p>
     </section>
 
+    <section class="card" aria-labelledby="apple-devices">
+      <h2 id="apple-devices">iPhone Duo and Apple Watch</h2>
+      <p>On the wider iPhone Duo display, Today puts the saved estimate beside the garden.</p>
+      <p>The optional Watch companion requires watchOS 10 or later and a paired iPhone. Sharing is off by default. On your iPhone, open Settings in DFE and turn on Show my garden on Apple Watch. The Watch shows your latest saved phone result. It receives no app names or usage times and does not read Screen Time itself.</p>
+      <p>If the Watch shows an older date, tap Refresh in the Watch app to check for the latest saved result. If it cannot reach the phone, open DFE on your iPhone. Turning sharing off, disconnecting Screen Time or deleting entries clears the summary when the Watch next receives the update.</p>
+    </section>
+
     <section class="card">
       <!-- [05] A saved reminder can appear without the app running. A fresh estimate still needs permitted execution. -->
       <h2>Optional garden updates</h2>
@@ -88,8 +95,9 @@
     <section class="card">
       <!-- [06] Deleting DFE history and removing Apple permission are different choices, so explain both. -->
       <h2>Your choices and local data</h2>
-      <p>To stop new Screen Time imports, choose Disconnect Screen Time in Settings. Your saved daily estimates remain available. Choose Delete all entries and confirm the warning to remove local history, saved setup, the shared widget summary, and your appearance choice.</p>
-      <p>Deleting entries also turns Daily garden update off, clears its local delivery log and cancels pending notices. Messages already shown in Notification Center stay there until you clear them.</p>
+      <p>To stop new Screen Time imports, choose Disconnect Screen Time in Settings. Your saved daily estimates remain available. To clear your history, choose Delete all entries and confirm. This also clears the shared widget summary and resets your calculation and appearance settings.</p>
+      <p>If automatic estimates were connected and still have permission, they stay connected with the standard calculation settings. The app and widget ignore days before the reset, and a paused widget stays paused.</p>
+      <p>Deleting entries turns off Watch sharing and Daily garden update. It also clears the local delivery log and cancels pending reminders. Messages already shown in Notification Center stay there until you clear them.</p>
       <p>Deleting local data does not remove Apple's Screen Time or notification permission. Use Disconnect Screen Time to remove activity access, or iPhone Settings to change notification permission. The app cannot delete Apple's own Screen Time records or recall files and backups made earlier.</p>
       <p>The app does not send your usage history to the DFE team or a project server. History that has contained a Screen Time import cannot be exported. Read the <a href="privacy-policy.html">iOS privacy policy</a> for the reviewed local-data details.</p>
     </section>
@@ -101,11 +109,6 @@
       <p>If you email us, your message and email address are handled through ZHAW's email service so we can reply. Do not include private activity records. Deleting entries in the app does not remove emails you have sent; contact us if you have a question about a previous message.</p>
       <p>This website uses GitHub Pages. Opening a page sends connection details, such as your IP address, to the hosting service. The pages contain no advertising or analytics code. See <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub's privacy statement</a> for how the hosting service handles these details.</p>
       <p class="muted">Last updated: <time datetime="2026-11-09">9 November 2026</time>. The DFE Team is responsible for the app and handles questions through the project email above.</p>
-    </section>
-    <section aria-labelledby="apple-devices">
-      <h2 id="apple-devices">iPhone Duo and Apple Watch companion</h2>
-      <p>On the wider iPhone Duo display, Today puts the saved estimate beside the garden. The optional Apple Watch companion shows the latest saved garden from your paired iPhone.</p>
-      <p>On a paired iPhone, Watch sharing starts off. Enable Show my garden on Apple Watch in Settings to send the latest saved summary to your own Watch. No app names or usage times are sent. The Watch does not import Screen Time. Check the date and saved time; an offline Watch may show an older result until it reconnects.</p>
     </section>
   </main>
 

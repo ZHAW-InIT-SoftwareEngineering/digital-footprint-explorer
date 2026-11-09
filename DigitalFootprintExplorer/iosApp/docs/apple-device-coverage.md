@@ -1,6 +1,6 @@
 # Apple device coverage
 
-This document describes the build 4 candidate starting from revision `47e651759e5991dbceef0d85bf3ea6451aa916d8`. It records the device layouts, simulator results and checks needed for a signed release. Build 4 targets iPhone, including Duo, with a paired Watch companion. The earlier iPad trials are kept below as dated test evidence.
+This document records the device layouts and acceptance evidence for build 4, which targets iPhone, including Duo, with a paired Watch companion. Implementation started from revision `47e651759e5991dbceef0d85bf3ea6451aa916d8`. The earlier iPad trials are kept below as dated test evidence.
 
 ## Layout and navigation
 
@@ -43,7 +43,7 @@ The Watch app and its complications use the five existing garden states. Rectang
 
 WatchConnectivity uses an iPhone and its paired Apple Watch. The minimum Watch target is watchOS 10, so Apple Watch Series 3 is not included. Current-device simulator availability does not change that minimum or replace testing on an actual paired Watch.
 
-New Watch bundle identifiers, the watch-local App Group and matching signing profiles need their own review. The app's existing Screen Time permission is not a Watch entitlement, and this companion does not request Watch Screen Time data.
+The Watch app and widget use a separate Watch App Group and matching signing profiles. Screen Time access belongs to the iPhone targets.
 
 ## Available simulator inventory
 
@@ -57,7 +57,7 @@ Xcode 27.2 exposes the following device types in this development environment. T
 
 ## Acceptance record
 
-The 8 November device audit used local source snapshot `8bb970b2b90e8d2baede7804edfc740564dd3a89beb7bfba429dfdd2c632bdfd`, recorded in the private source manifest. This is a content fingerprint, not a Git commit. It covers versioned and unignored new source, configuration and resources under `DigitalFootprintExplorer/`, excluding documentation and prose. The installed TestFlight 1.0 (3) beta has not changed.
+The 8 November device audit used local source snapshot `8bb970b2b90e8d2baede7804edfc740564dd3a89beb7bfba429dfdd2c632bdfd`, recorded in the private source manifest. The content fingerprint covers versioned and unignored new source, configuration and resources under `DigitalFootprintExplorer/`, excluding documentation and prose. TestFlight offered 1.0 (3) at the time of that audit.
 
 The retained native runs passed 448 unit methods. The shared model and its 24 previously passing Kotlin methods are unchanged. A tool run passed 56 Python methods, and the policy copies agree. The unsigned build for this audit passed 30 package checks, including matching build 4 source labels in the phone app, Home Screen widget, Watch app and Watch widget. These checks do not provide distribution signing or Apple validation.
 
@@ -103,13 +103,20 @@ The local visual review keeps the 8 November screenshots alongside the new nativ
 
 Three focused interface checks passed on each Watch size. The tests covered the garden and refresh action with accessibility text, the first view at normal text size and the enabled action in an empty simulator. Two Duo checks passed on the 867 × 553-point inner window, including light and dark appearances, the link to the saved day and the single column at maximum text size. One iPhone 18 Pro Max check and eight layout unit checks also passed. The updated unsigned package passed all 30 local checks. These are follow-up results for the changed screens; the earlier full runs keep their original source record.
 
+### Signed beta: 9 November
+
+Xcode exported 1.0 (4) from revision `b50869f4b7972bef7d4569d781e30dffec885ad4` with ZHAW's managed distribution signing. The local package check confirmed the signing identities and profiles for the iPhone app, Home Screen widget, Watch app and Watch widget. The two Watch components share their own App Group. Apple validated and processed the upload, and 1.0 (4) became the only build assigned to the internal pilot.
+
+The local iOS regression suite passed 451 controlled tests. A separate iPhone 18 Pro Max simulator run passed both Today layout checks for the widget link, covering the pending first day and completed setup. The hosted run for the signed revision reached the Gradle download and stopped on a broken TLS connection before running the shared model and iOS tests. The signed upload and the local tests are separate from physical-device acceptance and App Review.
+
 ### Remaining acceptance gates
 
 | Area | Required next evidence |
 | --- | --- |
 | Paired Watch delivery | A signed physical pair transfers the latest real aggregate, handles offline recovery, withdrawal and deletion, and updates the visible complication |
 | Watch system hosting | Add each supported family in its real system host and verify the saved-day label and tap into the Watch app |
-| Signing and distribution | Register the Watch identifiers and group, prepare matching profiles and validate the exact signed candidate before any upload |
+| Hosted checks | Re-run the failed hosted job and confirm the shared model and iOS tests complete |
+| Public pages | Verify GitHub Pages serves the updated Watch privacy and support information after the changes are accepted |
 | Swiss customer eligibility | Apple's written response confirms an available customer route, or the release accurately limits automatic access |
 
 The owner currently has an iPhone only. The paired Watch checks remain open. Local simulator success does not establish production readiness, complete Screen Time coverage or regional customer eligibility.

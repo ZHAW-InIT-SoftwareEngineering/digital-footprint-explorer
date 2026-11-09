@@ -105,6 +105,23 @@ jobs:
           python3 DigitalFootprintExplorer/iosApp/scripts/generate_privacy_policy.py --check --include-web 2>&1 \
             | tee "$RUNNER_TEMP/dfe-test-results/privacy-check.log"
 
+      - name: Prepare the Gradle wrapper
+        working-directory: DigitalFootprintExplorer
+        env:
+          GRADLE_USER_HOME: ${{ runner.temp }}/dfe-build-cache/gradle
+        run: |
+          set -euo pipefail
+          # [06] A short network failure during the wrapper download should not cancel the tests.
+          for attempt in 1 2 3; do
+            if ./gradlew --version; then
+              exit 0
+            fi
+            if [ "$attempt" -lt 3 ]; then
+              sleep "$((attempt * 10))"
+            fi
+          done
+          exit 1
+
       - name: Run the shared model and controlled iOS tests
         env:
           DFE_BUILD_CACHE: ${{ runner.temp }}/dfe-build-cache

@@ -8,9 +8,9 @@ The native app uses the existing shared emission model. It turns the available S
 
 These previews use isolated example history. They show the interface, not measured activity or verified emissions.
 
-## Apple device coverage in this branch
+## Apple device coverage
 
-Build 4 adds a layout for the wider iPhone Duo display and an optional Apple Watch companion. The app targets iPhone. It has not replaced TestFlight 1.0 (3). The device acceptance record separates unit checks, native interface runs, example screenshots and unsigned package checks. It also keeps failed attempts and their later focused checks, so a passing screenshot test is not mistaken for a completed physical-device trial.
+The app targets iPhone and adapts Today to the wider iPhone Duo display. An optional Apple Watch companion shows the latest saved garden. The device acceptance record separates local tests, example screenshots, signed builds and physical-device checks. It keeps earlier failures with their follow-up results so each outcome can be traced to its own test.
 
 Today keeps one column on compact screens and at larger accessibility text sizes. A regular window at least 760 points wide places the frameless garden beside the existing actions. On a wide window with moderate height, the result and the link to that day move beside the garden and use larger text. Native tabs can adapt to a sidebar. The same saved dates, pending messages, refresh path and daily calculations apply in each arrangement.
 
@@ -53,7 +53,7 @@ A saved reminder does not run a new calculation or update a widget. Force-quit n
 
 Family Controls and App and Website Usage need the correct capabilities, profiles and user authorization. Apple's published expanded-access customer conditions include an EU-located device and an EU Apple Account region. Development testing elsewhere does not prove customer availability there. Check [Apple's entitlement guide](https://developer.apple.com/documentation/familycontrols/requesting-the-family-controls-entitlement) and [expanded access conditions](https://developer.apple.com/documentation/familycontrols/authorizationstatus/approvedwithdataaccess) before choosing release countries.
 
-The offline policy is in the app. The approved privacy and support addresses are set in the release configuration, and their sources are in the repository website. Check the actual GitHub Pages deployment after an accepted update. Both addresses must return the correct public page before a release is uploaded; their App Store Connect fields also need to match.
+The offline policy is in the app. The privacy and support addresses are set in the release configuration, and their sources are in the repository website. After the changes are accepted, verify that GitHub Pages serves both updated pages at the addresses listed in App Store Connect before submitting to App Review.
 
 ## Verify an automatic update
 
@@ -120,8 +120,8 @@ DigitalFootprintExplorer/iosApp/
 └── docs/                   # Device acceptance notes and example-history previews
 ```
 
-The app remains under review. A release still needs a validated distribution build, successfully deployed privacy/support pages, confirmed customer regions and successful device acceptance.
+The acceptance record tracks the signed TestFlight build and the remaining checks before App Review.
 
 ## Public pages and contact
 
-DFE Team maintains the app and handles privacy and support questions at [digital-footprint-explorer.init@zhaw.ch](mailto:digital-footprint-explorer.init@zhaw.ch). The policy and support pages are included under the repository’s `docs/` folder in the same final pull request. Their HTTPS addresses are set in `Configuration/Config.xcconfig`; verify that GitHub Pages has deployed both pages before uploading a release. A pending deployment is a release gate. The offline policy remains available without visiting the website.
+The DFE Team maintains the app and answers privacy and support questions at [digital-footprint-explorer.init@zhaw.ch](mailto:digital-footprint-explorer.init@zhaw.ch). The website sources are in the repository's `docs/` folder. The app also includes a copy of the privacy policy that is available offline.

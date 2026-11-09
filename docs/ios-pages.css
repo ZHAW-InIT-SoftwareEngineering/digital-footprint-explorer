@@ -48,6 +48,28 @@ html:has(> body.dfe-site) {
 
 .dfe-site .site-header { background: var(--surface); }
 
+@media screen and (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: scroll(root block)) {
+    .dfe-site::before {
+      content: "";
+      position: fixed;
+      inset: 0 0 auto;
+      z-index: 11;
+      height: 2px;
+      background: var(--zhaw-blue);
+      pointer-events: none;
+      transform-origin: left;
+      animation: dfe-scroll-progress 1ms linear both;
+      animation-timeline: scroll(root block);
+    }
+  }
+}
+
+@keyframes dfe-scroll-progress {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
 /* [02] Equal side columns keep the title centred even when the links are wider than the logo. */
 .site-bar {
   display: grid;

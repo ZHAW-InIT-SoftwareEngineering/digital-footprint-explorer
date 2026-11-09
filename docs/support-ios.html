@@ -3,112 +3,113 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="Help with automatic estimates, local settings and the garden widget in Digital Footprint Explorer for iOS." />
+  <meta name="description" content="Set up Screen Time, understand your daily estimates and get help with the Digital Footprint Explorer widget and Apple Watch app." />
   <title>iOS support · Digital Footprint Explorer</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="ios-pages.css" />
 </head>
-<body class="ios-support">
+<body class="dfe-site">
   <a class="skip-link" href="#support-content">Skip to help</a>
   <!-- [02] Give visitors a direct route back to the project and its reviewed privacy policy. -->
-  <header>
-    <div class="container nav support-nav">
-      <a href="index.html" aria-label="Digital Footprint Explorer home">
+  <header class="site-header">
+    <div class="site-bar">
+      <a class="site-brand" href="index.html" aria-label="Digital Footprint Explorer home">
         <img src="images/zhaw_rgb.png" alt="ZHAW" />
       </a>
-      <strong>Digital Footprint Explorer</strong>
-      <nav class="support-nav-links" aria-label="Project pages">
+      <strong class="site-title">Digital Footprint Explorer</strong>
+      <nav class="site-nav" aria-label="Project pages">
         <a href="index.html">Project</a>
-        <a href="privacy-policy.html">iOS privacy policy</a>
+        <a href="support-ios.html" aria-current="page">iOS support</a>
+        <a href="privacy-policy.html">iOS privacy</a>
       </nav>
     </div>
   </header>
 
   <!-- [03] Keep setup, missing-data limits and customer choices together so help follows the real app journey. -->
-  <main id="support-content" class="container support-content">
-    <section class="card">
-      <h1>Help with the iOS version</h1>
-      <p>The DFE Team supports the Digital Footprint Explorer iOS app within School of Engineering ZHAW and handles privacy and support questions through the project email address below.</p>
-      <p class="muted">The iOS version is being prepared for release. These pages explain the planned customer experience and the access limits that still apply.</p>
-      <p>The garden shows changes in estimated phone use. It is a model result, rather than a direct measurement of energy use or carbon emissions.</p>
+  <main id="support-content" class="container site-content reading-width" tabindex="-1">
+    <section class="page-intro">
+      <h1>Support for iPhone</h1>
+      <p>Set up Screen Time, find out how your garden changes and get help with the widget or Apple Watch app.</p>
+      <p class="muted">The iOS version is being prepared for release. Screen Time access for App Store users in Switzerland is still awaiting confirmation.</p>
+      <nav class="topic-links support-topics" aria-label="Support topics">
+        <a href="#setup">Set up Screen Time</a>
+        <a href="#widget">Add the widget</a>
+        <a href="#apple-devices">Apple Watch</a>
+        <a href="#contact">Contact</a>
+      </nav>
     </section>
 
-    <section class="card">
-      <h2>Getting started</h2>
-      <p>The automatic version needs iOS 26.4 or later and Apple's expanded Screen Time access. Open Automatic setup, read what the app will use, and allow access in Apple's permission screen. Once access is available, the app starts automatic estimates. You do not select individual apps or enter daily minutes. This setup is kept while access remains valid; if Apple later removes or replaces that access, the app can ask you to reconnect.</p>
-      <p>The app uses the application activity that Apple makes available. Local rules group recognised apps into footprint categories; other apps stay in Other apps. It does not read what you do inside an app.</p>
-      <p>Usage time is the automatic input. Data traffic, Wi-Fi share, screen brightness and GPS/Bluetooth time remain model assumptions. The app explains these assumptions alongside the estimate. Carbon results are estimates, not direct measurements.</p>
+    <section id="setup" class="card">
+      <h2>Set up automatic estimates</h2>
+      <p>Automatic estimates require iOS 26.4 or later and Apple's expanded Screen Time access.</p>
+      <ol>
+        <li>Open <strong>Automatic setup</strong> and review what the app uses.</li>
+        <li>Tap <strong>Enable automatic estimates</strong> and allow access when Apple asks. If access is already available, tap <strong>Start automatic estimates</strong>.</li>
+        <li>In DFE, open <strong>Settings</strong> and check that <strong>Screen Time</strong> shows <strong>Connected</strong>.</li>
+      </ol>
+      <p>DFE uses the app activity Apple makes available, without daily forms or individual app selection. If the app loses access, open the same section in Settings and choose <strong>Reconnect Screen Time</strong> when it appears.</p>
     </section>
 
     <section class="card">
       <h2>Why has no daily result appeared yet?</h2>
-      <p>Automatic estimates cover days from your setup date after each day has ended. Today's usage is still changing, so it is not imported as a completed day. Your first result can appear after a completed day has usable data.</p>
-      <p>Apple may still be preparing that day's data. iOS also decides when the app can update in the background, so updates may take time. A pending result does not mean that your usage was zero. Check Screen Time in Settings and open the app again later.</p>
-      <p>For App Store customers, Apple's expanded access requires both an iPhone located in the EU and an Apple Account set to an EU country or region. We tested with development access in Switzerland. Access for App Store customers in Switzerland is still awaiting confirmation. If access is unavailable, the app shows that status and leaves new results pending. See <a href="https://developer.apple.com/documentation/familycontrols/authorizationstatus/approvedwithdataaccess">Apple's Screen Time access requirements</a>.</p>
+      <p>Your first estimate can appear after your setup day ends and Apple provides usable app activity. iOS controls when background updates run. If a day is still pending, check your Screen Time connection in DFE and try opening the app again later.</p>
+      <p>If expanded access is unavailable, DFE keeps new days pending and shows any earlier saved estimates. Apple's published requirements for App Store users include both an iPhone located in the EU and an Apple Account set to an EU country or region. Our Swiss tests used development access. <a href="https://developer.apple.com/documentation/familycontrols/authorizationstatus/approvedwithdataaccess">Read Apple's Screen Time access requirements</a>.</p>
     </section>
 
     <section class="card">
       <h2>Understanding your daily estimate</h2>
-      <p>Apple's returned app activity can differ from the daily Screen Time total, even for the same day and iPhone. The estimate uses the available app durations. It does not fill a difference with invented app use or treat the result as a complete measurement of your phone's impact.</p>
-      <p>Today shows the actual completed date beside your result. Compare its imported app time with that date on the same iPhone in Apple's daily Screen Time report. Today's changing total, a weekly daily average or activity shared across devices can describe a different period. The garden compares the estimate with up to seven earlier saved days; a greener garden is a relative change, not proof of a small measured impact.</p>
-      <p>Known app identifiers use local category rules; unknown apps keep their time under Other apps. Traffic rates are category averages. The app cannot tell whether WhatsApp time was messaging or a call, which video quality you used, or how much data actually travelled. Imported activity also does not establish every hour of background music listening. Website records are excluded, while browser app time can still be included.</p>
-      <p>Automatic setup keeps the saved routine's calculation settings, including valid zero traffic assumptions. It replaces daily minutes with Apple's available app time, rather than silently changing those settings or rewriting earlier estimates. If Apple reports screen-on activity but no positive app time is available, the day stays pending; this check does not prove that all other activity was exposed. See How the estimate works in Settings for the model and its limits.</p>
+      <p>In <strong>Today</strong>, check the completed date beside the estimate. For a comparison, open Apple's daily Screen Time report for the same date and iPhone. The app activity Apple shares with DFE can differ from the total in that report. A pending day has no usable estimate yet.</p>
+      <p>DFE groups available app time into categories on your device. Apps it cannot categorise appear under <strong>Other apps</strong>. Browser app time can count, while website records are excluded. The model uses assumptions for data traffic, Wi-Fi share, screen brightness, GPS and Bluetooth, so the result is an estimate of carbon emissions. See <strong>How the estimate works</strong> in DFE Settings.</p>
+      <p>Your first saved estimate gives the garden a starting point. Later, the garden compares each estimate with the average of up to seven earlier saved days. A greener garden means a lower estimate relative to those days.</p>
     </section>
 
     <section class="card">
-      <h2>A little space for your day</h2>
-      <p>There is no garden name, goal or personal profile to fill in. Once a daily estimate is available, the garden and its message reflect that result compared with up to seven earlier days. The first result is a starting point, and a pending day is never treated as zero.</p>
-      <p>A lower estimate brings a greener garden; a higher estimate changes its appearance too. One day is only part of the picture. The garden is a visual guide to estimated emissions, not a measurement of damage or recovery in the environment.</p>
-      <h3>App and Home Screen appearance</h3>
-      <p>In Settings, Appearance offers Light, Dark and System. Light is the default with a white background. Your choice applies across Today, History, Settings and their detail screens.</p>
-      <p>The Home Screen icon has light and dark versions, chosen by iOS. To review that choice, touch and hold the Home Screen background, then choose Edit and Customize. Select Dark for a dark icon, or Automatic to follow the system appearance. The wallpaper image and the app's own Appearance setting are separate, so a dark wallpaper alone does not choose the dark icon.</p>
+      <h2>App and Home Screen appearance</h2>
+      <p>In DFE Settings, choose <strong>Appearance</strong> to switch between Light, Dark and System. Light is the default. To change the app icon's appearance, touch and hold the iPhone Home Screen, then choose <strong>Edit</strong> and <strong>Customize</strong>. The icon follows your iPhone's Home Screen setting.</p>
     </section>
 
-    <section class="card">
+    <section id="widget" class="card">
       <!-- [04] Explain the steps iOS allows; the app cannot place a widget on someone's Home Screen for them. -->
       <h2>Adding the garden widget</h2>
-      <p>Open the widget guide from Today or the welcome screen. For the quickest route, touch and hold the Digital Footprint app icon on your Home Screen, then tap a small or medium widget size. This turns the icon into a widget. Tap the widget to open Today.</p>
-      <p>To keep the app icon too, touch and hold an empty area of the Home Screen, then tap Edit and Add Widget. Find Digital Footprint, choose Your garden and a size, then tap Add Widget. Use this route if widget sizes do not appear in the app icon menu.</p>
-      <p>You choose the widget's position. The app cannot place it automatically. The guide can check whether one of this app's widgets is configured, but it cannot tell exactly where it is or whether its latest update is visible. This check is not saved or sent to the project team.</p>
-      <p>The widget shows the latest saved garden, estimate, date and input source. It may show an earlier date while a new result is pending. iOS controls when updates appear. Removing the widget does not remove the app's history. See <a href="https://support.apple.com/en-ie/guide/iphone/iphb8f1bf206/27/ios/27">Apple's widget guide</a> for the Home Screen steps.</p>
-      <p>With automatic estimates enabled and Apple's required access, the widget can request the previous completed day's available app activity without opening DFE. It uses the same calculation and saves a protected pending result before updating the garden. DFE checks and adds that result to its private history when it next runs. The shared file contains the setup and category totals needed for this work, without app names or individual app records.</p>
+      <ol>
+        <li>Touch and hold an empty area of your iPhone Home Screen, then tap <strong>Edit</strong> and <strong>Add Widget</strong>.</li>
+        <li>Find <strong>Digital Footprint</strong> and choose <strong>Your garden</strong>.</li>
+        <li>Choose a small or medium size, then tap <strong>Add Widget</strong>. Tap the widget any time to open Today.</li>
+      </ol>
+      <p>The widget shows your latest saved garden and its date. If Apple allows access, it can calculate the previous completed day when iOS gives it time to run, even while DFE is closed. DFE adds that result to History the next time it runs. The widget may keep showing an earlier date while a new day is pending.</p>
+      <p>If DFE Settings shows <strong>Resume widget updates</strong> under Screen Time, tap it to review access. Removing the widget leaves your saved history available in DFE. <a href="https://support.apple.com/en-ie/guide/iphone/iphb8f1bf206/27/ios/27">See Apple's widget guide</a>.</p>
     </section>
 
     <section class="card" aria-labelledby="apple-devices">
       <h2 id="apple-devices">iPhone Duo and Apple Watch</h2>
-      <p>On the wider iPhone Duo display, Today puts the saved estimate beside the garden.</p>
-      <p>The optional Watch companion requires watchOS 10 or later and a paired iPhone. Sharing is off by default. On your iPhone, open Settings in DFE and turn on Show my garden on Apple Watch. The Watch shows your latest saved phone result. It receives no app names or usage times and does not read Screen Time itself.</p>
-      <p>If the Watch shows an older date, tap Refresh in the Watch app to check for the latest saved result. If it cannot reach the phone, open DFE on your iPhone. Turning sharing off, disconnecting Screen Time or deleting entries clears the summary when the Watch next receives the update.</p>
+      <p>On the wider iPhone Duo display, Today puts the saved estimate beside the garden when there is room.</p>
+      <p>The optional Watch app requires watchOS 10 or later and a paired iPhone. On your iPhone, open DFE Settings and turn on <strong>Show my garden on Apple Watch</strong>. The Watch receives a summary of your latest saved phone estimate. App names and usage times stay on your iPhone.</p>
+      <p>If the Watch shows an older date, tap <strong>Refresh</strong> in the Watch app. If it cannot reach the phone, open DFE on your iPhone. Turning off Watch sharing, disconnecting Screen Time or deleting entries clears the summary when the Watch next receives the update.</p>
     </section>
 
     <section class="card">
       <!-- [05] A saved reminder can appear without the app running. A fresh estimate still needs permitted execution. -->
       <h2>Optional garden updates</h2>
-      <p>In Settings, under A morning moment, turn on Daily garden update if you would like a short local reminder. It is off by default and asks for Apple's notification permission only when you enable it.</p>
-      <p>DFE saves one reminder for each of the next 30 mornings, around 08:00 in your local time. iOS can show these reminders while the app is closed, including after you remove it from multitasking. Opening DFE, or background time granted by iOS, renews the schedule. If DFE cannot run for more than 30 days, the saved reminders end until it can prepare more.</p>
-      <p>A general reminder invites you to explore your latest saved garden. The wording varies with its local delivery date, without a personal profile or extra activity collection. It does not claim that yesterday's estimate is ready. Missing activity, a zero-use day or unavailable Screen Time access can still have this reminder; the app does not turn those cases into invented results.</p>
-      <p>If a fresh import provides a valid estimate for yesterday before a reminder is due, the app may replace that pending message with a summary of your saved garden. It keeps the same reminder. Older wording can also be updated in a known future request, without changing its ID or delivery time. Once the day's reminder may have appeared, a later import does not send another summary, even if you dismissed the first message. Tapping either message opens Today.</p>
-      <p>The reminder itself does not refresh Screen Time, the garden or the widgets. Removing DFE from multitasking normally stops the main app's background launches. Its widget can try a separate update when iOS allows it, but neither route guarantees a fresh result at 08:00 or at a fixed interval. iOS, Focus, Scheduled Summary and notification settings can also delay or hide a reminder. The schedule uses local calendar times and is checked again when DFE can run after a clock or time zone change.</p>
-      <p>These notifications stay on your iPhone, with no remote push service or activity upload. Turn Daily garden update off to cancel its pending messages. This does not disconnect Screen Time. Disconnecting Screen Time leaves the separate reminder choice unchanged, so turn the reminder off too if you do not want it. If no reminder appears, check this choice and DFE's notification settings in iPhone Settings.</p>
+      <p>In DFE Settings, open <strong>A morning moment</strong> and turn on <strong>Daily garden update</strong>. Allow notifications when Apple asks. This setting is off by default.</p>
+      <p>DFE schedules one local reminder per day at about 08:00 for the next 30 mornings and renews the schedule when it can run. iOS can show reminders even after you close DFE from the app switcher. Focus, Scheduled Summary and your notification settings can change when they appear.</p>
+      <p>A reminder can arrive while yesterday's estimate is still pending. If a fresh result is saved in time, the reminder may describe your garden for that day. Tapping either kind of reminder opens Today.</p>
+      <p>Turn <strong>Daily garden update</strong> off to cancel pending reminders. This setting is separate from Screen Time. If reminders are missing, also check DFE's notification settings on your iPhone.</p>
     </section>
 
     <section class="card">
       <!-- [06] Deleting DFE history and removing Apple permission are different choices, so explain both. -->
       <h2>Your choices and local data</h2>
-      <p>To stop new Screen Time imports, choose Disconnect Screen Time in Settings. Your saved daily estimates remain available. To clear your history, choose Delete all entries and confirm. This also clears the shared widget summary and resets your calculation and appearance settings.</p>
-      <p>If automatic estimates were connected and still have permission, they stay connected with the standard calculation settings. The app and widget ignore days before the reset, and a paused widget stays paused.</p>
-      <p>Deleting entries turns off Watch sharing and Daily garden update. It also clears the local delivery log and cancels pending reminders. Messages already shown in Notification Center stay there until you clear them.</p>
-      <p>Deleting local data does not remove Apple's Screen Time or notification permission. Use Disconnect Screen Time to remove activity access, or iPhone Settings to change notification permission. The app cannot delete Apple's own Screen Time records or recall files and backups made earlier.</p>
-      <p>The app does not send your usage history to the DFE team or a project server. History that has contained a Screen Time import cannot be exported. Read the <a href="privacy-policy.html">iOS privacy policy</a> for the reviewed local-data details.</p>
+      <p>To stop new Screen Time imports, open <strong>Connection details</strong> in DFE Settings and choose <strong>Disconnect Screen Time</strong>. You can still read your saved estimates.</p>
+      <p>To clear DFE's saved data, choose <strong>Delete all entries</strong> and confirm. This clears your history and the widget summary, resets calculation and appearance settings, and turns off Watch sharing and daily reminders. Messages already shown in Notification Center stay there until you clear them.</p>
+      <p>If automatic estimates were connected and still have permission, they stay connected with the standard settings. DFE and the widget skip days before the reset. A paused widget stays paused. Deleting entries leaves Apple's Screen Time records and existing backups intact. <a href="privacy-policy.html#deletion">Read how DFE handles data deletion</a>.</p>
     </section>
 
-    <section class="card">
+    <section id="contact" class="card">
       <h2>Contact the project</h2>
       <p>For privacy or support questions, contact the DFE Team at <a href="mailto:digital-footprint-explorer.init@zhaw.ch">digital-footprint-explorer.init@zhaw.ch</a>.</p>
-      <p>If something fails, include the app version, your iOS version and a short description of the steps. Please do not send your Screen Time history, passwords, device identifier or other private files. Review any screenshot before sharing it.</p>
-      <p>If you email us, your message and email address are handled through ZHAW's email service so we can reply. Do not include private activity records. Deleting entries in the app does not remove emails you have sent; contact us if you have a question about a previous message.</p>
-      <p>This website uses GitHub Pages. Opening a page sends connection details, such as your IP address, to the hosting service. The pages contain no advertising or analytics code. See <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub's privacy statement</a> for how the hosting service handles these details.</p>
-      <p class="muted">Last updated: <time datetime="2026-11-09">9 November 2026</time>. The DFE Team is responsible for the app and handles questions through the project email above.</p>
+      <p>Include your app version, iOS version and the steps that led to the problem. For an import or widget issue, open <strong>Connection details</strong>, then <strong>Automatic update checks</strong>. Use <strong>Copy update checks</strong> to share a short technical summary if you wish. It excludes app names, usage amounts and estimate values. Keep Screen Time history, passwords and device identifiers out of your message.</p>
+      <p>The DFE Team is part of the ZHAW School of Engineering. The <a href="privacy-policy.html#website-support">iOS privacy policy</a> explains how this site and support email handle data.</p>
+      <p class="muted">Last updated <time datetime="2026-11-09">9 November 2026</time>.</p>
     </section>
   </main>
 

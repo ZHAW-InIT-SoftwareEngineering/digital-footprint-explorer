@@ -6,41 +6,38 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="How Digital Footprint Explorer handles your local history and optional Screen Time access.">
   <title>Privacy policy — Digital Footprint Explorer</title>
-  <style>
-    /* [02] Readable colours follow the system choice, while print keeps a clear white page. */
-    :root { color-scheme: light dark; --text: #17251d; --muted: #45564a; --surface: #fff; --line: #d9e2dc; }
-    * { box-sizing: border-box; }
-    body { margin: 0; background: var(--surface); color: var(--text); font: 1rem/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
-    main { max-width: 48rem; margin: auto; padding: clamp(1.25rem, 4vw, 3rem); }
-    header { padding-bottom: 1.25rem; border-bottom: 1px solid var(--line); }
-    .app-name { margin-bottom: .5rem; color: var(--muted); }
-    h1 { font-size: clamp(1.8rem, 4vw, 2.5rem); line-height: 1.2; margin: .5rem 0 1rem; }
-    h2 { font-size: 1.25rem; line-height: 1.35; margin: 2rem 0 .75rem; }
-    p { margin: .75rem 0; overflow-wrap: anywhere; }
-    .updated { color: var(--muted); }
-    a { color: #17613b; text-underline-offset: .2em; }
-    a:focus-visible { outline: 3px solid currentColor; outline-offset: 4px; }
-    .page-links { display: flex; gap: .5rem 1.25rem; flex-wrap: wrap; margin-bottom: 1rem; }
-    .page-links a { display: inline-flex; align-items: center; min-height: 44px; }
-    footer { margin-top: 2.5rem; padding-top: 1.25rem; border-top: 1px solid var(--line); }
-    @media (prefers-color-scheme: dark) { :root { --text: #f0f7f2; --muted: #c2d0c6; --surface: #142019; --line: #405247; } a { color: #a2e4ba; } }
-    @media print { :root { --text: #000; --muted: #333; --surface: #fff; --line: #ccc; } main { max-width: none; padding: 0; } h2 { break-after: avoid; } }
-  </style>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="ios-pages.css">
 </head>
-<body>
-<!-- [03] Keep the revision beside the policy so readers know which privacy choices they are reviewing. -->
-<main>
-  <header>
-    <!-- [04] Readers can return to the project or find help without reaching the end of the policy. -->
-    <nav class="page-links" aria-label="Project links">
-      <a href="index.html">Project</a>
-      <a href="support-ios.html">iOS support</a>
-    </nav>
-    <p class="app-name">Digital Footprint Explorer</p>
-    <h1>Privacy policy</h1>
-    <p class="updated">Last updated: <time datetime="2026-11-08">8 November 2026</time></p>
+<body class="dfe-site">
+  <a class="skip-link" href="#policy-content">Skip to privacy policy</a>
+  <header class="site-header">
+    <div class="site-bar">
+      <a class="site-brand" href="index.html" aria-label="Digital Footprint Explorer home">
+        <img src="images/zhaw_rgb.png" alt="ZHAW">
+      </a>
+      <strong class="site-title">Digital Footprint Explorer</strong>
+      <nav class="site-nav" aria-label="Project pages">
+        <a href="index.html">Project</a>
+        <a href="support-ios.html">iOS support</a>
+        <a href="privacy-policy.html" aria-current="page">iOS privacy</a>
+      </nav>
+    </div>
   </header>
-  <p>Digital Footprint Explorer helps you understand an estimated carbon footprint of your device use. Your settings, calculations and history are processed on your device. You do not need an app account.</p>
+
+  <main id="policy-content" class="container site-content reading-width" tabindex="-1">
+    <!-- [02] Keep the revision and the most requested privacy choices close to the title. -->
+    <div class="page-intro">
+      <h1>Privacy policy</h1>
+      <p class="muted">Last updated <time datetime="2026-11-08">8 November 2026</time></p>
+      <nav class="topic-links" aria-label="Privacy topics">
+        <a href="#screen-time">Screen Time</a>
+        <a href="#deletion">Delete your data</a>
+        <a href="#contact">Contact</a>
+      </nav>
+    </div>
+    <article class="card policy-copy">
+      <p>Digital Footprint Explorer helps you understand an estimated carbon footprint of your device use. Your settings, calculations and history are processed on your device. You do not need an app account.</p>
 <p>The DFE Team maintains the Digital Footprint Explorer iOS app within School of Engineering ZHAW and handles privacy and support questions.</p>
 <section aria-labelledby="inputs"><h2 id="inputs">What the app uses</h2>
 <p>The app keeps daily category times and the calculation settings used for them. These settings include estimated data traffic, Wi-Fi share, screen brightness, GPS time and Bluetooth time. The current interface uses starting model assumptions and does not ask you to type daily inputs.</p>
@@ -124,10 +121,15 @@
 <p>For privacy or support questions, contact the DFE Team at digital-footprint-explorer.init@zhaw.ch. Please do not send your Screen Time history or other private files.</p>
 <p>The DFE Team will update this policy if the app&#x27;s data practices change. The date above identifies this copy.</p>
 </section>
-  <footer>
-    <p><a href="mailto:digital-footprint-explorer.init@zhaw.ch">Email the DFE Team</a></p>
-    <p><a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub hosting privacy</a></p>
+    </article>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <p class="muted">© 2026 Zurich University of Applied Sciences (ZHAW) · Digital Footprint Explorer</p>
+      <p><a href="mailto:digital-footprint-explorer.init@zhaw.ch">Email the DFE Team</a></p>
+      <p><a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub hosting privacy</a></p>
+    </div>
   </footer>
-</main>
 </body>
 </html>

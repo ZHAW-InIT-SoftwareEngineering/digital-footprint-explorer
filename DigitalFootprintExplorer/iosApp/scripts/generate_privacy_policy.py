@@ -45,6 +45,7 @@ def outputs(document, *, include_web=False):
   <title>{html.escape(document['title'])} — {html.escape(document['app_name'])}</title>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="ios-pages.css">
+  <script src="ios-pages.js" defer></script>
 </head>
 <body class="dfe-site">
   <a class="skip-link" href="#policy-content">Skip to privacy policy</a>

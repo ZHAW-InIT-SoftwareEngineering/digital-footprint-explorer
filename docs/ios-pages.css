@@ -87,7 +87,14 @@ html:has(> body.dfe-site) {
   gap: .25rem .5rem;
 }
 
-.site-nav { justify-self: end; }
+.site-nav {
+  justify-self: end;
+  gap: .125rem;
+  padding: .1875rem;
+  border: 1px solid var(--border);
+  border-radius: .875rem;
+  background: var(--surface-subtle);
+}
 
 .site-nav a, .topic-links a {
   display: inline-flex;
@@ -97,16 +104,26 @@ html:has(> body.dfe-site) {
 }
 
 .site-nav a {
+  border-radius: .625rem;
   color: var(--text);
   font-size: .875rem;
+  text-decoration: none;
   white-space: nowrap;
 }
 
+@media (hover: hover) {
+  .site-nav a:hover { background: #e3eef6; color: #004c80; }
+}
+
+.site-nav a:active { background: #d0e4f2; color: #004c80; }
+
 .site-nav a[aria-current="page"] {
-  border-radius: .5rem;
-  background: var(--surface-subtle);
+  background: var(--zhaw-blue);
+  color: #fff;
   font-weight: 600;
 }
+
+.site-nav a[aria-current="page"]:active { background: #004c80; }
 
 .dfe-site .site-content {
   width: min(100%, 66rem);
@@ -180,10 +197,37 @@ html:has(> body.dfe-site) {
   gap: clamp(.5rem, 2vw, 1rem);
 }
 
-.app-screens img { display: block; }
-.ios-preview img { border: 1px solid var(--border); border-radius: .875rem; }
-.preview-note { margin-block: .75rem 0; }
+.preview-frame {
+  position: relative;
+  aspect-ratio: 660 / 1435;
+  overflow: hidden;
+}
+
+.dfe-site .preview-frame img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.ios-preview .preview-frame { border-radius: .875rem; box-shadow: 0 0 0 1px var(--border); }
+
+/* [04] The Android files have a 1537 px wide handset inside a larger transparent canvas. */
+.dfe-site .preview-frame.android-frame img {
+  position: absolute;
+  inset-inline-start: calc(-100% * 156 / 1537);
+  inset-block-start: calc(-100% * 143 / 3335);
+  width: calc(100% * 1840 / 1537);
+  max-width: none;
+  height: auto;
+}
+
 .dfe-site figcaption { margin-block-start: .375rem; color: var(--muted); }
+.dfe-site .contact-card { background: var(--surface-subtle); }
+.contact-options { gap: 1rem; }
+.contact-option {
+  padding: 1.125rem;
+  border: 1px solid var(--border);
+  border-radius: .875rem;
+  background: var(--surface);
+}
+.contact-option > :last-child { margin-block-end: 0; }
+.contact-links { display: flex; flex-wrap: wrap; gap: .5rem 1rem; }
+
 .dfe-site table { margin-block: 1rem; }
 .dfe-site caption { text-align: start; color: var(--muted); }
 .dfe-site th, .dfe-site td { border-bottom: 1px solid var(--border); }

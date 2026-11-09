@@ -826,21 +826,23 @@ final class ScreenTimeService: ObservableObject {
         #endif
     }
 
-    /// [41] Clears local app choices after the person's confirmed Delete action.
-    /// System permission is removed only through the separate Disconnect action.
-    func resetLocalData() {
-        do { try beforeWidgetAccessEnds?() }
-        catch {
-            lastError = "The widget setup could not be cleared. Your saved data is kept."
-            return
-        }
+    /// [41] Delete saved activity and old app choices without treating deletion as a withdrawal.
+    /// Only a complete all-app setup can continue from the new start date.
+    func deleteSavedEntries(in store: FootprintStore, now: Date = Date()) throws {
+        let consentDay = hasSavedAutomaticSetup(store: store) ? defaults.string(forKey: allActivityStartKey) : nil
+        refreshAuthorization()
+        try store.deleteAll(keepingAutomaticConsentFrom: consentDay,
+                            widgetAccess: widgetAutomaticAccessDecision, now: now)
+        // The history was replaced on the main actor. In-flight responses now belong to an older setup.
         selectionRevision &+= 1
         defaults.removeObject(forKey: selectionKey)
-        defaults.removeObject(forKey: historyKey)
-        defaults.removeObject(forKey: scopeKey)
-        defaults.removeObject(forKey: allActivityStartKey)
         defaults.removeObject(forKey: backfillCursorKey)
-        activityScope = .selectedApps
+        if consentDay == nil {
+            defaults.removeObject(forKey: historyKey)
+            defaults.removeObject(forKey: scopeKey)
+            defaults.removeObject(forKey: allActivityStartKey)
+            activityScope = .selectedApps
+        }
         #if SCREEN_TIME_ENABLED
         selections = [:]
         #endif
@@ -1045,6 +1047,7 @@ final class ScreenTimeService: ObservableObject {
         // [53] Earlier selected-app setups can still refresh a day after its category choices change.
         let reuseOlderImports = activityScope == .allAuthorizedApps
         let cursor = defaults.string(forKey: backfillCursorKey).flatMap { dayCalendar.date($0) }
+        let revision = selectionRevision
         let plan = ScreenTimeImportPlan.make(start: firstDay, today: today, calendar: calendar,
             cursor: cursor, backfillLimit: backfillLimit,
             shouldRefreshLatest: { !manualDays.contains(dayCalendar.key($0)) },
@@ -1057,17 +1060,17 @@ final class ScreenTimeService: ObservableObject {
             onAttempt: { [self] day in
                 // [54] A failed or interrupted old query gives the next gap a turn.
                 // The missing day itself remains available on a later cycle.
-                if let next = plan.nextBackfillDay[day] {
+                if revision == selectionRevision, let next = plan.nextBackfillDay[day] {
                     defaults.set(dayCalendar.key(next), forKey: backfillCursorKey)
                 }
             }, importDay: { [self] day in
+                guard revision == selectionRevision else { throw CancellationError() }
                 try aggregation.requireCurrent(store.aggregationCalendar)
-                let revision = selectionRevision
                 let usage = try await collectDay(day, calendar: calendar)
                 try Task.checkCancellation()
+                guard revision == selectionRevision else { throw CancellationError() }
                 refreshAuthorization()
                 guard state.canImport else { throw ScreenTimeImportError.permissionRequired }
-                guard revision == selectionRevision else { throw ScreenTimeImportError.selectionChanged }
                 try aggregation.requireCurrent(store.aggregationCalendar)
                 guard calendar.isDate(usage.day, inSameDayAs: day) else { throw FootprintError.invalidDay }
                 let wasMissing = !store.records.contains { $0.day == dayCalendar.key(day) }
@@ -1089,11 +1092,13 @@ final class ScreenTimeService: ObservableObject {
                 lastImportDate = Date()
                 return ScreenTimeDayImportReceipt(day: usage.day, created: wasMissing)
             }, onError: { [self] error in
+                guard revision == selectionRevision else { return .error }
                 lastError = error.localizedDescription
                 if ScreenTimeImportPolicy.shouldContinue(after: error) { return .pending }
                 return state.canImport ? .error : .noAccess
             })
         // [55] Check the time zone again even if the last day was unavailable; an old-zone result must not look current.
+        guard revision == selectionRevision else { throw CancellationError() }
         try aggregation.requireCurrent(store.aggregationCalendar)
         return refreshed
     }

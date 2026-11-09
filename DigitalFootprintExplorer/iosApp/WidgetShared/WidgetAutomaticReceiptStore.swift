@@ -34,17 +34,14 @@ struct WidgetAutomaticReceiptStore {
     }
 
     @discardableResult
-    func save(_ receipt: WidgetAutomaticReceipt) throws -> Bool {
+    func save(_ receipt: WidgetAutomaticReceipt, contextEpoch: UUID? = nil) throws -> Bool {
         guard directory != nil else { throw WidgetAutomaticReceiptStoreError.unavailable }
         try Self.validate(receipt)
         return try WidgetStorageVerificationStore(directory: directory, producer: producer).withExclusiveAccess { checks in
             let store = WidgetAutomaticReceiptStore(directory: checks.directory, producer: producer)
-            // [05] A query may finish after Delete or Disconnect. The saved stop marker also
-            // prevents that old task from putting its diagnostic day back after the reset.
-            if let directory = store.directory,
-               FileManager.default.fileExists(atPath: directory.appendingPathComponent(WidgetAutomaticExchange.blockedFileName).path) {
-                return false
-            }
+            // [05] Check the original ticket while saving, including after automatic updates resume.
+            guard try WidgetAutomaticExchange(directory: checks.directory, producer: producer)
+                .allowsReceiptDuringCoordinatedAccess(contextEpoch: contextEpoch) else { return false }
             // [02] A damaged technical note must not block fresh evidence. This does not change a garden or history file.
             if let previous = try? store.readDuringCoordinatedAccess(), Self.shouldKeep(previous, insteadOf: receipt) {
                 return false

@@ -388,7 +388,7 @@ def inspect_bundle(app, *, version='1.0', archive=None, project_root=None):
         'host_privacy_manifest': privacy_manifest_matches(read_plist(app / 'PrivacyInfo.xcprivacy'), True),
         'widget_privacy_manifest': privacy_manifest_matches(read_plist(widget / 'PrivacyInfo.xcprivacy'), False),
         'shared_group_configuration': info.get('DFEAppGroupIdentifier') == widget_info.get('DFEAppGroupIdentifier') == GROUP_ID,
-        'iphone_ipad_targets': info.get('UIDeviceFamily') == widget_info.get('UIDeviceFamily') == [1, 2],
+        'iphone_targets': info.get('UIDeviceFamily') == widget_info.get('UIDeviceFamily') == [1],
         'minimum_ios_matches': info.get('MinimumOSVersion') == widget_info.get('MinimumOSVersion') == '26.4',
         'host_executable_present': executable_path(app, info) is not None,
         'widget_executable_present': executable_path(widget, widget_info) is not None,

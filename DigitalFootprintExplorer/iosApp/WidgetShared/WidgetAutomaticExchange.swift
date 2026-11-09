@@ -218,6 +218,14 @@ struct WidgetAutomaticExchange {
         try read()?.pending ?? []
     }
 
+    // [15] The receipt writer holds the same lock. A resumed connection uses a different
+    // ticket, so a late note cannot restore the checks that deletion removed.
+    func allowsReceiptDuringCoordinatedAccess(contextEpoch: UUID?) throws -> Bool {
+        guard !hasBlockMarker else { return false }
+        guard let contextEpoch else { return true }
+        return try read()?.context.epoch == contextEpoch
+    }
+
     // [08] If the phone stopped between the durable day and its picture, repair the picture from that same day.
     @discardableResult
     func recoverPendingSnapshot() throws -> GardenWidgetSnapshot? {

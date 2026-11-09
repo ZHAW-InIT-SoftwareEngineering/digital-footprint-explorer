@@ -252,4 +252,31 @@ final class GardenLayoutUITests: XCTestCase {
         AutomaticUITestSupport.assertNoManualEntry(in: app)
     }
 
+    // [14] While the first estimate is pending, widget help should stay with the explanation.
+    func testFirstPendingDayKeepsWidgetHelpNearTheExplanation() {
+        let app = AutomaticUITestSupport.open()
+        AutomaticUITestSupport.openSetup(in: app)
+        let connect = app.buttons["automatic.connect"]
+        AutomaticUITestSupport.reach(connect, in: app)
+        connect.tap()
+
+        let pending = app.staticTexts["today.automaticPending"]
+        XCTAssertTrue(pending.waitForExistence(timeout: 10))
+        XCTAssertEqual(pending.label, "Let your next day take shape")
+        XCTAssertFalse(app.staticTexts["footprint.total"].exists)
+        XCTAssertFalse(app.buttons["today.automaticSetup"].exists)
+
+        let content = AutomaticUITestSupport.element("today.content", in: app)
+        let action = content.buttons["today.widgetHelp"]
+        AutomaticUITestSupport.reach(action, in: app, inside: content, below: app.navigationBars["Today"])
+        let explanation = content.staticTexts["today.pendingExplanation"]
+        XCTAssertTrue(explanation.isHittable)
+        let gap = action.frame.minY - explanation.frame.maxY
+        XCTAssertGreaterThanOrEqual(gap, 8, "Keep room between the note and the action")
+        XCTAssertLessThanOrEqual(gap, 32, "Keep the action near the note on a first pending day")
+        XCTAssertGreaterThanOrEqual(action.frame.height, 44 - 0.001)
+        AutomaticUITestSupport.assertNoManualEntry(in: app)
+        AutomaticUITestSupport.capture("First pending day with widget help")
+    }
+
 }

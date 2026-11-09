@@ -387,7 +387,26 @@ final class FootprintStore: ObservableObject {
                                                completionState: verificationCompletionState())
     }
 
-    func deleteAll() throws {
+    func deleteAll(keepingAutomaticConsentFrom consentDay: String? = nil,
+                   widgetAccess: Bool? = nil, now: Date = Date()) throws {
+        // [50] The new start date keeps erased days out of future imports. Only the standard
+        // assumptions carry forward; the old choices and their results leave together.
+        var replacement: FootprintArchive?
+        if let consentDay {
+            guard days.date(consentDay) != nil else { throw FootprintError.invalidDay }
+            let start = max(consentDay, days.key(now))
+            replacement = FootprintArchive(firstDay: start,
+                revisions: [RoutineRevision(effectiveDay: start, savedAt: now,
+                    inputs: AutomaticActivityClassification.assumptions(preserving: nil))],
+                records: [], inputPreference: .automatic, automaticStartDay: start)
+        }
+        let mayResumeWidget: Bool
+        if replacement != nil, let automaticWidgetExchange,
+           try !automaticWidgetExchange.newQueriesAreBlocked() {
+            mayResumeWidget = widgetAccess ?? ((try? automaticWidgetExchange.currentContext()?.enabled) == true)
+        } else {
+            mayResumeWidget = false
+        }
         // [35] Invalidate the shared ticket first, so an older widget query cannot restore a deleted day.
         try automaticWidgetExchange?.disableAndClear()
         // [23] Clear the widget summary first. If that fails, do not claim everything was deleted
@@ -403,10 +422,24 @@ final class FootprintStore: ObservableObject {
             try WidgetAutomaticReceiptMirror.clearCopies(in: automaticWidgetReceiptDirectory)
         }
         #endif
-        if FileManager.default.fileExists(atPath: fileURL.path) { try FileManager.default.removeItem(at: fileURL) }
-        archive = nil
+        if let replacement {
+            try writeArchive(replacement)
+        } else if FileManager.default.fileExists(atPath: fileURL.path) {
+            try FileManager.default.removeItem(at: fileURL)
+        }
+        archive = replacement
         unreadableArchive = false
         errorMessage = nil
+        // [51] Deletion may pause an active widget while its files are cleared. An earlier
+        // disconnection stays in place, even if Apple has yet to remove its permission.
+        if mayResumeWidget {
+            do {
+                try configureWidgetAutomaticInput(enabled: true, earliestDay: consentDay,
+                    allowResumingAfterWithdrawal: true)
+            } catch {
+                errorMessage = "Your entries were deleted. The widget could not resume automatic updates."
+            }
+        }
         publishWidgetSnapshot()
         // [45] Clearing the shared file first may leave no later publisher change to trigger a reload.
         if automaticWidgetExchange != nil { widgetPublisher?.reloadAfterClearing() }
@@ -652,10 +685,21 @@ final class FootprintStore: ObservableObject {
         // [28] A manual correction must not remove an earlier import's origin.
         committed.screenTimeDataImported = next.containsScreenTimeDerivedData
             || archive?.containsScreenTimeDerivedData == true
+        try writeArchive(committed)
+        // [30] Update the screen and widget only after the protected history file has been saved successfully.
+        archive = committed
+        errorMessage = nil
+        // [36] The private save comes first. Sharing the updated setup must not undo it on a storage error.
+        do { try refreshAutomaticWidgetContext() }
+        catch { errorMessage = "The widget setup could not be updated. Your saved day is kept." }
+        publishWidgetSnapshot()
+    }
+
+    private func writeArchive(_ archive: FootprintArchive) throws {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         encoder.outputFormatting = [.sortedKeys, .prettyPrinted]
-        let data = try encoder.encode(committed)
+        let data = try encoder.encode(archive)
         let directory = fileURL.deletingLastPathComponent()
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         // [29] Apply file protection during the complete replacement, rather than leaving an unprotected copy.
@@ -665,13 +709,6 @@ final class FootprintStore: ObservableObject {
         #else
         try data.write(to: fileURL, options: .atomic)
         #endif
-        // [30] Update the screen and widget only after the protected history file has been saved successfully.
-        archive = committed
-        errorMessage = nil
-        // [36] The private save comes first. Sharing the updated setup must not undo it on a storage error.
-        do { try refreshAutomaticWidgetContext() }
-        catch { errorMessage = "The widget setup could not be updated. Your saved day is kept." }
-        publishWidgetSnapshot()
     }
 
     private func publishWidgetSnapshot() {

@@ -26,7 +26,7 @@ Website records and browsing details are not used or saved. Time spent in a brow
 
 Earlier versions may keep a selection of apps or groups. That narrower setup stays in place until you choose the new all-app mode. New all-app input begins on the day you enable it and does not backfill earlier days.
 
-Apple restricts customer access to expanded activity data by device, system version and region, including EU device and Apple Account requirements. Development tests in Switzerland use a separate Apple-provided profile; this does not establish access for Swiss customers. Adding iPad or Watch support does not change these rules.
+Apple restricts customer access to expanded activity data by device, system version and region, including EU device and Apple Account requirements. Development tests in Switzerland use a separate Apple-provided profile; this does not establish access for Swiss customers. The Watch companion does not change these rules.
 
 ### How the data is used
 
@@ -66,7 +66,7 @@ The app checks that its shared garden file can be read back. Each widget size ca
 
 Watch sharing is off by default. If you enable Show my garden on Apple Watch on your iPhone, DFE sends the latest saved day, total estimate, garden state, estimate source, calculation time and completion status to your paired Watch through Apple Watch Connectivity. A local installation code and an update number also travel with the summary to keep updates in order and reject delayed updates. It does not send app names, app identifiers, individual app records, usage times or your full history. These details are exchanged only between your paired devices. No project server receives them.
 
-The Watch app and its own complications keep that summary in a protected local file. Anyone who can see your Watch may see the estimate. The Watch displays a phone result; it does not read Screen Time or measure Watch energy use. This companion does not connect to an iPad.
+The Watch app and its own complications keep that summary in a protected local file. Anyone who can see your Watch may see the estimate. The Watch displays a phone result; it does not read Screen Time or measure Watch energy use.
 
 A transfer can wait while the Watch is unavailable. The displayed date and saved time identify the cached result; background delivery is not an exact morning schedule. Turning sharing off, disconnecting Screen Time or deleting entries queues an empty state for the Watch. A Watch that is offline can keep its previous summary until it reconnects. Turning sharing off does not remove Screen Time permission on the phone.
 
@@ -98,9 +98,9 @@ Disconnecting does not erase Apple's own Screen Time records. Deleting data in t
 
 You can review saved estimates in History. The current interface does not provide manual entry or correction. Earlier saved entries stay readable. Local history is kept until you choose to delete it; there is no automatic age limit for saved entries.
 
-Choose Delete all entries in Settings to remove the routine, history, saved app choices, pending widget records and shared widget summary. This also resets your appearance choice, turns Daily garden update off, clears its local delivery log and the automatic-update checks and cancels its pending messages. This cannot be undone in the app. Messages already shown in Notification Center are not removed by this reset; you can clear them there.
+Choose Delete all entries in Settings to clear your history, saved app choices, calculation settings, pending widget records and shared garden summary. It resets the appearance, turns off daily reminders and Watch sharing, and clears the local update checks. You can remove reminders already shown in Notification Center there.
 
-A small disabled setup marker stays in shared storage so an update that was already running cannot restore deleted data. Disconnecting Screen Time also blocks new widget imports; saved estimates remain available.
+If automatic estimates were connected, they stay connected with the standard calculation settings. The app and widget ignore days before the reset. Shared storage uses a new setup marker so earlier work cannot restore deleted records. A paused widget stays paused.
 
 Delete all entries does not revoke Apple's Screen Time or notification permission. Use Disconnect Screen Time to remove activity access, and device notification settings to change notification permission.
 
@@ -127,8 +127,6 @@ The results are model estimates for awareness and comparison. They are not measu
 App categories and category-average traffic rates are assumptions. An app can support several types of activity, so a category rule cannot measure the share of video, messages or calls inside it. The imported durations do not establish all background music listening, call type, video quality or actual network traffic. Website records are excluded. The calculation method is explained in Settings.
 
 Automatic input keeps the calculation settings from your saved routine, including valid zero traffic assumptions. New days use the settings that apply to their date; saved days keep their own settings. Starting automatic input does not silently replace those assumptions or recalculate earlier days with new defaults.
-
-On iPad, the app currently uses the same phone reference model. Its power values have not been calibrated for iPad hardware. It is a reference estimate for comparison, not a measurement of iPad energy use. Each device keeps its own activity and history; phone and tablet activity are not combined.
 
 ### Online pages and support email
 

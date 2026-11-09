@@ -41,7 +41,7 @@ class ReleaseChecksTests(unittest.TestCase):
             'CFBundleIdentifier': release.APP_ID, 'CFBundleShortVersionString': '1.0',
             'CFBundleVersion': '1', 'CFBundleExecutable': 'DFE',
             'DFESourceRevision': 'sha256:' + 'a' * 64,
-            'DFEAppGroupIdentifier': release.GROUP_ID, 'UIDeviceFamily': [1, 2],
+            'DFEAppGroupIdentifier': release.GROUP_ID, 'UIDeviceFamily': [1],
             'MinimumOSVersion': '26.4', 'ITSAppUsesNonExemptEncryption': False,
             'DFEPrivacyPolicyURL': 'https://zhaw-init-softwareengineering.github.io/digital-footprint-explorer/privacy-policy.html',
             'DFESupportURL': 'https://zhaw-init-softwareengineering.github.io/digital-footprint-explorer/support-ios.html',
@@ -312,10 +312,12 @@ class ReleaseChecksTests(unittest.TestCase):
 
     # [23] The package should promise only the devices and system versions this automatic path supports.
     def test_wrong_device_family_and_minimum_ios_fail(self):
-        for key, value in (('UIDeviceFamily', [1]), ('MinimumOSVersion', '16.0')):
-            with self.subTest(key=key):
-                put_plist(self.widget / 'Info.plist', dict(self.widget_info, **{key: value}))
-                self.assertFalse(self.inspect()['preparation_ok'])
+        for bundle, info in ((self.app, self.info), (self.widget, self.widget_info)):
+            for key, value in (('UIDeviceFamily', [1, 2]), ('MinimumOSVersion', '16.0')):
+                with self.subTest(bundle=bundle.name, key=key):
+                    put_plist(bundle / 'Info.plist', dict(info, **{key: value}))
+                    self.assertFalse(self.inspect()['preparation_ok'])
+                    put_plist(bundle / 'Info.plist', info)
 
     # [24] A changed filename must not turn a release check into a read of unrelated local files.
     def test_executable_cannot_escape_the_bundle(self):

@@ -184,11 +184,10 @@ struct SettingsScreen: View {
                     defer { isDeleting = false }
                     do {
                         // [05] Clear saved data first; only a successful deletion should reset the related local choices and notices.
-                        try store.deleteAll()
+                        try screenTime.deleteSavedEntries(in: store)
                         AppServices.shared.watch.clear()
                         watchSharing = false
                         AppServices.shared.setWatchSharing(false)
-                        screenTime.resetLocalData()
                         AppAppearance.resetLocalPreferences()
                         await notifications.resetAfterDeletingHistory()
                     } catch { store.report(error) }

@@ -10,17 +10,17 @@ These previews use isolated example history. They show the interface, not measur
 
 ## Apple device coverage in this branch
 
-This local build 4 candidate extends the iPhone layout to iPad and wider windows, and adds an optional Apple Watch companion. It has not replaced TestFlight 1.0 (3). The device acceptance record separates unit checks, native interface runs, example screenshots and unsigned package checks. It also keeps failed attempts and their later focused checks, so a passing screenshot test is not mistaken for a completed physical-device trial.
+Build 4 adds a layout for the wider iPhone Duo display and an optional Apple Watch companion. The app targets iPhone. It has not replaced TestFlight 1.0 (3). The device acceptance record separates unit checks, native interface runs, example screenshots and unsigned package checks. It also keeps failed attempts and their later focused checks, so a passing screenshot test is not mistaken for a completed physical-device trial.
 
 Today keeps one column on compact screens and at larger accessibility text sizes. A regular window at least 760 points wide places the frameless garden beside the existing actions. On a wide window with moderate height, the result and the link to that day move beside the garden and use larger text. Native tabs can adapt to a sidebar. The same saved dates, pending messages, refresh path and daily calculations apply in each arrangement.
 
-On iPad, the calculation remains the app's phone reference model; it is not a measurement of iPad energy use. Screen Time queries use the current device, without adding activity from other devices. The Watch displays a saved iPhone result after the person enables sharing, which is off by default. It does not collect Watch activity or run the Screen Time calculation. WatchConnectivity requires a paired iPhone; iPad does not provide that connection.
+Screen Time queries use the current device, without adding activity from other devices. The Watch displays a saved iPhone result after the person enables sharing, which is off by default. It does not collect Watch activity or run the Screen Time calculation. WatchConnectivity requires a paired iPhone.
 
 See [Apple device coverage and acceptance](docs/apple-device-coverage.md#acceptance-record) for the recorded local results, simulator observations, platform limits and pending checks. Apple's regional Screen Time conditions, including the unresolved Swiss customer route, are unchanged.
 
 ## Independent widget updates
 
-The Screen Time build includes an activity reader in the widget, using the same shared calculation model as the app. With the saved automatic setup and Apple's required widget permissions, it can attempt the previous completed day's calculation when WidgetKit runs it. A protected pending record reaches disk before the garden changes, and the app checks and adds that record to its private history when it next opens. Disconnecting or deleting data blocks late widget queries too.
+The Screen Time build includes an activity reader in the widget, using the same shared calculation model as the app. With the saved automatic setup and Apple's required widget permissions, it can attempt the previous completed day's calculation when WidgetKit runs it. A protected pending record reaches disk before the garden changes, and the app checks and adds that record to its private history when it next opens. Disconnecting stops widget imports. Deleting entries clears old widget work and keeps a valid automatic setup for new days.
 
 iOS chooses widget execution times. This route does not promise an 08:00 refresh, complete Screen Time coverage or customer access in Switzerland. Each release needs its own distribution, TestFlight and new-day checks; a controlled same-day calculation is not evidence of an unattended daily update.
 

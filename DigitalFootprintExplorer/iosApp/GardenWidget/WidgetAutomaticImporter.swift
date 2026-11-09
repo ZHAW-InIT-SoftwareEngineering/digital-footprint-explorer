@@ -67,7 +67,8 @@ enum WidgetAutomaticImporter {
                     saveReceipt(.init(day: request.day, queryStartedAt: startedAt,
                         finishedAt: Date(), savedAt: nil, status: .timedOut,
                         calculationSucceeded: calculated, pendingSaved: false,
-                        elapsedMillis: elapsedMillis(since: startedUptime), error: nil), directory: directory)
+                        elapsedMillis: elapsedMillis(since: startedUptime), error: nil), directory: directory,
+                        contextEpoch: request.context.epoch)
                 }, completion: completion)
             terminal.arm()
             let query = Task { @MainActor in
@@ -100,7 +101,8 @@ enum WidgetAutomaticImporter {
                             saveReceipt(.init(day: request.day, queryStartedAt: startedAt, finishedAt: Date(),
                                 savedAt: saved ? Date() : nil, status: saved ? .pendingSaved : .superseded,
                                 calculationSucceeded: true, pendingSaved: saved,
-                                elapsedMillis: elapsedMillis(since: startedUptime), error: nil), directory: directory)
+                                elapsedMillis: elapsedMillis(since: startedUptime), error: nil), directory: directory,
+                                contextEpoch: request.context.epoch)
                         } catch {
                             // [13] A snapshot error can happen after the pending day reached disk.
                             // Check that saved handoff before describing the whole attempt as a failed save.
@@ -112,7 +114,8 @@ enum WidgetAutomaticImporter {
                                 savedAt: durable ? Date() : nil,
                                 status: durable ? .pendingSavedSnapshotPending : .commitRejected,
                                 calculationSucceeded: true, pendingSaved: durable,
-                                elapsedMillis: elapsedMillis(since: startedUptime), error: .fixed(error)), directory: directory)
+                                elapsedMillis: elapsedMillis(since: startedUptime), error: .fixed(error)), directory: directory,
+                                contextEpoch: request.context.epoch)
                         }
                     }
                 } catch {
@@ -120,7 +123,8 @@ enum WidgetAutomaticImporter {
                         saveReceipt(.init(day: request.day, queryStartedAt: startedAt,
                             finishedAt: Date(), savedAt: nil, status: .queryFailed,
                             calculationSucceeded: false, pendingSaved: false,
-                            elapsedMillis: elapsedMillis(since: startedUptime), error: .fixed(error)), directory: directory)
+                            elapsedMillis: elapsedMillis(since: startedUptime), error: .fixed(error)), directory: directory,
+                            contextEpoch: request.context.epoch)
                     }
                 }
             }
@@ -186,9 +190,9 @@ enum WidgetAutomaticImporter {
         Int(max(0, (ProcessInfo.processInfo.systemUptime - started) * 1_000))
     }
 
-    private static func saveReceipt(_ receipt: WidgetAutomaticReceipt, directory: URL) {
+    private static func saveReceipt(_ receipt: WidgetAutomaticReceipt, directory: URL, contextEpoch: UUID? = nil) {
         do {
-            _ = try WidgetAutomaticReceiptStore(directory: directory).save(receipt)
+            _ = try WidgetAutomaticReceiptStore(directory: directory).save(receipt, contextEpoch: contextEpoch)
         } catch {
             // [06] A failed technical note must not replace a valid garden or hold up WidgetKit.
         }

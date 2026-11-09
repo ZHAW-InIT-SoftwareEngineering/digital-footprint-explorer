@@ -142,6 +142,55 @@ final class WidgetHostReconciliationTests: XCTestCase {
         #endif
     }
 
+    // [19] Restarting automatic updates must not let an older query restore an erased result or note.
+    func testDeleteWithSavedConsentResumesWidgetWithFreshTicketAndNoEarlierDays() throws {
+        let (store, exchange, calculator, now) = try fixture()
+        let consentDay = try XCTUnwrap(store.firstDay)
+        let request = try XCTUnwrap(exchange.contextForYesterday(now: now, calendar: calendar))
+        let saved = try pending(exchange, calculator: calculator, now: now)
+        let receipt = WidgetAutomaticReceipt(day: saved.record.day, queryStartedAt: now.addingTimeInterval(-1),
+            finishedAt: now, savedAt: now, status: .pendingSaved, calculationSucceeded: true,
+            pendingSaved: true, elapsedMillis: 1_000, error: nil)
+        let checks = WidgetAutomaticReceiptStore(directory: exchange.directory)
+        XCTAssertTrue(try checks.save(receipt, contextEpoch: request.context.epoch))
+
+        try store.deleteAll(keepingAutomaticConsentFrom: consentDay, widgetAccess: true, now: now)
+
+        XCTAssertTrue(store.usesAutomaticInput)
+        XCTAssertTrue(store.records.isEmpty)
+        XCTAssertTrue(try exchange.pendingRecords().isEmpty)
+        XCTAssertNil(WidgetSnapshotStorage(directory: exchange.directory).read().snapshot)
+        XCTAssertNil(try checks.latest())
+        XCTAssertFalse(try exchange.newQueriesAreBlocked())
+        let context = try XCTUnwrap(exchange.currentContext())
+        XCTAssertNotEqual(context.epoch, request.context.epoch)
+        XCTAssertEqual(context.configuration.eligibleStartDay, store.dayKey(for: now))
+        XCTAssertNil(try exchange.contextForYesterday(now: now, calendar: calendar))
+        XCTAssertFalse(try exchange.validateRequest(request, now: now, calendar: calendar))
+        XCTAssertThrowsError(try exchange.commit(saved.record, expected: request, at: now, calendar: calendar))
+        XCTAssertFalse(try checks.save(receipt, contextEpoch: request.context.epoch))
+        XCTAssertNil(try checks.latest())
+
+        let tomorrow = try XCTUnwrap(calendar.date(byAdding: .day, value: 1, to: now))
+        let next = try XCTUnwrap(exchange.contextForYesterday(now: tomorrow, calendar: calendar))
+        XCTAssertEqual(next.day, store.dayKey(for: now))
+        XCTAssertNil(next.baselineKg)
+    }
+
+    // [20] An earlier withdrawal still takes priority even if Apple's status has yet to change.
+    func testDeleteWithSavedConsentKeepsEarlierWidgetWithdrawal() throws {
+        let (store, exchange, _, now) = try fixture()
+        let consentDay = try XCTUnwrap(store.firstDay)
+        try exchange.blockNewQueries()
+        try store.deleteAll(keepingAutomaticConsentFrom: consentDay, widgetAccess: true, now: now)
+
+        XCTAssertTrue(store.usesAutomaticInput)
+        XCTAssertTrue(try exchange.newQueriesAreBlocked())
+        XCTAssertFalse(try exchange.currentContext()?.enabled ?? true)
+        let tomorrow = try XCTUnwrap(calendar.date(byAdding: .day, value: 1, to: now))
+        XCTAssertNil(try exchange.contextForYesterday(now: tomorrow, calendar: calendar))
+    }
+
     // [01] A widget day must enter private history before the app publishes that older history again.
     func testReopenMergesPendingBeforePublishingAndKeepsWidgetSaveTime() throws {
         let (store, exchange, calculator, now) = try fixture()

@@ -1,6 +1,6 @@
 # Apple device coverage
 
-This document describes the build 4 candidate starting from revision `47e651759e5991dbceef0d85bf3ea6451aa916d8`. It records the device layouts, simulator results and checks needed for a signed release.
+This document describes the build 4 candidate starting from revision `47e651759e5991dbceef0d85bf3ea6451aa916d8`. It records the device layouts, simulator results and checks needed for a signed release. Build 4 targets iPhone, including Duo, with a paired Watch companion. The earlier iPad trials are kept below as dated test evidence.
 
 ## Layout and navigation
 
@@ -21,13 +21,13 @@ The iPhone checks cover the real navigation and safe areas on iPhone 18 Pro and 
 
 ## What each platform calculates
 
-The iPhone and iPad app query the current device's available Screen Time app activity. The query is not changed to combine several devices. Broader access still requires Apple's capabilities, a suitable provisioning profile and the person's authorization.
+The iPhone app queries the current device's available Screen Time app activity. The query is not changed to combine several devices. Broader access still requires Apple's capabilities, a suitable provisioning profile and the person's authorization.
 
-iPad uses the unchanged phone reference model and shows that limit in the saved-day explanation. There are no new tablet power coefficients or claims of measured iPad energy. Split View, picture-in-picture and overlapping activity need physical checks. Invalid or excessive durations remain pending or report an error; the app does not clamp them into a convenient daily total.
+Invalid or excessive durations remain pending or report an error so an incomplete record cannot look like a full day.
 
 The independent Home Screen widget retains its existing protected input path and pending handoff. The current device expansion does not guarantee complete activity coverage, an exact morning execution time or a fresh calculation after every force-quit.
 
-Apple's published EU conditions for expanded customer access remain separate from development testing. Adding iPad or Watch support does not authorize general Screen Time collection for customers in Switzerland.
+Apple's published EU conditions for expanded customer access remain separate from development testing. The Watch companion does not add Screen Time access for customers in Switzerland.
 
 ## Apple Watch companion
 
@@ -41,7 +41,7 @@ The Watch privacy manifest declares `SystemBootTime` with reason `35F9.1` for it
 
 The Watch app and its complications use the five existing garden states. Rectangular, circular and inline complications are included; the rectangular layout can also appear in Smart Stack. A refresh action can ask a reachable paired iPhone for its latest saved result. It does not grant Screen Time access, measure Watch use or guarantee that the iPhone can run while closed.
 
-WatchConnectivity uses an iPhone and its paired Apple Watch. The iPad app does not act as the Watch's phone. The minimum Watch target is watchOS 10, so Apple Watch Series 3 is not included. Current-device simulator availability does not change that minimum or replace testing on an actual paired Watch.
+WatchConnectivity uses an iPhone and its paired Apple Watch. The minimum Watch target is watchOS 10, so Apple Watch Series 3 is not included. Current-device simulator availability does not change that minimum or replace testing on an actual paired Watch.
 
 New Watch bundle identifiers, the watch-local App Group and matching signing profiles need their own review. The app's existing Screen Time permission is not a Watch entitlement, and this companion does not request Watch Screen Time data.
 
@@ -53,7 +53,6 @@ Xcode 27.2 exposes the following device types in this development environment. T
 | --- | --- | --- |
 | Compact iPhone with Dynamic Island | iPhone 18 Pro and Pro Max | Portrait and landscape safe areas, unchanged compact flow, refresh and larger text |
 | Adaptable iPhone | iPhone Duo | Available compact and expanded window sizes, rotation, column changes and navigation |
-| iPad | iPad Pro M5, 11-inch and 13-inch | Portrait and landscape, narrow windows, larger text, current-device activity and model explanation |
 | Apple Watch | Series 12 and Ultra 4 | App layout, complications, cached state, pairing and transfer ordering |
 
 ## Acceptance record
@@ -108,14 +107,12 @@ Three focused interface checks passed on each Watch size. The tests covered the 
 
 | Area | Required next evidence |
 | --- | --- |
-| Physical iPad activity | A signed iPad imports its own completed day without combining devices, with the phone-reference model clearly labelled |
-| iPad calibration | Review the reference assumptions before making any claim about actual tablet energy |
 | Paired Watch delivery | A signed physical pair transfers the latest real aggregate, handles offline recovery, withdrawal and deletion, and updates the visible complication |
 | Watch system hosting | Add each supported family in its real system host and verify the saved-day label and tap into the Watch app |
 | Signing and distribution | Register the Watch identifiers and group, prepare matching profiles and validate the exact signed candidate before any upload |
 | Swiss customer eligibility | Apple's written response confirms an available customer route, or the release accurately limits automatic access |
 
-The owner currently has an iPhone only. The physical iPad and Watch checks therefore remain open. Local simulator success does not establish production readiness, complete Screen Time coverage or regional customer eligibility.
+The owner currently has an iPhone only. The paired Watch checks remain open. Local simulator success does not establish production readiness, complete Screen Time coverage or regional customer eligibility.
 
 ## Running the layout checks
 
@@ -130,19 +127,19 @@ xcodebuild -project DigitalFootprintExplorer/iosApp/iosApp.xcodeproj \
   -only-testing:iosAppUITests/AdaptiveDeviceUITests test
 ```
 
-For Duo and independently sized iPad windows, set `DFE_UI_WINDOW_ORIENTATION_INDEPENDENT=1` explicitly in the `iosAppUITests` runner environment of the generated `.xctestrun`, then use `test-without-building` with that file. The acceptance runs used this explicit contract; ordinary phone runs leave it unset. `DFE_UI_REQUIRE_OFFSET_WINDOW=1` can require a genuinely moved window for the focused origin regression. Neither option resizes the app or supplies a fake viewport. Record the actual geometry and preserve the failed attempts. Use Device Hub separately for the three Duo poses, since the public SDK has no pose setter. The `WatchApp` scheme now includes the eight isolated Watch UI tests and a separate opt-in system-host audit; see [the Watch test guide](../WatchAppUITests/README.md). Shared contract, deadline and inbox methods run in the iOS unit-test target. Physical permission, new-day and paired-Watch acceptance remain separate.
+For Duo, set `DFE_UI_WINDOW_ORIENTATION_INDEPENDENT=1` explicitly in the `iosAppUITests` runner environment of the generated `.xctestrun`, then use `test-without-building` with that file. The acceptance runs used this explicit contract; ordinary phone runs leave it unset. `DFE_UI_REQUIRE_OFFSET_WINDOW=1` can require a genuinely moved window for the focused origin regression. Neither option resizes the app or supplies a fake viewport. Record the actual geometry and preserve the failed attempts. Use Device Hub separately for the three Duo poses, since the public SDK has no pose setter. The `WatchApp` scheme now includes the eight isolated Watch UI tests and a separate opt-in system-host audit; see [the Watch test guide](../WatchAppUITests/README.md). Shared contract, deadline and inbox methods run in the iOS unit-test target. Physical permission, new-day and paired-Watch acceptance remain separate.
 
 No build from this branch should replace the current beta until the relevant checks and privacy changes have been reviewed.
 
 ## Release and device follow-up
 
-The owner currently has only an iPhone. A physical iPad and paired Watch must be arranged for the remaining acceptance checks. Simulator fixtures do not establish real activity coverage or phone-to-Watch delivery.
+The owner currently has only an iPhone. A paired Watch is needed for the remaining companion checks. Simulator fixtures do not establish real activity coverage or phone-to-Watch delivery.
 
 Before distributing the companion, register `ch.zhaw.digitalfootprintexplorer.ios.watchkitapp` and `ch.zhaw.digitalfootprintexplorer.ios.watchkitapp.GardenWidget`, assign the watch-local group `group.ch.zhaw.digitalfootprintexplorer.ios.watch` to those two targets, and prepare matching signing profiles. The Watch does not need the phone's Family Controls rights. Review the optional derived-summary transfer and the updated privacy text with the release owner and App Review; this document does not claim Apple has approved this particular companion flow.
 
 The generic iOS simulator build now gives the Home Screen widget the same arm64 architecture as the app and existing Kotlin targets. The Watch keeps its own standard architectures. The shared model and Android app remain unchanged.
 
-Use the ordinary iOS simulator for routine checks, or set `DFE_SIMULATOR_ID` to request a particular phone or iPad. The check script waits for boot to finish and rejects a failed migration instead of counting an unstarted test as a pass. A device-specific runtime still needs its own acceptance. The prepared CI changes have not run on GitHub from this local branch.
+Use the ordinary iOS simulator for routine checks, or set `DFE_SIMULATOR_ID` to request a particular iPhone. The check script waits for boot to finish and rejects a failed migration instead of counting an unstarted test as a pass. A device-specific runtime still needs its own acceptance. The hosted checks use iPhone 18 Pro on iOS 27.0 with the Xcode 27.1 SDK. The Duo simulator checks run separately.
 
 ## Platform references
 

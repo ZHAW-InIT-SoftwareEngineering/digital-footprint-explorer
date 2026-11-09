@@ -257,13 +257,14 @@ private struct TodayScreen: View {
     }
 
     // [25] Small screens keep the same reading order, garden size and space above the floating tabs.
+    // Before the first estimate, widget help belongs close to the note about waiting.
     private func compactContent(gardenHeight: CGFloat) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             TodayWelcome()
             savedGarden(height: gardenHeight, width: TodayGardenLayout.maximumWidth)
             setupAction
             pendingExplanation()
-            Spacer(minLength: 0)
+            if displayedRecord != nil { Spacer(minLength: 0) }
             widgetAction()
             dayDetailsAction()
         }
@@ -418,14 +419,21 @@ private struct TodayScreen: View {
         if let record = displayedRecord {
             // [15] Today stays a short overview; the saved day holds the full explanation.
             let link = NavigationLink { RecordScreen(store: store, day: record.day) } label: {
-                HStack(spacing: 12) {
+                HStack(spacing: inOverview ? 8 : 12) {
                     Text("View this day").font((inOverview ? Font.body : .subheadline).weight(.semibold))
-                    Spacer(minLength: 8)
+                    if !inOverview { Spacer(minLength: 8) }
                     Image(systemName: "chevron.right").font(.caption.weight(.semibold))
+                        .accessibilityHidden(true)
                 }.frame(minHeight: 44)
             }.accessibilityIdentifier("today.dayDetails")
-            if inOverview { link.buttonStyle(.bordered) }
-            else { link }
+            if inOverview {
+                // Keep this button close to the estimate without stretching it across the column.
+                let button = link.buttonBorderShape(.roundedRectangle(radius: 14))
+                if #available(iOS 26.0, *) { button.buttonStyle(.glass) }
+                else { button.buttonStyle(.bordered) }
+            } else {
+                link
+            }
         }
     }
 }

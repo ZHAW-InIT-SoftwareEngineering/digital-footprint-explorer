@@ -78,18 +78,26 @@ jobs:
           python3 - <<'PY'
           import json
           import os
+          import subprocess
           from pathlib import Path
 
-          # [03] Use the intended runtime, rather than silently testing on an older installed iOS.
+          # [03] Start with a fresh simulator on the intended runtime. The runner's existing device failed data migration.
           results = Path(os.environ["RUNNER_TEMP"]) / "dfe-test-results"
           devices = json.loads((results / "simulators.json").read_text())["devices"]
-          phones = [device for runtime, entries in devices.items() if runtime.endswith("iOS-27-1")
-                    for device in entries if device.get("isAvailable") and "iPhone" in device["name"]]
+          runtime = "com.apple.CoreSimulator.SimRuntime.iOS-27-1"
+          phones = [device for device in devices.get(runtime, [])
+                    if device.get("isAvailable") and "iPhone" in device["name"]]
           if not phones:
               raise SystemExit("This runner needs an available iOS 27.1 iPhone simulator.")
+          phone = phones[0]
+          simulator_id = subprocess.check_output([
+              "xcrun", "simctl", "create", "DFE CI iPhone", phone["deviceTypeIdentifier"], runtime,
+          ], text=True).strip()
+          if not simulator_id:
+              raise SystemExit("CoreSimulator did not return a device ID for the new iPhone.")
           with open(os.environ["GITHUB_ENV"], "a") as output:
-              output.write(f'DFE_SIMULATOR_ID={phones[0]["udid"]}\n')
-          print(f'Test destination: {phones[0]["name"]} / iOS 27.1')
+              output.write(f"DFE_SIMULATOR_ID={simulator_id}\n")
+          print(f'Test destination: fresh {phone["name"]} / iOS 27.1 ({simulator_id})')
           PY
 
       - name: Check policy copies and local tools

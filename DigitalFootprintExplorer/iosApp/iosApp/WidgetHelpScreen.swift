@@ -66,7 +66,7 @@ struct WidgetHelpScreen: View {
                     }
                 }
                 Section {
-                    Link("Open Apple's widget guide", destination: URL(string: "https://support.apple.com/en-ie/guide/iphone/iphb8f1bf206/27/ios/27")!)
+                    Link("Open Apple's widget guide", destination: DeviceHelpLinks.widgets)
                         .frame(minHeight: 44).accessibilityIdentifier("widget-help.appleGuide")
                 } footer: {
                     Text("You choose where the widget belongs. iOS asks you to add it from the Home Screen; the app cannot place it for you.")

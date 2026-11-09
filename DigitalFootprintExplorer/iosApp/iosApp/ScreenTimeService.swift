@@ -86,9 +86,9 @@ enum ScreenTimeState: Equatable {
         switch self {
         case .unavailable: "Automatic import is unavailable in this build. Saved days remain readable."
         case .notRequested: "Allow Screen Time to start automatic daily estimates. New days stay pending until access and complete data are available."
-        case .denied: "Screen Time was not approved on this phone. New automatic days stay pending."
+        case .denied: "Screen Time was not approved on this device. New automatic days stay pending."
         case .reportOnly: "This permission allows Screen Time reports, but it does not allow usage time to be imported into the footprint calculation. New automatic days stay pending."
-        case .dataAccess: "Screen Time can supply app usage time from this iPhone after you enable automatic input. Data use, brightness and background activity still use model assumptions."
+        case .dataAccess: "Screen Time can supply app usage time from this device after you enable automatic input. Data use, brightness and background activity still use model assumptions."
         case .revoked: "Screen Time access has been removed. Your saved results remain available. You can reconnect Screen Time to resume automatic input."
         }
     }
@@ -97,7 +97,7 @@ enum ScreenTimeState: Equatable {
 struct ScreenTimeAuthorizationDecision {
     static func state(permission: ScreenTimePermission, previouslyAuthorized: Bool,
                       supportsDataAccess: Bool, enabled: Bool) -> ScreenTimeState {
-        // [06] The build must support importing, and Apple must also allow data access on this phone.
+        // [06] The build must support importing, and Apple must also allow data access on this device.
         guard enabled else { return .unavailable }
         switch permission {
         case .notDetermined: return previouslyAuthorized ? .revoked : .notRequested
@@ -853,7 +853,7 @@ final class ScreenTimeService: ObservableObject {
     }
 
     #if SCREEN_TIME_ENABLED
-    /// [42] One opt-in covers app activity Apple makes available on this phone.
+    /// [42] One opt-in covers app activity Apple makes available on this device.
     /// Starting here does not rewrite earlier history or invent today's result.
     func saveAllActivitySetup(inputs: FootprintInputs, store: FootprintStore, now: Date = Date()) throws {
         refreshAuthorization()

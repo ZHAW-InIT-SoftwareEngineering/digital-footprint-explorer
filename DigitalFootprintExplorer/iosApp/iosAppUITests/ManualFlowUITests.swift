@@ -96,9 +96,9 @@ enum AutomaticUITestSupport {
                 }
             }
             visible = visible.insetBy(dx: 4, dy: verticalMargin)
-            // [05] Read one stable view of the row, since iOS may remove an offscreen row before
-            // the next check.
-            let targetFrame = element.exists ? (try? element.snapshot())?.frame : nil
+            // [05] Keep one live screen frame for this step. A windowed iPad snapshot can use local
+            // points, so mixing it with the live window and bars makes visible text look outside the page.
+            let targetFrame = element.exists ? element.frame : nil
             if let targetFrame, element.isHittable {
                 let inBar = bars.contains { $0.exists && $0.isHittable && $0.frame.insetBy(dx: -1, dy: -1).contains(targetFrame) }
                 if inBar || visible.insetBy(dx: -1, dy: -1).contains(targetFrame) { return }

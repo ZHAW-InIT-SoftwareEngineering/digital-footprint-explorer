@@ -1,0 +1,2 @@
+# [01] Local policy and release checks do not need their Python cache in a review.
+__pycache__/

@@ -179,11 +179,11 @@ struct ScreenTimeSettingsView: View {
     private var statusExplanation: String {
         #if DEBUG
         if Self.isControlledDisconnectPreview && previewDisconnected {
-            return "Automatic estimates are off. Your saved days stay on this iPhone."
+            return "Automatic estimates are off. Your saved days stay on this device."
         }
         #endif
         if connected {
-            return "Automatic daily estimates are on. Your app activity stays on this iPhone."
+            return "Automatic daily estimates are on. Your app activity stays on this device."
         }
         if service.state == .dataAccess {
             return "Screen Time access is available. Enable automatic estimates to finish the setup."
@@ -257,7 +257,7 @@ private struct AutomaticUpdateChecksView: View {
                 if let copyMessage {
                     Text(copyMessage).font(.footnote).foregroundStyle(.secondary)
                 }
-                Text("These checks stay on this iPhone. Times use your current time zone. A widget data read does not tell us exactly when iOS displayed it.")
+                Text("These checks stay on this device. Times use your current time zone. A widget data read does not tell us exactly when iOS displayed it.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -280,7 +280,7 @@ private struct AutomaticUpdateChecksView: View {
             checkRow("App at saved time", detail: completion(check.lastCompletionState))
             checkRow("Recorded by", detail: "DFE " + check.lastProducer.appVersion + " (" + check.lastProducer.appBuild + ")"
                      + (check.lastProducer.isDebug ? " · Development check" : " · Release check")
-                     + (check.lastProducer.isSimulator ? " · Simulator" : " · iPhone"))
+                     + (check.lastProducer.isSimulator ? " · Simulator" : " · Device"))
             if check.initialSaveObserved {
                 checkRow("First save for this day", detail: timestamp(check.firstObservedAt) + " · " + completion(check.firstCompletionState))
                 if check.firstProducer.isDebug || check.firstProducer.isSimulator {
@@ -303,7 +303,7 @@ private struct AutomaticUpdateChecksView: View {
         if let check = store.widgetVerification {
             let current = check.status == .verified && check.day == store.latest?.day && check.receiptStored
             checkRow("Shared garden data", detail: current ? "Verified for " + (check.day ?? "this day") : sharedStatus(check))
-            checkRow("Checked on this iPhone", detail: timestamp(check.checkedAt))
+            checkRow("Checked on this device", detail: timestamp(check.checkedAt))
         } else {
             checkRow("Shared garden data", detail: store.widgetStorageAvailable
                      ? "Not verified on this device yet" : "Shared storage is unavailable")

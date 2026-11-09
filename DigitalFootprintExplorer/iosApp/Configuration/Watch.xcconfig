@@ -1,0 +1,5 @@
+// [01] Reuse the release identity, but the Watch never links the phone calculation framework.
+#include "Config.xcconfig"
+OTHER_LDFLAGS =
+FRAMEWORK_SEARCH_PATHS =
+DFE_WATCH_APP_GROUP_IDENTIFIER = group.$(DFE_APP_BUNDLE_IDENTIFIER).watch

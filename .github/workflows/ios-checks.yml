@@ -38,14 +38,40 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Check Xcode and choose an iOS 27.1 simulator
+      - name: Check Xcode, prepare watchOS and choose an iOS 27.1 simulator
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/dfe-test-results"
           test "$(uname -m)" = arm64
           xcodebuild -version | tee "$RUNNER_TEMP/dfe-test-results/toolchain.log"
+          xcodebuild -showsdks | tee -a "$RUNNER_TEMP/dfe-test-results/toolchain.log"
           java -version 2>&1 | tee -a "$RUNNER_TEMP/dfe-test-results/toolchain.log"
           python3 --version | tee -a "$RUNNER_TEMP/dfe-test-results/toolchain.log"
+          # [05] The phone now embeds a Watch app. Its matching arm64 runtime must be ready before the tests start.
+          # Apple documents this download command under "Downloading and installing additional Xcode components".
+          watch_runtime_available() {
+            python3 - "$1" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          runtimes = json.loads(Path(sys.argv[1]).read_text())["runtimes"]
+          ready = any(runtime.get("identifier") == "com.apple.CoreSimulator.SimRuntime.watchOS-27-1"
+                      and runtime.get("isAvailable") is True
+                      and "arm64" in runtime.get("supportedArchitectures", []) for runtime in runtimes)
+          raise SystemExit(0 if ready else 1)
+          PY
+          }
+          xcrun simctl list runtimes -j > "$RUNNER_TEMP/dfe-test-results/runtimes-before.json"
+          if ! watch_runtime_available "$RUNNER_TEMP/dfe-test-results/runtimes-before.json"; then
+            xcodebuild -downloadPlatform watchOS -buildVersion 27.1 -architectureVariant arm64 2>&1 \
+              | tee "$RUNNER_TEMP/dfe-test-results/watch-runtime-download.log"
+          fi
+          xcrun simctl list runtimes -j > "$RUNNER_TEMP/dfe-test-results/runtimes.json"
+          if ! watch_runtime_available "$RUNNER_TEMP/dfe-test-results/runtimes.json"; then
+            echo "This runner needs an available arm64 watchOS 27.1 simulator runtime." >&2
+            exit 1
+          fi
           xcrun simctl list devices available -j > "$RUNNER_TEMP/dfe-test-results/simulators.json"
           python3 - <<'PY'
           import json

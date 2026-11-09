@@ -234,7 +234,10 @@ final class SettingsLayoutUITests: XCTestCase {
 
         let appearance = settings.buttons["settings.appearance"]
         reach(appearance)
-        XCTAssertGreaterThanOrEqual(appearance.frame.height, 44)
+        // [11] Scrolling can leave a tiny rounding error in screen coordinates.
+        // Keep the 44-point tap area check without treating numerical dust as a smaller button.
+        let coordinateRoundingTolerance: CGFloat = 0.0001
+        XCTAssertGreaterThanOrEqual(appearance.frame.height + coordinateRoundingTolerance, 44)
         AutomaticUITestSupport.capture(largeText ? "AX5 Settings appearance action" : "Settings appearance action")
 
         let deletion = settings.buttons["settings.delete"]

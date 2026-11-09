@@ -85,7 +85,7 @@ struct CategoryBreakdownCard: View {
                 .fixedSize(horizontal: false, vertical: true)
             VStack(spacing: 20) {
                 sourceRow("App use", kg: record.result.appUsageKg,
-                          symbol: "iphone", identifier: "breakdown.app")
+                          symbol: UIDevice.current.userInterfaceIdiom == .pad ? "ipad" : "iphone", identifier: "breakdown.app")
                 sourceRow("Screen", kg: record.result.displayKg,
                           symbol: "sun.max", identifier: "breakdown.screen")
                 sourceRow("Background", kg: record.result.backgroundKg,

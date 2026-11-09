@@ -29,7 +29,7 @@ struct HistoryTip: Equatable {
         case .audio:
             "Choose what you want to listen to, then pause when you are finished instead of letting playback continue."
         case .social:
-            "Choose one reason to open the app, then put your phone down when you are done. Quiet notifications that pull you back in."
+            "Choose one reason to open the app, then put your device aside when you are done. Quiet notifications that pull you back in."
         case .messaging:
             "Check messages at times that work for you. Quiet non-urgent chats so each alert does not start another session."
         case .ai:
@@ -41,7 +41,7 @@ struct HistoryTip: Equatable {
         case .gaming:
             "Choose a stopping point before you start, such as the end of one round. Take a short break before playing again."
         case .navigation:
-            "Plan the route before you leave. Once you know the way, put your phone away when you no longer need directions."
+            "Plan the route before you leave. Once you know the way, put your device away when you no longer need directions."
         case .other:
             "Finish one task, then take a short screen break before opening another app. A small change is enough to start."
         }
@@ -100,17 +100,17 @@ struct HistoryTips: View {
                 DisclosureGroup {
                     VStack(alignment: .leading, spacing: 24) {
                         idea("Choose a daily time limit", symbol: "timer",
-                             detail: "In iPhone Settings, open Screen Time and choose an optional daily time limit. Pick an amount that feels useful to you.",
+                             detail: "In Settings, open Screen Time and choose an optional daily time limit. Pick an amount that feels useful to you.",
                              guide: "Apple's Screen Time guide", id: "limit",
-                             url: "https://support.apple.com/guide/iphone/set-schedules-with-screen-time-iphb0c7313c9/ios")
+                             url: DeviceHelpLinks.screenTime)
                         idea("Quiet alerts you do not need", symbol: "bell.slash",
-                             detail: "Open iPhone Settings, then Notifications. Choose which apps can interrupt you, while keeping the alerts that matter.",
+                             detail: "Open Settings, then Notifications. Choose which apps can interrupt you, while keeping the alerts that matter.",
                              guide: "Apple's notification guide", id: "notifications",
-                             url: "https://support.apple.com/guide/iphone/change-notification-settings-iph7c3d96bab/ios")
+                             url: DeviceHelpLinks.notifications)
                         idea("Make room for a screen break", symbol: "moon",
-                             detail: "Open iPhone Settings, then Focus. Choose the people and apps that can reach you while you take some time away.",
+                             detail: "Open Settings, then Focus. Choose the people and apps that can reach you while you take some time away.",
                              guide: "Apple's Focus guide", id: "focus",
-                             url: "https://support.apple.com/guide/iphone/set-up-a-focus-iphd6288a67f/ios")
+                             url: DeviceHelpLinks.focus)
                         Text("Shorter app sessions can lower the time used by the estimate. Actual carbon savings are not measured.")
                             .font(.footnote)
                             .foregroundStyle(.primary)

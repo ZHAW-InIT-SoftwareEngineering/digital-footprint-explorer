@@ -8,7 +8,7 @@ DFE_APP_GROUP_IDENTIFIER = group.$(DFE_APP_BUNDLE_IDENTIFIER)
 CODE_SIGN_ENTITLEMENTS = Configuration/App.entitlements
 // [02] Keep version and build values together; a release still needs an unused build number in App Store
 // Connect.
-CURRENT_PROJECT_VERSION = 3
+CURRENT_PROJECT_VERSION = 4
 MARKETING_VERSION = 1.0
 // [03] These pages are included in the same repository change. Check the public deployment before
 // uploading a release; a configured address does not mean that the page is already live.

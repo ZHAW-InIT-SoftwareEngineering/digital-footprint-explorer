@@ -48,8 +48,12 @@ struct CompanionGardenStorage: CompanionGardenPersistence {
 
     func loadInbox(now: Date = Date()) throws -> CompanionGardenInbox {
         let path = directory.appendingPathComponent(Self.fileName)
-        guard FileManager.default.fileExists(atPath: path.path) else { return CompanionGardenInbox() }
-        let attributes = try FileManager.default.attributesOfItem(atPath: path.path)
+        let attributes: [FileAttributeKey: Any]
+        do {
+            attributes = try FileManager.default.attributesOfItem(atPath: path.path)
+        } catch let error as CocoaError where error.code == .fileNoSuchFile || error.code == .fileReadNoSuchFile {
+            return CompanionGardenInbox()
+        }
         guard let size = attributes[.size] as? NSNumber,
               size.intValue <= CompanionGardenEnvelope.maximumBytes else {
             throw CompanionGardenError.oversizedPayload

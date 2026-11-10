@@ -6,39 +6,41 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="How Digital Footprint Explorer handles your local history and optional Screen Time access.">
   <title>Privacy policy — Digital Footprint Explorer</title>
-  <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="ios-pages.css">
-  <script src="ios-pages.js" defer></script>
+  <style>
+    /* [02] Readable colours follow the system choice, while print keeps a clear white page. */
+    :root { color-scheme: light dark; --text: #17251d; --muted: #45564a; --surface: #fff; --line: #d9e2dc; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--surface); color: var(--text); font: 1rem/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    main { max-width: 48rem; margin: auto; padding: clamp(1.25rem, 4vw, 3rem); }
+    header { padding-bottom: 1.25rem; border-bottom: 1px solid var(--line); }
+    .app-name { margin-bottom: .5rem; color: var(--muted); }
+    h1 { font-size: clamp(1.8rem, 4vw, 2.5rem); line-height: 1.2; margin: .5rem 0 1rem; }
+    h2 { font-size: 1.25rem; line-height: 1.35; margin: 2rem 0 .75rem; }
+    p { margin: .75rem 0; overflow-wrap: anywhere; }
+    .updated { color: var(--muted); }
+    a { color: #17613b; text-underline-offset: .2em; }
+    a:focus-visible { outline: 3px solid currentColor; outline-offset: 4px; }
+    .page-links { display: flex; gap: .5rem 1.25rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    .page-links a { display: inline-flex; align-items: center; min-height: 44px; }
+    footer { margin-top: 2.5rem; padding-top: 1.25rem; border-top: 1px solid var(--line); }
+    @media (prefers-color-scheme: dark) { :root { --text: #f0f7f2; --muted: #c2d0c6; --surface: #142019; --line: #405247; } a { color: #a2e4ba; } }
+    @media print { :root { --text: #000; --muted: #333; --surface: #fff; --line: #ccc; } main { max-width: none; padding: 0; } h2 { break-after: avoid; } }
+  </style>
 </head>
-<body class="dfe-site">
-  <a class="skip-link" href="#policy-content">Skip to privacy policy</a>
-  <header class="site-header">
-    <div class="site-bar">
-      <a class="site-brand" href="index.html" aria-label="Digital Footprint Explorer home">
-        <img src="images/zhaw_rgb.png" alt="ZHAW">
-      </a>
-      <strong class="site-title">Digital Footprint Explorer</strong>
-      <nav class="site-nav" aria-label="Project pages">
-        <a href="index.html">Project</a>
-        <a href="support-ios.html">iOS support</a>
-        <a href="privacy-policy.html" aria-current="page">iOS privacy</a>
-      </nav>
-    </div>
+<body>
+<!-- [03] Keep the revision beside the policy so readers know which privacy choices they are reviewing. -->
+<main>
+  <header>
+    <!-- [04] Readers can return to the project or find help without reaching the end of the policy. -->
+    <nav class="page-links" aria-label="Project links">
+      <a href="index.html">Project</a>
+      <a href="support-ios.html">iOS support</a>
+    </nav>
+    <p class="app-name">Digital Footprint Explorer</p>
+    <h1>Privacy policy</h1>
+    <p class="updated">Last updated: <time datetime="2026-11-08">8 November 2026</time></p>
   </header>
-
-  <main id="policy-content" class="container site-content reading-width" tabindex="-1">
-    <!-- [02] Keep the revision and the most requested privacy choices close to the title. -->
-    <div class="page-intro">
-      <h1>Privacy policy</h1>
-      <p class="muted">Last updated <time datetime="2026-11-08">8 November 2026</time></p>
-      <nav class="topic-links" aria-label="Privacy topics">
-        <a href="#screen-time">Screen Time</a>
-        <a href="#deletion">Delete your data</a>
-        <a href="#contact">Contact</a>
-      </nav>
-    </div>
-    <article class="card policy-copy">
-      <p>Digital Footprint Explorer helps you understand an estimated carbon footprint of your device use. Your settings, calculations and history are processed on your device. You do not need an app account.</p>
+  <p>Digital Footprint Explorer helps you understand an estimated carbon footprint of your device use. Your settings, calculations and history are processed on your device. You do not need an app account.</p>
 <p>The DFE Team maintains the Digital Footprint Explorer iOS app within School of Engineering ZHAW and handles privacy and support questions.</p>
 <section aria-labelledby="inputs"><h2 id="inputs">What the app uses</h2>
 <p>The app keeps daily category times and the calculation settings used for them. These settings include estimated data traffic, Wi-Fi share, screen brightness, GPS time and Bluetooth time. The current interface uses starting model assumptions and does not ask you to type daily inputs.</p>
@@ -65,16 +67,16 @@
 <p>Your device&#x27;s backup settings may include app data in an Apple or computer backup. Those backups are managed outside this app. You can review and remove them through Apple&#x27;s backup settings.</p>
 </section>
 <section aria-labelledby="widget"><h2 id="widget">What the widget can show</h2>
-<p>DFE and its own widget share a protected local summary: the date, total estimate, garden state, estimate source, calculation time and whether the day is complete. With automatic setup enabled, they also share the setup date, time zone, calculation assumptions and up to eight recent totals for the seven-day garden comparison. The widget does not receive your individual app choices, app names or full history.</p>
-<p>When Apple permits access, the widget can request the previous completed day&#x27;s app activity and run the same local calculation without opening DFE. It keeps category totals and their calculation inputs in a protected pending record before updating the garden. DFE adds that record to its private history when it next runs. Up to 32 pending days can wait there; a full or unreadable file stops new saves rather than discarding earlier work. No app identifiers or individual app records are saved in this shared file.</p>
+<p>DFE and its own widget share a summary in an App Group file that uses iOS file protection: the date, total estimate, garden state, estimate source, calculation time and whether the day is complete. With automatic setup enabled, they also share the setup date, time zone, calculation assumptions and up to eight recent totals for the seven-day garden comparison. The widget does not receive your individual app choices, app names or full history.</p>
+<p>When Apple permits access, the widget can request the previous completed day&#x27;s app activity and run the same local calculation without opening DFE. It saves category totals and calculation inputs in an App Group file with iOS file protection before updating the garden. When DFE next runs, it checks the day and recalculates the result before adding it to its private history. Up to 32 pending days can wait in the shared file. If the widget cannot read or write that file, its new saves can pause while the app&#x27;s own imports continue. No app identifiers or individual app records are saved in this shared file.</p>
 <p>iOS decides when a widget gets another update. The widget can run separately after you remove DFE from multitasking, but this does not guarantee a new estimate at 08:00 or at any fixed interval. Unavailable permission, incomplete activity or a failed update keeps the last valid saved garden and its date.</p>
 <p>Anyone who can see your Home Screen may see the widget&#x27;s summary. You can remove the widget at any time. Removing it does not delete your history in the app.</p>
 <p>The optional widget guide can ask iOS whether this app&#x27;s own widget is configured. This only helps with setup. The status is not saved or sent to the project team, and it does not identify where the widget was placed.</p>
 <p>The app checks that its shared garden file can be read back. Each widget size can also keep a small local record of its latest data read. These records contain dates, app build and fixed status words, without the garden value or detailed inputs. A data read does not establish exactly when iOS displayed the widget.</p>
 </section>
 <section aria-labelledby="watch"><h2 id="watch">Your optional Apple Watch companion</h2>
-<p>Watch sharing is off by default. If you enable Show my garden on Apple Watch on your iPhone, DFE sends the latest saved day, total estimate, garden state, estimate source, calculation time and completion status to your paired Watch through Apple Watch Connectivity. A local installation code and an update number also travel with the summary to keep updates in order and reject delayed updates. It does not send app names, app identifiers, individual app records, usage times or your full history. These details are exchanged only between your paired devices. No project server receives them.</p>
-<p>The Watch app and its own complications keep that summary in a protected local file. Anyone who can see your Watch may see the estimate. The Watch displays a phone result; it does not read Screen Time or measure Watch energy use.</p>
+<p>Watch sharing is off by default. If you enable Show my garden on Apple Watch on your iPhone, DFE sends the latest saved day, total estimate, garden state, estimate source, calculation time and completion status to your paired Watch through Apple Watch Connectivity. A local installation code and an update number also travel with the summary to keep updates in order and reject delayed updates. It does not send app names, app identifiers, individual app records, usage times or your full history. Apple manages delivery of the summary to your paired Watch through Watch Connectivity. No DFE project server receives it.</p>
+<p>The Watch app and its own complications keep that summary in a local file that uses system file protection. Anyone who can see your Watch may see the estimate. The Watch displays a phone result; it does not read Screen Time or measure Watch energy use.</p>
 <p>A transfer can wait while the Watch is unavailable. The displayed date and saved time identify the cached result; background delivery is not an exact morning schedule. Turning sharing off, disconnecting Screen Time or deleting entries queues an empty state for the Watch. A Watch that is offline can keep its previous summary until it reconnects. Turning sharing off does not remove Screen Time permission on the phone.</p>
 </section>
 <section aria-labelledby="notifications"><h2 id="notifications">Optional garden updates</h2>
@@ -122,22 +124,10 @@
 <p>For privacy or support questions, contact the DFE Team at digital-footprint-explorer.init@zhaw.ch. Please do not send your Screen Time history or other private files.</p>
 <p>The DFE Team will update this policy if the app&#x27;s data practices change. The date above identifies this copy.</p>
 </section>
-    </article>
-  </main>
-
-  <footer class="footer">
-    <div class="container footer-inner reading-width">
-      <div>
-        <strong class="footer-name">Digital Footprint Explorer</strong>
-        <p class="muted">© 2026 Zurich University of Applied Sciences (ZHAW)</p>
-      </div>
-      <nav class="footer-links" aria-label="Footer navigation">
-        <a href="index.html">Project</a>
-        <a href="support-ios.html">iOS support</a>
-        <a href="mailto:digital-footprint-explorer.init@zhaw.ch">Email the DFE Team</a>
-        <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub hosting privacy</a>
-      </nav>
-    </div>
+  <footer>
+    <p><a href="mailto:digital-footprint-explorer.init@zhaw.ch">Email the DFE Team</a></p>
+    <p><a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub hosting privacy</a></p>
   </footer>
+</main>
 </body>
 </html>

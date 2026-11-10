@@ -22,6 +22,7 @@ import SwiftUI
 @MainActor
 struct DFEWatchApp: App {
     @StateObject private var model: WatchGardenModel
+    @Environment(\.scenePhase) private var scenePhase
 
     init() {
         let shared = WatchGardenModel.shared
@@ -34,7 +35,9 @@ struct DFEWatchApp: App {
         WindowGroup {
             rootContent
                 .tint(Color(red: 0.16, green: 0.78, blue: 0.46))
-                .task { model.start() }
+                .onChange(of: scenePhase, initial: true) { _, phase in
+                    model.setSceneActive(phase == .active)
+                }
                 #if DEBUG
                 .modifier(WatchVisualTextSize(isPreviewing: model.isPreviewing))
                 #endif

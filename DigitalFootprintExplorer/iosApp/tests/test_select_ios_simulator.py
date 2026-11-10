@@ -73,5 +73,33 @@ class SimulatorSelectionTests(unittest.TestCase):
             selector.select_simulator(data)
 
 
+    def test_controlled_destination_falls_back_to_compatible_phone(self):
+        data = {'devices': {
+            PREFIX + 'iOS-26-4': [phone('old')],
+            PREFIX + 'iOS-27-0': [phone('supported', 'iPhone 17')],
+            PREFIX + 'iOS-27-1-iPhone19-4': [phone('duo', 'iPhone Duo')],
+            PREFIX + 'iOS-27-2': [phone('ahead')],
+        }}
+        self.assertEqual(selector.select_simulator(data, standard_iphone_only=True,
+                                                   minimum_version=(27, 0), sdk_version=(27, 1)), 'supported')
+
+    def test_controlled_destination_accepts_a_patch_runtime_and_renamed_phone(self):
+        renamed = phone('renamed', 'Local test device')
+        renamed['deviceTypeIdentifier'] = 'com.apple.CoreSimulator.SimDeviceType.iPhone-17'
+        data = {'devices': {PREFIX + 'iOS-27-2-1': [renamed]}}
+        self.assertEqual(selector.select_simulator(data, standard_iphone_only=True,
+                                                   minimum_version=(27, 0), sdk_version=(27, 2)), 'renamed')
+
+    def test_controlled_destination_rejects_older_and_special_device_runtimes(self):
+        data = {'devices': {
+            PREFIX + 'iOS-26-4': [phone('old')],
+            PREFIX + 'iOS-27-1-iPhone19-4': [phone('special')],
+            PREFIX + 'iOS-27-1': [phone('duo', 'iPhone Duo')],
+        }}
+        with self.assertRaisesRegex(ValueError, 'No standard iPhone simulator'):
+            selector.select_simulator(data, standard_iphone_only=True,
+                                      minimum_version=(27, 0), sdk_version=(27, 1))
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -1,313 +1,44 @@
-/* [01] Match the scrollbar space on both sides so the cards sit at the centre of the window. */
-html:has(> body.dfe-site) {
-  scrollbar-gutter: stable both-edges;
-  color-scheme: only light;
-  background: #fff;
-}
-
-.dfe-site {
-  --bg: #fff;
-  --surface: #fff;
-  --surface-subtle: #f5f5f7;
-  --text: #1d1d1f;
-  --muted: #515154;
-  --primary: #0066cc;
-  --zhaw-blue: #0064a6;
-  --border: #d2d2d7;
-  --radius: 1.25rem;
-  --shadow-sm: none;
-  min-height: 100vh;
+/* [01] Keep new iOS help readable without changing the existing Android project page. */
+.ios-support {
+  --bg: #f5f8f6;
+  --surface: #ffffff;
+  --text: #17251d;
+  --muted: #45564a;
+  --primary: #17613b;
+  --border: #d9e2dc;
   background: var(--bg);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  line-height: 1.5;
 }
-
-.dfe-site a {
-  overflow-wrap: anywhere;
-  text-underline-offset: .18em;
+.ios-support .support-nav { flex-wrap: wrap; }
+.ios-support .support-nav img { height: 48px; width: auto; }
+.support-nav-links, .ios-public-links { display: flex; gap: .5rem 1rem; flex-wrap: wrap; }
+.support-nav-links a, .ios-public-links a { padding-block: .5rem; }
+.ios-support .support-content { max-width: 860px; }
+.ios-support .support-content p, .ios-support .support-content a { overflow-wrap: anywhere; }
+.ios-support .support-content .card + .card { margin-top: 1.5rem; }
+.ios-support .support-content h2 { margin-top: 0; }
+.ios-support a { text-decoration: underline; text-underline-offset: .2em; }
+.ios-support a:focus-visible, .ios-public-links a:focus-visible {
+  outline: 3px solid currentColor; outline-offset: 4px;
 }
-
-.dfe-site main a, .dfe-site .footer a { text-decoration: underline; }
-
-.dfe-site a:focus-visible {
-  outline: 3px solid var(--primary);
-  outline-offset: 3px;
+/* [02] A visible keyboard route avoids moving through every navigation link first. */
+.ios-support .skip-link { position: absolute; top: -5rem; left: 1rem; z-index: 20; background: var(--surface); padding: .75rem 1rem; }
+.ios-support .skip-link:focus { top: 1rem; }
+@media (max-width: 480px) {
+  .ios-support .support-nav img { height: 40px; }
+  .ios-support .support-nav strong { flex: 1; min-width: 10rem; }
 }
-
-.dfe-site .skip-link {
-  position: fixed;
-  top: 1rem;
-  left: 1rem;
-  z-index: 20;
-  padding: .65rem 1rem;
-  background: var(--surface);
-  transform: translateY(calc(-100% - 1.5rem));
-}
-
-.dfe-site .skip-link:focus { transform: none; }
-
-.dfe-site .site-header { background: var(--surface); }
-
-@media screen and (prefers-reduced-motion: no-preference) {
-  @supports (animation-timeline: scroll(root block)) {
-    .dfe-site::before {
-      content: "";
-      position: fixed;
-      inset: 0 0 auto;
-      z-index: 11;
-      height: 2px;
-      background: var(--zhaw-blue);
-      pointer-events: none;
-      transform-origin: left;
-      animation: dfe-scroll-progress 1ms linear both;
-      animation-timeline: scroll(root block);
-    }
+/* [03] The help follows the reader's system appearance; print keeps a plain light page. */
+@media (prefers-color-scheme: dark) {
+  .ios-support {
+    color-scheme: dark;
+    --bg: #0f1913; --surface: #142019; --text: #f0f7f2;
+    --muted: #c2d0c6; --primary: #a2e4ba; --border: #405247;
   }
+  .ios-support header { background: rgba(20, 32, 25, .94); }
 }
-
-@keyframes dfe-scroll-progress {
-  from { transform: scaleX(0); }
-  to { transform: scaleX(1); }
-}
-
-/* [02] Equal side columns keep the title centred even when the links are wider than the logo. */
-.site-bar {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  align-items: center;
-  gap: 0 clamp(.75rem, 2vw, 2rem);
-  max-width: 96rem;
-  min-height: 3.75rem;
-  margin-inline: auto;
-  padding: .375rem clamp(1rem, 3.5vw, 3.5rem);
-}
-
-.site-brand {
-  display: grid;
-  place-items: center;
-  justify-self: start;
-  min-width: 44px;
-  min-height: 44px;
-}
-
-.site-brand img {
-  display: block;
-  width: auto;
-  height: 1.875rem;
-}
-
-.site-title {
-  text-align: center;
-  font-size: clamp(.9375rem, 2vw, 1.0625rem);
-  line-height: 1.25;
-  letter-spacing: -.015em;
-}
-
-.site-nav, .topic-links {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: .25rem .5rem;
-}
-
-.site-nav { justify-self: end; }
-
-.site-nav a, .topic-links a {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-  padding: .375rem .625rem;
-}
-
-.site-nav a {
-  position: relative;
-  color: var(--text);
-  font-size: .875rem;
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-/* [05] A thin line marks the current page and gives feedback before navigation. */
-.site-nav a::after {
-  content: "";
-  position: absolute;
-  inset-inline: .625rem;
-  inset-block-end: .375rem;
-  block-size: 1px;
-  background: currentColor;
-  opacity: 0;
-  transform: scaleX(.65);
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .site-nav a::after { transition: opacity 150ms ease, transform 150ms ease; }
-}
-
-@media (hover: hover) {
-  .site-nav a:hover { text-decoration: none; }
-  .site-nav a:hover::after { opacity: 1; transform: none; }
-}
-
-.site-nav a:is(:active, :focus-visible, [aria-current="page"])::after {
-  opacity: 1;
-  transform: none;
-}
-
-.site-nav a:is(:active, [aria-current="page"]) { color: var(--zhaw-blue); }
-.site-nav a[aria-current="page"] { font-weight: 600; }
-
-.dfe-site :is(.site-content, .footer-inner) {
-  width: min(100%, 66rem);
-}
-
-.dfe-site :is(.site-content, .footer-inner).reading-width { width: min(100%, 56rem); }
-.dfe-site .site-content { padding-block: clamp(1.25rem, 3.25vw, 2.75rem); }
-.dfe-site .site-content [id] { scroll-margin-top: 4.75rem; }
-.dfe-site .site-content p { margin-block-end: .75em; }
-
-.page-intro {
-  margin-block-end: clamp(1.25rem, 2.75vw, 2rem);
-  text-align: center;
-}
-
-.dfe-site h1 {
-  margin: 0 auto .85rem;
-  max-width: 19ch;
-  font-size: clamp(2rem, 4.2vw, 3.125rem);
-  line-height: 1.08;
-  letter-spacing: -.04em;
-  text-wrap: balance;
-}
-
-#project-content .page-intro h1 { margin-block-end: 1.125rem; }
-.page-intro p { max-width: 62ch; margin-inline: auto; }
-.page-intro .topic-links { margin-block-start: .375rem; }
-
-.dfe-site .card {
-  padding: clamp(1rem, 2.5vw, 1.75rem);
-  overflow-wrap: anywhere;
-}
-
-.dfe-site .card-highlight {
-  background: #edf5fa;
-  border-color: #bfd8e8;
-  border-block-start: 3px solid var(--zhaw-blue);
-}
-
-.card-highlight h2 { color: var(--zhaw-blue); }
-.dfe-site .card + .card { margin-block-start: 1rem; }
-.dfe-site h2 { font-size: clamp(1.25rem, 2.5vw, 1.5rem); line-height: 1.2; letter-spacing: -.025em; }
-.dfe-site h3 { font-size: 1.0625rem; line-height: 1.35; }
-.dfe-site .card > h2:first-child { margin-block-start: 0; }
-.dfe-site .card > :last-child { margin-block-end: 0; }
-.dfe-site .policy-copy > section + section { border-top: 1px solid var(--border); margin-block-start: 1.125rem; }
-.dfe-site .policy-copy > section > h2 { font-size: 1.25rem; margin-block-start: 1rem; }
-
-.dfe-site figure { margin: 0; }
-.dfe-site main img { max-width: 100%; height: auto; }
-.dfe-site main img.install-code {
-  width: 7rem;
-  padding: .25rem;
-  background: #fff;
-  border-radius: .25rem;
-}
-
-.platforms {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
-  gap: 1.25rem 2.25rem;
-}
-.platforms h3 { margin-block-start: 0; }
-.platform-previews {
-  margin-block-start: 1.25rem;
-  padding-block-start: 1rem;
-  border-block-start: 1px solid var(--border);
-}
-
-.app-screens {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-items: start;
-  max-width: 23rem;
-  gap: clamp(.5rem, 2vw, 1rem);
-}
-
-.preview-frame {
-  position: relative;
-  aspect-ratio: 660 / 1435;
-  overflow: hidden;
-}
-
-.dfe-site .preview-frame img { display: block; width: 100%; height: 100%; object-fit: contain; }
-.ios-preview .preview-frame { border-radius: .875rem; box-shadow: 0 0 0 1px var(--border); }
-
-/* [04] The Android files have a 1537 px wide handset inside a larger transparent canvas. */
-.dfe-site .preview-frame.android-frame img {
-  position: absolute;
-  inset-inline-start: calc(-100% * 156 / 1537);
-  inset-block-start: calc(-100% * 143 / 3335);
-  width: calc(100% * 1840 / 1537);
-  max-width: none;
-  height: auto;
-}
-
-.dfe-site figcaption { margin-block-start: .375rem; color: var(--muted); }
-.contact-options { gap: 1rem; }
-.contact-option {
-  padding: 1rem;
-  border: 1px solid var(--border);
-  border-radius: .875rem;
-  background: var(--surface);
-}
-.contact-option > :last-child { margin-block-end: 0; }
-.contact-links { display: flex; flex-wrap: wrap; gap: .5rem 1rem; }
-
-.dfe-site table { margin-block: 1rem; }
-.dfe-site caption { text-align: start; color: var(--muted); }
-.dfe-site th, .dfe-site td { border-bottom: 1px solid var(--border); }
-.dfe-site thead tr, .dfe-site tbody tr:nth-child(odd) { background: var(--surface-subtle); color: var(--text); }
-.dfe-site .footer { background: var(--surface); }
-.dfe-site .footer p { margin: 0; }
-
-.footer-inner {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: .75rem 1.5rem;
-  padding-block: clamp(1rem, 2.5vw, 1.5rem);
-  font-size: .875rem;
-}
-
-.footer-name { display: block; margin-block-end: .125rem; color: var(--text); }
-
-.footer-links { display: flex; flex-wrap: wrap; column-gap: 1rem; }
-.footer-links a { display: inline-flex; align-items: center; min-height: 44px; }
-
-/* [03] Put the links on their own row when all three items no longer fit side by side. */
-@media (max-width: 52rem) {
-  .dfe-site .site-header { position: static; }
-  .site-bar { grid-template-columns: 2.75rem minmax(0, 1fr) 2.75rem; gap: 0 .5rem; }
-  .site-nav { grid-column: 1 / -1; justify-self: center; }
-  .dfe-site .site-content [id] { scroll-margin-top: 1rem; }
-}
-
-@media (max-width: 34rem) {
-  .support-topics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .support-topics a { justify-content: center; }
-}
-
 @media print {
-  .dfe-site {
-    color-scheme: light;
-    --bg: #fff;
-    --surface: #fff;
-    --text: #000;
-    --muted: #333;
-    --border: #ccc;
-  }
-  .dfe-site .card-highlight { background: #fff; }
-  .dfe-site .site-header { position: static; }
-  .site-nav, .topic-links, .dfe-site .skip-link { display: none; }
-  .dfe-site h2, .dfe-site h3 { break-after: avoid; }
+  .ios-support { --bg: #fff; --surface: #fff; --text: #000; --muted: #333; --primary: #000; --border: #ccc; }
+  .ios-support header { position: static; background: #fff; }
+  .ios-support .card { box-shadow: none; }
+  .ios-support h2, .ios-support h3 { break-after: avoid; }
 }

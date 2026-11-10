@@ -1,6 +1,6 @@
 # Apple device coverage
 
-This document records the device layouts and acceptance evidence for build 4, which targets iPhone, including Duo, with a paired Watch companion. Implementation started from revision `47e651759e5991dbceef0d85bf3ea6451aa916d8`. The earlier iPad trials are kept below as dated test evidence.
+This document records the device layouts and acceptance evidence for build 4, which targets iPhone, including Duo, with a paired Watch companion. Implementation started from revision `47e651759e5991dbceef0d85bf3ea6451aa916d8`. This release has no native iPad target. The earlier iPad trials are kept below as dated test evidence.
 
 ## Layout and navigation
 
@@ -25,7 +25,7 @@ The iPhone app queries the current device's available Screen Time app activity. 
 
 Invalid or excessive durations remain pending or report an error so an incomplete record cannot look like a full day.
 
-The independent Home Screen widget retains its existing protected input path and pending handoff. The current device expansion does not guarantee complete activity coverage, an exact morning execution time or a fresh calculation after every force-quit.
+The independent Home Screen widget saves its pending handoff in an App Group file with iOS file protection. The app checks and recalculates pending results before adding them to history. The current device expansion does not guarantee complete activity coverage, an exact morning execution time or a fresh calculation after every force-quit.
 
 Apple's published EU conditions for expanded customer access remain separate from development testing. The Watch companion does not add Screen Time access for customers in Switzerland.
 
@@ -33,7 +33,7 @@ Apple's published EU conditions for expanded customer access remain separate fro
 
 The Watch app is a companion to the paired iPhone, rather than a second activity collector. Sharing is off by default and requires a separate choice in iPhone Settings.
 
-The bounded transfer contains the latest saved day, estimated total, garden state, source, calculation time and completion state. A local installation code and update number keep updates in order and reject late results. It does not include app names, app identifiers, category durations or full history. The privacy copy dated 8 November 2026 describes these ordering details and the exchange between the paired devices. The Watch keeps its accepted copy in protected local storage and identifies missing, older and offline results.
+The bounded transfer contains the latest saved day, estimated total, garden state, source, calculation time and completion state. A local installation code and update number keep updates in order and reject late results. It does not include app names, app identifiers, category durations or full history. Apple manages delivery to the paired Watch through Watch Connectivity, and no DFE project server receives the summary. The Watch keeps its accepted copy in local storage with system file protection and identifies missing, older and offline results.
 
 The Watch's saved inbox preserves withdrawal and sender-ordering state. If a clear comes from a different phone installation, passive results stay blocked: a delayed older sender cannot restore the garden, and a valid reply to a current refresh is needed to resume. A privacy clear takes effect in memory even if saving fails, and the app tries to remove the readable old result and save the blocked state. If the filesystem rejects every write, protection across a relaunch cannot be guaranteed. The app reports the storage problem. An offline Watch cannot receive a new clear until connectivity delivers it, so this is not an immediate remote-wipe promise.
 
@@ -146,7 +146,7 @@ Before distributing the companion, register `ch.zhaw.digitalfootprintexplorer.io
 
 The generic iOS simulator build now gives the Home Screen widget the same arm64 architecture as the app and existing Kotlin targets. The Watch keeps its own standard architectures. The shared model and Android app remain unchanged.
 
-Use the ordinary iOS simulator for routine checks, or set `DFE_SIMULATOR_ID` to request a particular iPhone. The check script waits for boot to finish and rejects a failed migration instead of counting an unstarted test as a pass. A device-specific runtime still needs its own acceptance. The hosted checks use iPhone 18 Pro on iOS 27.0 with the Xcode 27.1 SDK. The Duo simulator checks run separately.
+Use the ordinary iOS simulator for routine checks, or set `DFE_SIMULATOR_ID` to request a particular iPhone. The check script waits for boot to finish and rejects a failed migration instead of counting an unstarted test as a pass. A device-specific runtime still needs its own acceptance. The hosted checks select a compatible installed Xcode and a standard iPhone runtime. The Duo simulator checks run separately.
 
 ## Platform references
 

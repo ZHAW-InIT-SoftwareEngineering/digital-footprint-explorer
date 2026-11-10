@@ -70,10 +70,21 @@ struct WidgetAutomaticPendingRecord: Codable, Equatable, Identifiable {
     let originSavedAt: Date
     let producer: WidgetVerificationProducer
     let record: FootprintRecord
+
+    // [18] A clock or time zone change can make a valid day look too recent for now.
+    func isReady(asOf now: Date, calendar: Calendar) -> Bool {
+        record.day < FootprintCalendar(calendar: calendar).key(now)
+            && originSavedAt <= now.addingTimeInterval(5)
+    }
 }
 
 enum WidgetAutomaticExchangeError: Error {
     case unavailable, invalidData, unsupportedVersion, staleContext, mailboxFull, snapshotMismatch, blocked
+}
+
+struct WidgetAutomaticDeletion: Codable {
+    let archiveReplacementID: UUID?
+    let resumeWidget: Bool
 }
 
 // [02] A saved pending day is a real handoff, not a second private archive.
@@ -81,6 +92,7 @@ enum WidgetAutomaticExchangeError: Error {
 struct WidgetAutomaticExchange {
     static let fileName = "widget-automatic-exchange-v1.json"
     static let blockedFileName = "widget-automatic-input-blocked-v1"
+    private static let deletionFileName = "widget-automatic-deletion-v1.json"
     static let maximumPendingRecords = 32
     private static let maximumBytes = 524_288
     let directory: URL?
@@ -107,6 +119,34 @@ struct WidgetAutomaticExchange {
 
     func newQueriesAreBlocked() throws -> Bool { try isQueryBlocked() }
 
+    // [16] Keep a deletion pause separate from a person's Screen Time withdrawal. The
+    // archive ID lets the next launch finish or undo only the interrupted deletion.
+    func beginDeletion(archiveReplacementID: UUID?, widgetAccess: Bool?) throws -> WidgetAutomaticDeletion {
+        try coordinated { exchange in
+            guard let url = exchange.deletionURL else { throw WidgetAutomaticExchangeError.unavailable }
+            guard !exchange.hasDeletionMarker else { throw WidgetAutomaticExchangeError.blocked }
+            let resumeWidget = archiveReplacementID != nil && !exchange.hasWithdrawalMarker
+                && (widgetAccess ?? ((try? exchange.read()?.context.enabled) == true))
+            let deletion = WidgetAutomaticDeletion(archiveReplacementID: archiveReplacementID,
+                resumeWidget: resumeWidget)
+            try JSONEncoder().encode(deletion).write(to: url,
+                options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+            return deletion
+        }
+    }
+
+    func pendingDeletion() throws -> WidgetAutomaticDeletion? {
+        guard hasDeletionMarker else { return nil }
+        return try coordinated { exchange in
+            guard let url = exchange.deletionURL, exchange.hasDeletionMarker else { return nil }
+            return try JSONDecoder().decode(WidgetAutomaticDeletion.self, from: Data(contentsOf: url))
+        }
+    }
+
+    func cancelDeletion() throws {
+        try coordinated { try $0.removeDeletionMarker() }
+    }
+
     @discardableResult
     func publishContext(from archive: FootprintArchive?, enabled: Bool,
                         calendar: Calendar = FootprintCalendar.localCalendar,
@@ -114,6 +154,7 @@ struct WidgetAutomaticExchange {
                         eligibleStartDay: String? = nil,
                         now: Date = Date()) throws -> WidgetAutomaticContext {
         return try coordinated { exchange in
+            guard !exchange.hasDeletionMarker else { throw WidgetAutomaticExchangeError.blocked }
             if !enabled { try exchange.writeBlockMarker() }
             let configuration = try exchange.makeConfiguration(archive: archive, enabled: enabled, calendar: calendar,
                 classificationRevision: classificationRevision, modelRevision: modelRevision,
@@ -210,12 +251,25 @@ struct WidgetAutomaticExchange {
     }
 
     func pendingRecords() throws -> [WidgetAutomaticPendingRecord] {
-        try coordinated { try $0.read()?.pending ?? [] }
+        try coordinated {
+            // [19] The private delete may already be committed. Never restore old pending days
+            // while the shared reset still has work to do.
+            guard !$0.hasDeletionMarker else { return [] }
+            return try $0.read()?.pending ?? []
+        }
     }
 
     // [09] The publisher already holds the shared turn. Taking another lock here would block both processes.
-    func pendingRecordsDuringCoordinatedAccess() throws -> [WidgetAutomaticPendingRecord] {
-        try read()?.pending ?? []
+    func latestPendingForSnapshotDuringCoordinatedAccess(
+        now: Date = Date(), calendar: Calendar = FootprintCalendar.localCalendar
+    ) throws -> WidgetAutomaticPendingRecord? {
+        guard !hasBlockMarker, let state = try read(), state.context.enabled else { return nil }
+        let configuration = state.context.configuration
+        return state.pending.filter {
+            $0.classificationRevision == configuration.classificationRevision
+                && $0.modelRevision == configuration.modelRevision
+                && $0.isReady(asOf: now, calendar: calendar)
+        }.max(by: { $0.record.day < $1.record.day })
     }
 
     // [15] The receipt writer holds the same lock. A resumed connection uses a different
@@ -228,14 +282,19 @@ struct WidgetAutomaticExchange {
 
     // [08] If the phone stopped between the durable day and its picture, repair the picture from that same day.
     @discardableResult
-    func recoverPendingSnapshot() throws -> GardenWidgetSnapshot? {
+    func recoverPendingSnapshot(now: Date = Date(),
+                                calendar: Calendar = FootprintCalendar.localCalendar) throws -> GardenWidgetSnapshot? {
         try coordinated { exchange in
-            guard let state = try exchange.read(), state.context.enabled,
-                  let last = state.pending.max(by: { $0.record.day < $1.record.day }) else { return nil }
+            guard let last = try exchange.latestPendingForSnapshotDuringCoordinatedAccess(now: now, calendar: calendar)
+                else { return nil }
             let storage = WidgetSnapshotStorage(directory: exchange.directory)
             let existing = storage.read().snapshot
             let saved = exchange.snapshot(for: last.record)
-            if let existing, existing.day > saved.day { return existing }
+            if let existing, existing.day > saved.day
+                || (existing.day == saved.day && (existing.source == .manual
+                    || (existing.source == .screenTimeWithEstimates && existing.calculatedAt >= saved.calculatedAt))) {
+                return existing
+            }
             _ = try storage.write(saved)
             guard storage.read().snapshot == saved else { throw WidgetAutomaticExchangeError.snapshotMismatch }
             return saved
@@ -253,24 +312,36 @@ struct WidgetAutomaticExchange {
         }
     }
 
-    // [07] Keep a disabled ticket on disk after deletion. An older query must not recreate the garden.
-    func disableAndClear() throws {
+    // [17] Clearing the picture and its checks must leave pending days available until
+    // the phone's history is safely erased.
+    func clearDeletionArtifacts() throws {
+        try coordinated { try $0.clearDeletionArtifactsDuringCoordinatedAccess() }
+    }
+
+    func finishDeletion(_ deletion: WidgetAutomaticDeletion, archive: FootprintArchive?,
+                        calendar: Calendar, classificationRevision: String, now: Date = Date()) throws {
         try coordinated { exchange in
-            try exchange.writeBlockMarker()
-            let disabled = WidgetAutomaticConfiguration(enabled: false,
-                timeZoneIdentifier: TimeZone.autoupdatingCurrent.identifier, eligibleStartDay: nil,
-                classificationRevision: "disabled", modelRevision: "disabled", revisions: [], baseline: [],
-                knownRecordDays: [], knownAutomaticRecordDays: [])
-            try exchange.write(State(context: WidgetAutomaticContext(epoch: UUID(), configuration: disabled), pending: []))
-            _ = try WidgetSnapshotStorage(directory: exchange.directory).write(nil)
-            _ = try WidgetStorageVerificationStore(directory: exchange.directory, producer: producer)
-                .clearDuringCoordinatedAccess()
-            // [14] Delete also removes the widget's completed-day diagnostic. The stop marker
-            // remains, so a query already running cannot write that old check back afterwards.
-            if let directory = exchange.directory {
-                let receipt = directory.appendingPathComponent(WidgetAutomaticReceipt.fileName)
-                if FileManager.default.fileExists(atPath: receipt.path) { try FileManager.default.removeItem(at: receipt) }
-            }
+            // [07] A new ticket prevents an older query from restoring a deleted garden.
+            try exchange.clearDeletionArtifactsDuringCoordinatedAccess()
+            let configuration = try exchange.makeConfiguration(archive: archive,
+                enabled: deletion.resumeWidget && !exchange.hasWithdrawalMarker, calendar: calendar,
+                classificationRevision: classificationRevision, modelRevision: "shared-ios-v1",
+                eligibleStartDay: nil, now: now)
+            let context = WidgetAutomaticContext(epoch: UUID(), configuration: configuration)
+            try exchange.write(State(context: context, pending: []))
+            if !configuration.enabled { try exchange.writeBlockMarker() }
+            try exchange.removeDeletionMarker()
+        }
+    }
+
+    private func clearDeletionArtifactsDuringCoordinatedAccess() throws {
+        _ = try WidgetSnapshotStorage(directory: directory).write(nil)
+        _ = try WidgetStorageVerificationStore(directory: directory, producer: producer)
+            .clearDuringCoordinatedAccess()
+        // [14] The pause stays in place, so an old query cannot write back this check.
+        if let directory {
+            let receipt = directory.appendingPathComponent(WidgetAutomaticReceipt.fileName)
+            if FileManager.default.fileExists(atPath: receipt.path) { try FileManager.default.removeItem(at: receipt) }
         }
     }
 
@@ -375,8 +446,24 @@ struct WidgetAutomaticExchange {
     }
 
     private var hasBlockMarker: Bool {
+        hasWithdrawalMarker || hasDeletionMarker
+    }
+
+    private var hasWithdrawalMarker: Bool {
         guard let directory else { return true }
         return FileManager.default.fileExists(atPath: directory.appendingPathComponent(Self.blockedFileName).path)
+    }
+
+    private var deletionURL: URL? {
+        directory?.appendingPathComponent(Self.deletionFileName)
+    }
+
+    private var hasDeletionMarker: Bool {
+        deletionURL.map { FileManager.default.fileExists(atPath: $0.path) } ?? false
+    }
+
+    private func removeDeletionMarker() throws {
+        if let url = deletionURL, hasDeletionMarker { try FileManager.default.removeItem(at: url) }
     }
 
     private func writeBlockMarker() throws {

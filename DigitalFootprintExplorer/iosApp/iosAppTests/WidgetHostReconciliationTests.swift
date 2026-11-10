@@ -35,13 +35,16 @@ final class WidgetHostReconciliationTests: XCTestCase {
         value.timeZone = TimeZone(identifier: "Europe/Zurich")!
         return value
     }
-    private func fixture(enableWidget: Bool = true) throws -> (FootprintStore, WidgetAutomaticExchange, WidgetReconciliationCalculator, Date) {
+    private func fixture(enableWidget: Bool = true, publishWidget: Bool = false) throws
+        -> (FootprintStore, WidgetAutomaticExchange, WidgetReconciliationCalculator, Date) {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         addTeardownBlock { try? FileManager.default.removeItem(at: folder) }
         let exchange = WidgetAutomaticExchange(directory: folder.appendingPathComponent("group"))
         let calculator = WidgetReconciliationCalculator()
+        let publisher = publishWidget ? FootprintWidgetPublisher(
+            storage: WidgetSnapshotStorage(directory: exchange.directory), reload: {}) : nil
         let store = FootprintStore(fileURL: folder.appendingPathComponent("private/history.json"),
-            calculator: calculator, calendar: calendar, automaticWidgetExchange: exchange,
+            calculator: calculator, calendar: calendar, widgetPublisher: publisher, automaticWidgetExchange: exchange,
             automaticWidgetReceiptDirectory: folder.appendingPathComponent("documents"))
         let now = Date()
         let begin = calendar.date(byAdding: .day, value: -3, to: calendar.startOfDay(for: now))!
@@ -68,7 +71,7 @@ final class WidgetHostReconciliationTests: XCTestCase {
             garden: .state(total: result.totalKg, baseline: request.baselineKg),
             baselineKg: request.baselineKg, automaticCategories: [.video])
         XCTAssertTrue(try exchange.commit(record, expected: request, at: now, calendar: calendar))
-        return try XCTUnwrap(exchange.pendingRecords().first)
+        return try XCTUnwrap(exchange.pendingRecords().first { $0.record.day == request.day })
     }
     private func reopen(_ store: FootprintStore, exchange: WidgetAutomaticExchange,
                         calculator: WidgetReconciliationCalculator) -> FootprintStore {
@@ -231,6 +234,143 @@ final class WidgetHostReconciliationTests: XCTestCase {
         XCTAssertTrue(try exchange.pendingRecords().isEmpty)
     }
 
+    // [21] A widget result from an older classification cannot block a valid day behind it.
+    func testObsoletePendingDayDoesNotBlockCurrentHandoffOrPhoneImport() throws {
+        let (store, exchange, calculator, now) = try fixture()
+        let earlier = try XCTUnwrap(calendar.date(byAdding: .day, value: -1, to: now))
+        try exchange.publishContext(from: store.archive, enabled: true, calendar: calendar,
+            classificationRevision: "old-rules", now: earlier)
+        let obsolete = try pending(exchange, calculator: calculator, now: earlier)
+        try exchange.publishContext(from: store.archive, enabled: true, calendar: calendar,
+            classificationRevision: AutomaticActivityClassification.revision, now: now)
+        let current = try pending(exchange, calculator: calculator, now: now)
+
+        let reopened = reopen(store, exchange: exchange, calculator: calculator)
+
+        XCTAssertEqual(reopened.records.map(\.day), [current.record.day])
+        XCTAssertTrue(try exchange.pendingRecords().isEmpty)
+        XCTAssertNil(reopened.errorMessage)
+        try reopened.configureWidgetAutomaticInput(enabled: true)
+        let date = try XCTUnwrap(reopened.date(for: obsolete.record.day))
+        try reopened.importAutomaticUsage(day: date, minutesByCategory: [FootprintCategory.video.rawValue: 12], now: now)
+        XCTAssertEqual(reopened.records.map(\.day), [obsolete.record.day, current.record.day])
+    }
+
+    // [22] If clearing a diagnostic fails, keep the widget day and the live ticket for another try.
+    func testFailedDerivedCleanupKeepsPendingDayAndResumesQueries() throws {
+        let (store, exchange, calculator, now) = try fixture(publishWidget: true)
+        let request = try XCTUnwrap(exchange.contextForYesterday(now: now, calendar: calendar))
+        let saved = try pending(exchange, calculator: calculator, now: now)
+        let privateHistory = try Data(contentsOf: store.fileURL)
+        let obstruction = store.fileURL.deletingPathExtension().appendingPathExtension("import-verification.json")
+        try FileManager.default.createDirectory(at: obstruction, withIntermediateDirectories: false)
+
+        XCTAssertThrowsError(try store.deleteAll(keepingAutomaticConsentFrom: store.firstDay,
+            widgetAccess: true, now: now))
+
+        XCTAssertEqual(try Data(contentsOf: store.fileURL), privateHistory)
+        XCTAssertEqual(try exchange.pendingRecords(), [saved])
+        XCTAssertEqual(try exchange.currentContext(), request.context)
+        XCTAssertFalse(try exchange.newQueriesAreBlocked())
+        #if DFE_WIDGET_AUTOMATIC_IMPORT
+        XCTAssertEqual(WidgetSnapshotStorage(directory: exchange.directory).read().snapshot?.day, saved.record.day)
+        #endif
+        try FileManager.default.removeItem(at: obstruction)
+        try store.reload()
+        XCTAssertEqual(store.records.map(\.day), [saved.record.day])
+    }
+
+    // [23] An unsuccessful private replacement should neither consume the widget's day nor
+    // leave the widget paused until the person runs setup again.
+    func testFailedArchiveReplacementKeepsPendingDayAndResumesQueries() throws {
+        let (store, exchange, calculator, now) = try fixture()
+        let original = try Data(contentsOf: store.fileURL)
+        let oldArchive = store.archive
+        let request = try XCTUnwrap(exchange.contextForYesterday(now: now, calendar: calendar))
+        let saved = try pending(exchange, calculator: calculator, now: now)
+        try FileManager.default.removeItem(at: store.fileURL)
+        try FileManager.default.createDirectory(at: store.fileURL, withIntermediateDirectories: false)
+
+        XCTAssertThrowsError(try store.deleteAll(keepingAutomaticConsentFrom: store.firstDay,
+            widgetAccess: true, now: now))
+
+        XCTAssertEqual(store.archive, oldArchive)
+        XCTAssertEqual(try exchange.pendingRecords(), [saved])
+        XCTAssertEqual(try exchange.currentContext(), request.context)
+        XCTAssertFalse(try exchange.newQueriesAreBlocked())
+        try FileManager.default.removeItem(at: store.fileURL)
+        try original.write(to: store.fileURL)
+        try store.reload()
+        XCTAssertEqual(store.records.map(\.day), [saved.record.day])
+    }
+
+    // [25] A storage failure cannot undo a pause the person set before asking to delete entries.
+    func testFailedDeleteDoesNotUndoExistingWithdrawal() throws {
+        let (store, exchange, calculator, now) = try fixture()
+        let saved = try pending(exchange, calculator: calculator, now: now)
+        try exchange.blockNewQueries()
+        let obstruction = store.fileURL.deletingPathExtension().appendingPathExtension("import-verification.json")
+        try FileManager.default.createDirectory(at: obstruction, withIntermediateDirectories: false)
+
+        XCTAssertThrowsError(try store.deleteAll())
+        XCTAssertEqual(try exchange.pendingRecords(), [saved])
+        XCTAssertTrue(try exchange.newQueriesAreBlocked())
+    }
+
+    // [26] A committed erase must stay final even if the app cannot replace the shared mailbox.
+    func testCommittedDeleteHidesOldPendingDayUntilSharedResetCanRetry() throws {
+        let (store, exchange, calculator, now) = try fixture()
+        let request = try XCTUnwrap(exchange.contextForYesterday(now: now, calendar: calendar))
+        let saved = try pending(exchange, calculator: calculator, now: now)
+        let mailbox = try XCTUnwrap(exchange.directory).appendingPathComponent(WidgetAutomaticExchange.fileName)
+        let oldMailbox = try Data(contentsOf: mailbox)
+        try FileManager.default.removeItem(at: mailbox)
+        try FileManager.default.createDirectory(at: mailbox, withIntermediateDirectories: false)
+        // A clock correction can make the old widget date fall within the replacement's range.
+        let resetTime = try XCTUnwrap(store.date(for: saved.record.day))
+        try store.deleteAll(keepingAutomaticConsentFrom: store.firstDay, widgetAccess: true, now: resetTime)
+        XCTAssertTrue(store.records.isEmpty)
+        XCTAssertEqual(store.automaticStartDate, resetTime)
+        XCTAssertNotNil(store.errorMessage)
+        let committedID = try XCTUnwrap(store.archive?.widgetDeletionID)
+        XCTAssertEqual(try exchange.pendingDeletion()?.archiveReplacementID, committedID)
+
+        XCTAssertThrowsError(try store.deleteAll(keepingAutomaticConsentFrom: store.firstDay,
+            widgetAccess: true, now: now))
+        XCTAssertThrowsError(try exchange.beginDeletion(archiveReplacementID: UUID(), widgetAccess: true))
+        XCTAssertEqual(try exchange.pendingDeletion()?.archiveReplacementID, committedID)
+
+        try FileManager.default.removeItem(at: mailbox)
+        try oldMailbox.write(to: mailbox)
+        XCTAssertTrue(try exchange.pendingRecords().isEmpty)
+        XCTAssertNil(try exchange.recoverPendingSnapshot(now: now, calendar: calendar))
+        XCTAssertTrue(try exchange.newQueriesAreBlocked())
+
+        let reopened = reopen(store, exchange: exchange, calculator: calculator)
+        XCTAssertTrue(reopened.records.isEmpty)
+        XCTAssertNil(try exchange.pendingDeletion())
+        XCTAssertFalse(try exchange.newQueriesAreBlocked())
+        XCTAssertTrue(try exchange.pendingRecords().isEmpty)
+        XCTAssertFalse(try exchange.validateRequest(request, now: now, calendar: calendar))
+    }
+
+    // [27] If the app stops before replacing history, leave the older withdrawal and saved widget day alone.
+    func testInterruptedDeleteBeforeCommitPreservesPendingDayAndWithdrawal() throws {
+        let (store, exchange, calculator, now) = try fixture()
+        let saved = try pending(exchange, calculator: calculator, now: now)
+        try exchange.blockNewQueries()
+        _ = try exchange.beginDeletion(archiveReplacementID: UUID(), widgetAccess: true)
+        try exchange.clearDeletionArtifacts()
+        XCTAssertTrue(try exchange.pendingRecords().isEmpty)
+
+        let reopened = reopen(store, exchange: exchange, calculator: calculator)
+
+        XCTAssertEqual(reopened.records.map(\.day), [saved.record.day])
+        XCTAssertNil(try exchange.pendingDeletion())
+        XCTAssertTrue(try exchange.newQueriesAreBlocked())
+        XCTAssertTrue(try exchange.pendingRecords().isEmpty)
+    }
+
     // [03] A person's saved correction wins over an automatic handoff for the same date.
     func testManualRecordWinsAndPendingReplayIsAcknowledged() throws {
         let (store, exchange, calculator, now) = try fixture()
@@ -382,5 +522,35 @@ final class WidgetHostReconciliationTests: XCTestCase {
         XCTAssertTrue(reopened.isConfigured)
         XCTAssertNotNil(reopened.errorMessage)
         XCTAssertEqual(try Data(contentsOf: store.fileURL), previous)
+    }
+
+    // [24] The normal phone refresh should finish even when it cannot read the widget mailbox.
+    func testForegroundRefreshSurvivesUnreadableAndUnsupportedWidgetMailboxes() async throws {
+        #if DFE_WIDGET_AUTOMATIC_IMPORT
+        let (store, exchange, calculator, now) = try fixture()
+        let date = try XCTUnwrap(calendar.date(byAdding: .day, value: -1, to: now))
+        try store.importAutomaticUsage(day: date, minutesByCategory: [FootprintCategory.video.rawValue: 20], now: now)
+        let mailbox = try XCTUnwrap(exchange.directory).appendingPathComponent(WidgetAutomaticExchange.fileName)
+        let supported = try Data(contentsOf: mailbox)
+        var newer = try XCTUnwrap(JSONSerialization.jsonObject(with: supported) as? [String: Any])
+        newer["version"] = 2
+        let widgetStorage = WidgetSnapshotStorage(directory: exchange.directory)
+        let publisher = FootprintWidgetPublisher(storage: widgetStorage, reload: {})
+        let suite = "dfe-widget-refresh-test-\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+
+        for damaged in [Data("damaged".utf8), try JSONSerialization.data(withJSONObject: newer)] {
+            try damaged.write(to: mailbox)
+            _ = try widgetStorage.write(nil)
+            let reopened = FootprintStore(fileURL: store.fileURL, calculator: calculator, calendar: calendar,
+                widgetPublisher: publisher, automaticWidgetExchange: exchange)
+            let service = ScreenTimeService(isolatedUIArguments: ["-ui-testing", "-ui-automatic-preview"], defaults: defaults)
+            try await AppServices(store: reopened, screenTime: service).performRefresh(trigger: .pullToRefresh)
+            XCTAssertEqual(reopened.records.map(\.day), [store.dayKey(for: date)])
+            XCTAssertEqual(widgetStorage.read().snapshot, reopened.latest.map { GardenWidgetSnapshot(record: $0) })
+            XCTAssertEqual(try Data(contentsOf: mailbox), damaged)
+        }
+        #endif
     }
 }

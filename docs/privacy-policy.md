@@ -50,9 +50,9 @@ Your device's backup settings may include app data in an Apple or computer backu
 
 ### What the widget can show
 
-DFE and its own widget share a protected local summary: the date, total estimate, garden state, estimate source, calculation time and whether the day is complete. With automatic setup enabled, they also share the setup date, time zone, calculation assumptions and up to eight recent totals for the seven-day garden comparison. The widget does not receive your individual app choices, app names or full history.
+DFE and its own widget share a summary in an App Group file that uses iOS file protection: the date, total estimate, garden state, estimate source, calculation time and whether the day is complete. With automatic setup enabled, they also share the setup date, time zone, calculation assumptions and up to eight recent totals for the seven-day garden comparison. The widget does not receive your individual app choices, app names or full history.
 
-When Apple permits access, the widget can request the previous completed day's app activity and run the same local calculation without opening DFE. It keeps category totals and their calculation inputs in a protected pending record before updating the garden. DFE adds that record to its private history when it next runs. Up to 32 pending days can wait there; a full or unreadable file stops new saves rather than discarding earlier work. No app identifiers or individual app records are saved in this shared file.
+When Apple permits access, the widget can request the previous completed day's app activity and run the same local calculation without opening DFE. It saves category totals and calculation inputs in an App Group file with iOS file protection before updating the garden. When DFE next runs, it checks the day and recalculates the result before adding it to its private history. Up to 32 pending days can wait in the shared file. If the widget cannot read or write that file, its new saves can pause while the app's own imports continue. No app identifiers or individual app records are saved in this shared file.
 
 iOS decides when a widget gets another update. The widget can run separately after you remove DFE from multitasking, but this does not guarantee a new estimate at 08:00 or at any fixed interval. Unavailable permission, incomplete activity or a failed update keeps the last valid saved garden and its date.
 
@@ -64,9 +64,9 @@ The app checks that its shared garden file can be read back. Each widget size ca
 
 ### Your optional Apple Watch companion
 
-Watch sharing is off by default. If you enable Show my garden on Apple Watch on your iPhone, DFE sends the latest saved day, total estimate, garden state, estimate source, calculation time and completion status to your paired Watch through Apple Watch Connectivity. A local installation code and an update number also travel with the summary to keep updates in order and reject delayed updates. It does not send app names, app identifiers, individual app records, usage times or your full history. These details are exchanged only between your paired devices. No project server receives them.
+Watch sharing is off by default. If you enable Show my garden on Apple Watch on your iPhone, DFE sends the latest saved day, total estimate, garden state, estimate source, calculation time and completion status to your paired Watch through Apple Watch Connectivity. A local installation code and an update number also travel with the summary to keep updates in order and reject delayed updates. It does not send app names, app identifiers, individual app records, usage times or your full history. Apple manages delivery of the summary to your paired Watch through Watch Connectivity. No DFE project server receives it.
 
-The Watch app and its own complications keep that summary in a protected local file. Anyone who can see your Watch may see the estimate. The Watch displays a phone result; it does not read Screen Time or measure Watch energy use.
+The Watch app and its own complications keep that summary in a local file that uses system file protection. Anyone who can see your Watch may see the estimate. The Watch displays a phone result; it does not read Screen Time or measure Watch energy use.
 
 A transfer can wait while the Watch is unavailable. The displayed date and saved time identify the cached result; background delivery is not an exact morning schedule. Turning sharing off, disconnecting Screen Time or deleting entries queues an empty state for the Watch. A Watch that is offline can keep its previous summary until it reconnects. Turning sharing off does not remove Screen Time permission on the phone.
 

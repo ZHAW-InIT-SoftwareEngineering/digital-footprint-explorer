@@ -57,13 +57,16 @@ final class WatchCompanionInboxTests: XCTestCase {
 
     func testCurrentDirectReplyResumesNewPhoneThenNormalUpdatesContinue() throws {
         var inbox = CompanionGardenInbox(envelope: message(oldPhone, 50))
+        XCTAssertTrue(inbox.needsDirectReply(for: message(newPhone, 2)))
         _ = try inbox.receive(message(newPhone, 1, .sharingOff), trustedReply: false,
                               persist: { _ in }, invalidateSavedResult: {})
+        XCTAssertTrue(inbox.needsDirectReply(for: message(newPhone, 2)))
         XCTAssertFalse(try inbox.receive(message(newPhone, 2), trustedReply: false,
                                         persist: { _ in }, invalidateSavedResult: {}))
         XCTAssertTrue(try inbox.receive(message(newPhone, 2), trustedReply: true,
                                        persist: { _ in }, invalidateSavedResult: {}))
         XCTAssertFalse(inbox.requiresInteractiveResume)
+        XCTAssertFalse(inbox.needsDirectReply(for: message(newPhone, 3)))
         XCTAssertTrue(try inbox.receive(message(newPhone, 3), trustedReply: false,
                                        persist: { _ in }, invalidateSavedResult: {}))
         XCTAssertFalse(try inbox.receive(message(oldPhone, 51), trustedReply: false,

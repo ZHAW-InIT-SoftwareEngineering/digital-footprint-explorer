@@ -32,7 +32,7 @@ final class AppServices {
     lazy var background = BackgroundScheduler(store: store, screenTime: screenTime, notifications: notifications)
     private let refreshCoordinator = RefreshCoordinator<Void>()
     private let refreshKey = UUID()
-    private var watchHistoryObservation: AnyCancellable?
+    private var watchStateObservation: AnyCancellable?
     private var watchEnabledForProcess = false
     static let watchSharingKey = WatchSharingPreference.key
 
@@ -51,20 +51,20 @@ final class AppServices {
         #endif
         if !isTest, WatchCompanionService.isSupported {
             watchEnabledForProcess = true
-            watch.setSharingEnabled(WatchSharingPreference.defaults.bool(forKey: Self.watchSharingKey))
+            watch.restoreSharingPreference(WatchSharingPreference.defaults.bool(forKey: Self.watchSharingKey))
             watch.onRefreshRequested = { [weak self] in await self?.refresh() }
-            watchHistoryObservation = store.$archive.dropFirst().sink { [weak self] _ in
-                // [17] The store publishes its replacement after saving. Read it on the next turn,
-                // so the Watch never receives the previous value from a will-change callback.
+            watchStateObservation = Publishers.CombineLatest(store.$archive, screenTime.$state).dropFirst().sink { [weak self] _ in
+                // [17] Read the settled values on the next turn. A cold launch may learn
+                // the Screen Time decision after it has loaded the last saved day.
                 Task { @MainActor [weak self] in self?.publishWatchGarden() }
             }
         }
-        #if DFE_WIDGET_AUTOMATIC_IMPORT
-        screenTime.beforeWidgetAccessEnds = { [weak store, weak self] in
-            store?.blockWidgetAutomaticInput()
-            self?.watch.disconnect()
+        screenTime.beforeWidgetAccessEnds = { [weak self] in
+            #if DFE_WIDGET_AUTOMATIC_IMPORT
+            self?.store.blockWidgetAutomaticInput()
+            #endif
+            self?.publishWatchGarden()
         }
-        #endif
         #if DEBUG
         let args = ProcessInfo.processInfo.arguments
         if args.contains("-ui-testing"), args.contains("-ui-automatic-preview"),
@@ -79,8 +79,8 @@ final class AppServices {
 
     func startWatchCompanion() {
         guard watchEnabledForProcess else { return }
-        watch.start()
         publishWatchGarden()
+        watch.start()
     }
 
     func setWatchSharing(_ enabled: Bool) {
@@ -93,8 +93,8 @@ final class AppServices {
     private func publishWatchGarden() {
         guard watchEnabledForProcess, watch.sharingEnabled else { return }
         guard store.archive != nil else { watch.clear(); return }
-        guard screenTime.state.canImport else { watch.disconnect(); return }
-        watch.publish(snapshot: store.latest.map { GardenWidgetSnapshot(record: $0) })
+        watch.publish(snapshot: store.latest.map { GardenWidgetSnapshot(record: $0) },
+                      screenTimeAccess: screenTime.watchScreenTimeAccess)
     }
 
     // [03] One update path keeps the pull gesture, launch recovery and daily results in step.
@@ -152,8 +152,13 @@ final class AppServices {
         #if DFE_WIDGET_AUTOMATIC_IMPORT
         // [15] Only a confirmed all-app connection enables independent widget reads.
         // The widget still asks Apple's API; this shared ticket cannot grant protected access.
-        try store.configureWidgetAutomaticInput(enabled: screenTime.widgetAutomaticAccessDecision,
-            earliestDay: screenTime.widgetAutomaticStartDay)
+        do {
+            try store.configureWidgetAutomaticInput(enabled: screenTime.widgetAutomaticAccessDecision,
+                earliestDay: screenTime.widgetAutomaticStartDay)
+        } catch {
+            // [22] The phone can still import Screen Time if the widget's handoff is unreadable.
+            store.errorMessage = "The widget update could not be checked. Your saved history is kept."
+        }
         #endif
         if store.usesAutomaticInput {
             do {

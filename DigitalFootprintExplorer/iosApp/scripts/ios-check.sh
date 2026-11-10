@@ -26,7 +26,7 @@ fi
 # [08] Finish the first boot before Xcode starts its shorter test-launch timer.
 # Some runtimes report a migration failure with exit zero, so keep that failure visible too.
 boot_log="$cache_dir/simulator-boot.log"
-xcrun simctl bootstatus "$simulator_id" -b | tee "$boot_log"
+xcrun simctl bootstatus "$simulator_id" -b 2>&1 | tee "$boot_log"
 if grep -q 'Data Migration Failed' "$boot_log"; then
   echo "The selected simulator could not finish data migration. Restart it before running the tests again." >&2
   exit 1

@@ -272,6 +272,8 @@ struct FootprintArchive: Codable, Equatable {
     var inputPreference: FootprintInputPreference? = nil
     // [26] Switching from manual input starts a new measured period, not older history.
     var automaticStartDay: String? = nil
+    // [30] This ID tells the app which archive replacement reached disk during deletion.
+    var widgetDeletionID: UUID? = nil
     var usesAutomaticInput: Bool { inputPreference == .automatic }
     var containsScreenTimeDerivedData: Bool {
         screenTimeDataImported == true || records.contains { $0.source == .screenTimeWithEstimates }

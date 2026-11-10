@@ -38,8 +38,10 @@ final class WatchCompanionService: NSObject, ObservableObject, WCSessionDelegate
     private let isolated: Bool
     private let injectedTransport: ((CompanionGardenEnvelope) throws -> Void)?
     private var latest: CompanionGardenEnvelope?
-    private var producer = UUID()
+    private var producer: UUID?
     private var sequence: UInt64 = 0
+    private var savedSenderHadSnapshot = false
+    private var pendingUpdate: (availability: CompanionGardenAvailability, snapshot: CompanionGardenSnapshot?)?
     private var started = false
     private var refreshInFlight = false
 
@@ -61,14 +63,9 @@ final class WatchCompanionService: NSObject, ObservableObject, WCSessionDelegate
         injectedTransport = nil
         let root = shouldIsolate ? nil : FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
         let localStorage = root.map { CompanionGardenStorage(directory: $0.appendingPathComponent("WatchCompanion", isDirectory: true)) }
-        let previous = localStorage.flatMap { try? $0.load() }
         storage = localStorage
         super.init()
-        if let previous {
-            latest = previous
-            producer = previous.producer
-            sequence = previous.sequence
-        }
+        restoreSender()
     }
 
     // [09] A test can fail a save or capture a transfer without touching a person's files or their paired Watch.
@@ -76,16 +73,55 @@ final class WatchCompanionService: NSObject, ObservableObject, WCSessionDelegate
         self.storage = storage
         injectedTransport = transport
         isolated = false
-        let previous = try? storage.load(now: Date())
         super.init()
-        if let previous {
-            latest = previous
-            producer = previous.producer
-            sequence = previous.sequence
+        restoreSender()
+    }
+
+    // [11] A clock correction can make a saved result too new to display. Its sender
+    // and sequence still tell the Watch which message came first.
+    private func restoreSender() {
+        guard !isolated, producer == nil, let storage else { return }
+        let now = Date()
+        do {
+            let saved = try storage.load(now: .distantFuture)
+            let queued = queuedEnvelope()
+            let previous: CompanionGardenEnvelope?
+            if let saved, let queued,
+               (queued.producer == saved.producer && queued.sequence > saved.sequence
+                || queued.producer != saved.producer && queued.snapshot == nil && queued.sentAt >= saved.sentAt) {
+                // A privacy clear may have reached Apple's queue even if its local save failed.
+                previous = queued
+            } else {
+                previous = saved ?? queued
+            }
+            producer = previous?.producer ?? UUID()
+            sequence = previous?.sequence ?? 0
+            savedSenderHadSnapshot = previous?.snapshot != nil
+            if let previous, (previous == saved || previous.snapshot == nil),
+               (try? previous.validate(now: now)) != nil { latest = previous }
+        } catch {
+            // [12] If the file cannot be read, recover ordering from the message Apple has
+            // already queued. With neither copy, wait for a direct reply or a privacy clear.
+            if let queued = queuedEnvelope() {
+                producer = queued.producer
+                sequence = queued.sequence
+            }
         }
     }
 
-    // [02] Set the saved preference before start(). A Watch request is never treated as permission to enable sharing.
+    private func queuedEnvelope() -> CompanionGardenEnvelope? {
+        guard injectedTransport == nil, Self.isSupported,
+              let data = WCSession.default.applicationContext[CompanionGardenEnvelope.contextKey] as? Data else { return nil }
+        return try? CompanionGardenEnvelope.decode(data, now: .distantFuture)
+    }
+
+    // [02] Restoring the user's choice at launch does not send an empty garden first.
+    func restoreSharingPreference(_ enabled: Bool) {
+        guard !isolated, !started else { return }
+        sharingEnabled = enabled
+        policy.setEnabled(enabled)
+    }
+
     func setSharingEnabled(_ enabled: Bool) {
         guard !isolated else { return }
         guard enabled != sharingEnabled else { return }
@@ -98,8 +134,9 @@ final class WatchCompanionService: NSObject, ObservableObject, WCSessionDelegate
         guard !isolated, !started, injectedTransport != nil || Self.isSupported else { return }
         started = true
         // [03] Replace a queued old estimate when the saved privacy choice is off, including after an interrupted shutdown.
-        if !sharingEnabled, latest?.availability == .available {
+        if !sharingEnabled, savedSenderHadSnapshot || queuedEnvelope()?.snapshot != nil {
             saveAndQueue(availability: .sharingOff, snapshot: nil)
+            if injectedTransport != nil { return }
         }
         if injectedTransport != nil { sendCurrentContext(); return }
         let session = WCSession.default
@@ -107,50 +144,76 @@ final class WatchCompanionService: NSObject, ObservableObject, WCSessionDelegate
         session.activate()
     }
 
-    func publish(snapshot: GardenWidgetSnapshot?, availability: CompanionGardenAvailability = .available) {
+    func publish(snapshot: GardenWidgetSnapshot?, screenTimeAccess: Bool? = true) {
         guard sharingEnabled else { return }
-        guard let snapshot, availability == .available else {
-            saveAndQueue(availability: availability == .available ? .empty : availability, snapshot: nil)
+        guard let snapshot else {
+            saveAndQueue(availability: .empty, snapshot: nil)
             return
+        }
+        // [13] A saved manual or routine estimate does not depend on Screen Time.
+        // Wait for a definite answer before changing a Screen Time result at launch.
+        if snapshot.source == .screenTimeWithEstimates {
+            guard let screenTimeAccess else { return }
+            guard screenTimeAccess else { disconnect(); return }
         }
         guard let garden = CompanionGardenState(rawValue: snapshot.garden.rawValue),
               let source = CompanionEstimateSource(rawValue: snapshot.source.rawValue) else { return }
+        // [14] The phone archive saves whole seconds. Use the same time before and after a restart.
+        let savedAtSeconds = snapshot.calculatedAt.timeIntervalSince1970.rounded(.down)
         let phoneResult = CompanionGardenSnapshot(day: snapshot.day, totalKg: snapshot.totalKg,
                                                  garden: garden, source: source,
-                                                 calculatedAt: snapshot.calculatedAt, isCompleted: snapshot.isCompleted)
-        // [04] Reopening a tab does not need another transfer when the phone result has not changed.
-        guard latest?.availability != .available || latest?.snapshot != phoneResult else { return }
+                                                 calculatedAt: Date(timeIntervalSince1970: savedAtSeconds),
+                                                 isCompleted: snapshot.isCompleted)
         saveAndQueue(availability: .available, snapshot: phoneResult)
     }
 
     func clear() {
-        saveAndQueue(availability: sharingEnabled ? .empty : .sharingOff, snapshot: nil)
+        saveAndQueue(availability: sharingEnabled ? .empty : .sharingOff, snapshot: nil, permitSenderRecovery: true)
     }
 
     func disconnect() {
         saveAndQueue(availability: sharingEnabled ? .disconnected : .sharingOff, snapshot: nil)
     }
 
-    private func saveAndQueue(availability: CompanionGardenAvailability, snapshot: CompanionGardenSnapshot?) {
+    private func saveAndQueue(availability: CompanionGardenAvailability, snapshot: CompanionGardenSnapshot?,
+                              permitSenderRecovery: Bool = false) {
         guard !isolated else { return }
+        let availability = policy.responseAvailability(for: availability)
+        let snapshot = policy.allowedSnapshot(snapshot)
+        restoreSender()
+        // [04] A launch or a tab change need not write or send the same result or status again.
+        if latest?.availability == availability, latest?.snapshot == snapshot {
+            pendingUpdate = nil
+            return
+        }
+        if producer == nil, permitSenderRecovery || availability == .sharingOff || availability == .disconnected {
+            producer = UUID()
+        }
+        guard let producer else {
+            pendingUpdate = (availability, snapshot)
+            transferStatus = "Open DFE on your Watch to check sharing"
+            return
+        }
+        pendingUpdate = nil
         guard sequence < UInt64.max else {
             transferStatus = "Open DFE again to check Watch sharing"
             return
         }
         let next = CompanionGardenEnvelope(producer: producer, sequence: sequence + 1, sentAt: Date(),
-                                           availability: policy.responseAvailability(for: availability),
-                                           snapshot: policy.allowedSnapshot(snapshot))
+                                           availability: availability, snapshot: snapshot)
         do {
             guard let storage else { throw CompanionGardenError.storageUnavailable }
             try storage.save(next, now: Date())
             latest = next
             sequence = next.sequence
+            savedSenderHadSnapshot = next.snapshot != nil
             sendCurrentContext()
         } catch {
             // [05] A failed result save must not send an untracked estimate. A privacy clear still replaces the system's old queued result.
             if next.snapshot == nil {
                 latest = next
                 sequence = next.sequence
+                savedSenderHadSnapshot = false
                 sendCurrentContext()
                 transferStatus = "Watch clear queued; local saving needs attention"
             } else {
@@ -172,28 +235,41 @@ final class WatchCompanionService: NSObject, ObservableObject, WCSessionDelegate
         guard session.activationState == .activated else { return }
         // [10] Detect a paired Watch even before sharing is enabled, so an iPhone without one does not show an unused setting.
         watchIsPaired = session.isPaired
+        if !sharingEnabled, latest?.availability != .sharingOff, queuedEnvelope()?.snapshot != nil {
+            saveAndQueue(availability: .sharingOff, snapshot: nil)
+            return
+        }
         guard let latest, sharingEnabled || latest.snapshot == nil else { return }
         guard session.isPaired, session.isWatchAppInstalled else {
             transferStatus = "Install DFE on your paired Apple Watch, then open it"
             return
         }
         do {
-            let data = try latest.encoded()
             // [06] A latest-state transfer replaces an older queued result. It can wait safely while the Watch is offline.
-            try session.updateApplicationContext([CompanionGardenEnvelope.contextKey: data])
+            if queuedEnvelope() != latest {
+                let data = try latest.encoded()
+                try session.updateApplicationContext([CompanionGardenEnvelope.contextKey: data])
+            }
             transferStatus = sharingEnabled ? "Latest phone result queued for Apple Watch" : "Watch sharing is off"
         } catch {
             transferStatus = "Open DFE on your Watch to try again"
         }
     }
 
-    private func replyToRefresh(_ reply: @escaping ([String: Any]) -> Void) {
+    func resultForWatchRefresh() -> CompanionGardenEnvelope? {
         if !sharingEnabled {
             if latest?.availability != .sharingOff { saveAndQueue(availability: .sharingOff, snapshot: nil) }
+        } else if let pendingUpdate {
+            saveAndQueue(availability: pendingUpdate.availability, snapshot: pendingUpdate.snapshot, permitSenderRecovery: true)
         } else if latest == nil {
-            saveAndQueue(availability: .empty, snapshot: nil)
+            saveAndQueue(availability: .empty, snapshot: nil, permitSenderRecovery: true)
         }
-        if let latest, let data = try? latest.encoded(), sharingEnabled || latest.snapshot == nil {
+        guard let latest, sharingEnabled || latest.snapshot == nil else { return nil }
+        return latest
+    }
+
+    private func replyToRefresh(_ reply: @escaping ([String: Any]) -> Void) {
+        if let latest = resultForWatchRefresh(), let data = try? latest.encoded() {
             reply([CompanionGardenEnvelope.contextKey: data])
         } else {
             reply(["dfeCompanionUnavailable": true])
@@ -209,7 +285,14 @@ final class WatchCompanionService: NSObject, ObservableObject, WCSessionDelegate
 
     nonisolated func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState,
                              error: (any Error)?) {
-        Task { @MainActor [weak self] in self?.sendCurrentContext() }
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            if let pendingUpdate = self.pendingUpdate {
+                self.saveAndQueue(availability: pendingUpdate.availability, snapshot: pendingUpdate.snapshot)
+            } else {
+                self.sendCurrentContext()
+            }
+        }
     }
 
     nonisolated func sessionDidBecomeInactive(_ session: WCSession) {

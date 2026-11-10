@@ -17,14 +17,12 @@ concurrency:
 
 jobs:
   tests:
-    # [02] The app uses the iOS 27 SDK. Keep the runner and Xcode choice visible when its image changes.
-    runs-on: xcode-27
+    # [02] This arm64 image carries the iOS 27 SDK. The repo can select another compatible runner.
+    runs-on: ${{ vars.DFE_IOS_RUNNER || 'xcode-27' }}
     timeout-minutes: 75
     defaults:
       run:
         shell: bash
-    env:
-      DEVELOPER_DIR: /Applications/Xcode_27.1.app/Contents/Developer
 
     steps:
       - name: Check out the proposed code
@@ -38,64 +36,87 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Check Xcode, prepare watchOS and choose an iOS 27.0 simulator
+      - name: Choose the toolchain and prepare the simulators
         run: |
           set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/dfe-test-results"
+          results="$RUNNER_TEMP/dfe-test-results"
+          mkdir -p "$results"
           test "$(uname -m)" = arm64
-          xcodebuild -version | tee "$RUNNER_TEMP/dfe-test-results/toolchain.log"
-          xcodebuild -showsdks | tee -a "$RUNNER_TEMP/dfe-test-results/toolchain.log"
-          java -version 2>&1 | tee -a "$RUNNER_TEMP/dfe-test-results/toolchain.log"
-          python3 --version | tee -a "$RUNNER_TEMP/dfe-test-results/toolchain.log"
-          # [05] Xcode can ship different iOS and Watch SDK versions. Use the Watch SDK to choose its runtime.
-          watch_sdk_version="$(xcrun --sdk watchsimulator --show-sdk-version)"
-          watch_runtime_id="com.apple.CoreSimulator.SimRuntime.watchOS-${watch_sdk_version//./-}"
-          echo "Watch Simulator SDK: $watch_sdk_version" | tee -a "$RUNNER_TEMP/dfe-test-results/toolchain.log"
+
+          # [03] Start with the runner's Xcode and use another installed copy if its SDK is too old.
+          selected="$(xcode-select -p 2>/dev/null || true)"
+          export DEVELOPER_DIR=""
+          for candidate in "$selected" /Applications/Xcode*.app/Contents/Developer; do
+            [[ -d "$candidate" ]] || continue
+            version="$(DEVELOPER_DIR="$candidate" xcodebuild -version 2>/dev/null)" || continue
+            [[ "$version" =~ ^Xcode[[:space:]]+([0-9]+)\.([0-9]+) ]] || continue
+            if (( BASH_REMATCH[1] > 27 || (BASH_REMATCH[1] == 27 && BASH_REMATCH[2] >= 1) )); then
+              ios_sdk_version="$(DEVELOPER_DIR="$candidate" xcrun --sdk iphonesimulator --show-sdk-version)" || continue
+              [[ "$ios_sdk_version" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)?$ ]] || continue
+              (( ${ios_sdk_version%%.*} >= 27 )) || continue
+              watch_sdk_version="$(DEVELOPER_DIR="$candidate" xcrun --sdk watchsimulator --show-sdk-version)" || continue
+              export DEVELOPER_DIR="$candidate"
+              break
+            fi
+          done
+          if [[ -z "$DEVELOPER_DIR" ]]; then
+            echo 'This runner needs Xcode 27.1 or later with the iOS 27 and watchOS Simulator SDKs.' >&2
+            exit 1
+          fi
+          printf 'DEVELOPER_DIR=%s\n' "$DEVELOPER_DIR" >> "$GITHUB_ENV"
+          {
+            printf 'Selected Xcode: %s\n' "$DEVELOPER_DIR"
+            xcodebuild -version
+            xcodebuild -showsdks
+            java -version
+            python3 --version
+          } 2>&1 | tee "$results/toolchain.log"
+
+          # [05] The embedded Watch app needs a runtime compatible with the selected Watch SDK.
           watch_runtime_available() {
-            python3 - "$1" "$watch_runtime_id" <<'PY'
+            xcrun simctl list runtimes -j > "$results/runtimes.json" || return 1
+            python3 - "$results/runtimes.json" "$watch_sdk_version" <<'PY'
           import json
           import sys
           from pathlib import Path
 
           runtimes = json.loads(Path(sys.argv[1]).read_text())["runtimes"]
-          ready = any(runtime.get("identifier") == sys.argv[2]
+          sdk_version = sys.argv[2].split(".")[:2]
+          ready = any(runtime.get("identifier", "").startswith("com.apple.CoreSimulator.SimRuntime.watchOS-")
+                      and runtime.get("version", "").split(".")[:2] == sdk_version
                       and runtime.get("isAvailable") is True
                       and "arm64" in runtime.get("supportedArchitectures", []) for runtime in runtimes)
           raise SystemExit(0 if ready else 1)
           PY
           }
-          xcrun simctl list runtimes -j > "$RUNNER_TEMP/dfe-test-results/runtimes-before.json"
-          if ! watch_runtime_available "$RUNNER_TEMP/dfe-test-results/runtimes-before.json"; then
-            xcodebuild -downloadPlatform watchOS -buildVersion "$watch_sdk_version" -architectureVariant arm64 2>&1 \
-              | tee "$RUNNER_TEMP/dfe-test-results/watch-runtime-download.log"
+          if ! watch_runtime_available; then
+            # [07] Apple downloads can fail briefly. Try the download again without rerunning tests.
+            for attempt in 1 2 3; do
+              echo "Preparing watchOS runtime (attempt $attempt of 3)" | tee -a "$results/watch-runtime-download.log"
+              if ! xcodebuild -downloadPlatform watchOS -buildVersion "$watch_sdk_version" -architectureVariant arm64 2>&1 \
+                | tee -a "$results/watch-runtime-download.log"; then
+                echo "Watch runtime download attempt $attempt failed." | tee -a "$results/watch-runtime-download.log"
+              fi
+              if watch_runtime_available; then
+                break
+              fi
+              if [[ "$attempt" -lt 3 ]]; then
+                sleep "$((attempt * 15))"
+              fi
+            done
           fi
-          xcrun simctl list runtimes -j > "$RUNNER_TEMP/dfe-test-results/runtimes.json"
-          if ! watch_runtime_available "$RUNNER_TEMP/dfe-test-results/runtimes.json"; then
+          if ! watch_runtime_available; then
             echo "This runner needs an available arm64 watchOS $watch_sdk_version simulator runtime." >&2
             exit 1
           fi
-          xcrun simctl list devices available -j > "$RUNNER_TEMP/dfe-test-results/simulators.json"
-          python3 - <<'PY'
-          import json
-          import os
-          from pathlib import Path
 
-          # [03] The runner's iOS 27.1 Duo failed data migration even on a fresh device.
-          # Build with Xcode 27.1 and run these unit tests on the standard iOS 27.0 iPhone.
-          results = Path(os.environ["RUNNER_TEMP"]) / "dfe-test-results"
-          devices = json.loads((results / "simulators.json").read_text())["devices"]
-          runtime = "com.apple.CoreSimulator.SimRuntime.iOS-27-0"
-          device_type = "com.apple.CoreSimulator.SimDeviceType.iPhone-18-Pro"
-          phone = next((device for device in devices.get(runtime, [])
-                        if device.get("isAvailable") and device.get("udid")
-                        and device.get("deviceTypeIdentifier") == device_type), None)
-          if phone is None:
-              raise SystemExit("This runner needs an available iPhone 18 Pro on iOS 27.0.")
-          simulator_id = phone["udid"]
-          with open(os.environ["GITHUB_ENV"], "a") as output:
-              output.write(f"DFE_SIMULATOR_ID={simulator_id}\n")
-          print(f'Test destination: {phone["name"]} / iOS 27.0 ({simulator_id})')
-          PY
+          # [08] The general tests use an ordinary iPhone. The Duo runtime is checked separately.
+          xcrun simctl list devices available -j > "$results/simulators.json"
+          simulator_id="$(python3 DigitalFootprintExplorer/iosApp/scripts/select-ios-simulator.py \
+            --standard-iphone-only --minimum-version 27.0 --sdk-version "$ios_sdk_version" \
+            < "$results/simulators.json")"
+          printf 'DFE_SIMULATOR_ID=%s\n' "$simulator_id" >> "$GITHUB_ENV"
+          printf 'Test destination: %s\n' "$simulator_id" | tee -a "$results/toolchain.log"
 
       - name: Check policy copies and local tools
         run: |

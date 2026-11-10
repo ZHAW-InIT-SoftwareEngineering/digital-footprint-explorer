@@ -389,6 +389,11 @@ final class FootprintStore: ObservableObject {
 
     func deleteAll(keepingAutomaticConsentFrom consentDay: String? = nil,
                    widgetAccess: Bool? = nil, now: Date = Date()) throws {
+        // [54] Finish an earlier delete first, so another attempt cannot clear its safety pause.
+        if try automaticWidgetExchange?.pendingDeletion() != nil {
+            try readArchive()
+            try recoverInterruptedWidgetDeletion()
+        }
         // [50] The new start date keeps erased days out of future imports. Only the standard
         // assumptions carry forward; the old choices and their results leave together.
         var replacement: FootprintArchive?
@@ -398,46 +403,48 @@ final class FootprintStore: ObservableObject {
             replacement = FootprintArchive(firstDay: start,
                 revisions: [RoutineRevision(effectiveDay: start, savedAt: now,
                     inputs: AutomaticActivityClassification.assumptions(preserving: nil))],
-                records: [], inputPreference: .automatic, automaticStartDay: start)
+                records: [], inputPreference: .automatic, automaticStartDay: start,
+                widgetDeletionID: automaticWidgetExchange == nil ? nil : UUID())
         }
-        let mayResumeWidget: Bool
-        if replacement != nil, let automaticWidgetExchange,
-           try !automaticWidgetExchange.newQueriesAreBlocked() {
-            mayResumeWidget = widgetAccess ?? ((try? automaticWidgetExchange.currentContext()?.enabled) == true)
-        } else {
-            mayResumeWidget = false
-        }
-        // [35] Invalidate the shared ticket first, so an older widget query cannot restore a deleted day.
-        try automaticWidgetExchange?.disableAndClear()
-        // [23] Clear the widget summary first. If that fails, do not claim everything was deleted
-        // while an old saved amount is still available to the widget.
-        try widgetPublisher?.publish(nil)
-        try importVerification.clear()
-        try WidgetVerificationMirror.clear(at: widgetCheckFileURL)
-        if FileManager.default.fileExists(atPath: widgetReconciliationFileURL.path) {
-            try FileManager.default.removeItem(at: widgetReconciliationFileURL)
-        }
-        #if DFE_WIDGET_AUTOMATIC_IMPORT
-        if let automaticWidgetReceiptDirectory {
-            try WidgetAutomaticReceiptMirror.clearCopies(in: automaticWidgetReceiptDirectory)
-        }
-        #endif
-        if let replacement {
-            try writeArchive(replacement)
-        } else if FileManager.default.fileExists(atPath: fileURL.path) {
-            try FileManager.default.removeItem(at: fileURL)
+        // [35] Pause new widget saves during deletion. Keep the pending days intact until the
+        // private save succeeds so a failed delete can leave history and widget access in place.
+        let deletion = try automaticWidgetExchange?.beginDeletion(
+            archiveReplacementID: replacement?.widgetDeletionID, widgetAccess: widgetAccess)
+        do {
+            // [23] A failed clear should leave the private archive available for recovery.
+            try widgetPublisher?.publish(nil)
+            try automaticWidgetExchange?.clearDeletionArtifacts()
+            try importVerification.clear()
+            try WidgetVerificationMirror.clear(at: widgetCheckFileURL)
+            if FileManager.default.fileExists(atPath: widgetReconciliationFileURL.path) {
+                try FileManager.default.removeItem(at: widgetReconciliationFileURL)
+            }
+            #if DFE_WIDGET_AUTOMATIC_IMPORT
+            if let automaticWidgetReceiptDirectory {
+                try WidgetAutomaticReceiptMirror.clearCopies(in: automaticWidgetReceiptDirectory)
+            }
+            #endif
+            if let replacement {
+                try writeArchive(replacement)
+            } else if FileManager.default.fileExists(atPath: fileURL.path) {
+                try FileManager.default.removeItem(at: fileURL)
+            }
+        } catch {
+            do { try automaticWidgetExchange?.cancelDeletion() }
+            catch { errorMessage = "Your history is kept. The widget could not resume automatic updates." }
+            publishWidgetSnapshot()
+            throw error
         }
         archive = replacement
         unreadableArchive = false
         errorMessage = nil
-        // [51] Deletion may pause an active widget while its files are cleared. An earlier
-        // disconnection stays in place, even if Apple has yet to remove its permission.
-        if mayResumeWidget {
+        // [51] Rotate the ticket after the archive is gone. An earlier withdrawal stays in place.
+        if let deletion {
             do {
-                try configureWidgetAutomaticInput(enabled: true, earliestDay: consentDay,
-                    allowResumingAfterWithdrawal: true)
+                try automaticWidgetExchange?.finishDeletion(deletion, archive: archive, calendar: aggregationCalendar,
+                    classificationRevision: AutomaticActivityClassification.revision, now: now)
             } catch {
-                errorMessage = "Your entries were deleted. The widget could not resume automatic updates."
+                errorMessage = "Your history was cleared. The widget reset could not finish."
             }
         }
         publishWidgetSnapshot()
@@ -513,16 +520,17 @@ final class FootprintStore: ObservableObject {
             eligibleStartDay: widgetContextStartDay())
     }
 
-    // [40] A widget first saves a complete pending day. Merge it before publishing from private history,
-    // then acknowledge its ID only after that history has reached disk.
+    // [40] Merge each usable day before acknowledging it. Discard incompatible handoffs
+    // separately so a change in the model cannot stop later days from reaching history.
     private func reconcileWidgetPendingRecords() throws {
         guard let automaticWidgetExchange else { return }
         let pending = try automaticWidgetExchange.pendingRecords()
         guard !pending.isEmpty else { return }
-        guard var next = archive, next.usesAutomaticInput, let start = next.automaticStartDay else {
-            throw WidgetAutomaticExchangeError.invalidData
-        }
+        guard var next = archive, next.usesAutomaticInput, let start = next.automaticStartDay else { return }
+        let now = Date()
         var accepted = Set<UUID>()
+        var rejected = Set<UUID>()
+        var retryError: Error?
         var changed = false
         for item in pending.sorted(by: { $0.record.day < $1.record.day }) {
             let record = item.record
@@ -532,16 +540,17 @@ final class FootprintStore: ObservableObject {
             }
             guard item.classificationRevision == AutomaticActivityClassification.revision,
                   item.modelRevision == "shared-ios-v1", record.day >= start,
-                  days.date(record.day) != nil, record.day < today,
-                  item.originSavedAt <= Date().addingTimeInterval(5),
+                  days.date(record.day) != nil,
                   record.calculatedAt <= item.originSavedAt.addingTimeInterval(5),
                   let sourceCalendar = calendarForWidgetReceipt(item),
                   let sourceDate = FootprintCalendar(calendar: sourceCalendar).date(record.day),
                   let interval = sourceCalendar.dateInterval(of: .day, for: sourceDate),
                   record.inputs.calendarDayMinutes == interval.duration / 60,
                   let routine = next.revisions.last(where: { $0.effectiveDay <= record.day })?.inputs else {
-                throw WidgetAutomaticExchangeError.invalidData
+                rejected.insert(item.id)
+                continue
             }
+            guard item.isReady(asOf: now, calendar: aggregationCalendar) else { continue }
             // [41] The host checks the same assumptions and calculator again. A pending file cannot choose new inputs.
             var normalized = record.inputs
             normalized.calendarDayMinutes = nil
@@ -550,9 +559,18 @@ final class FootprintStore: ObservableObject {
             expected.calendarDayMinutes = nil
             for index in expected.usages.indices { expected.usages[index].minutes = 0 }
             guard normalized == expected,
-                  Set(record.automaticCategories ?? []) == Set(record.inputs.usages.map(\.category)),
-                  try calculator.calculate(record.inputs) == record.result else {
-                throw WidgetAutomaticExchangeError.invalidData
+                  Set(record.automaticCategories ?? []) == Set(record.inputs.usages.map(\.category)) else {
+                rejected.insert(item.id)
+                continue
+            }
+            do {
+                guard try calculator.calculate(record.inputs) == record.result else {
+                    rejected.insert(item.id)
+                    continue
+                }
+            } catch {
+                retryError = error
+                continue
             }
             // [42] Manual corrections always win. For automatic days, a later valid calculation may
             // replace an older one, while replaying an equal or older handoff changes nothing.
@@ -569,9 +587,10 @@ final class FootprintStore: ObservableObject {
             }
             accepted.insert(item.id)
         }
+        try automaticWidgetExchange.acknowledge(ids: rejected)
         if changed {
             next.records.sort { $0.day < $1.day }
-            recomputeGardens(&next, now: Date())
+            recomputeGardens(&next, now: now)
             try commit(next)
         }
         // [47] Keep the widget's original clock separate from this later host reconciliation.
@@ -579,6 +598,7 @@ final class FootprintStore: ObservableObject {
         do { try recordWidgetReconciliation(pending.filter { accepted.contains($0.id) }) }
         catch { errorMessage = "The widget check could not be saved. Your history is kept." }
         try automaticWidgetExchange.acknowledge(ids: accepted)
+        if let retryError { throw retryError }
     }
 
     private func recordWidgetReconciliation(_ pending: [WidgetAutomaticPendingRecord]) throws {
@@ -619,14 +639,29 @@ final class FootprintStore: ObservableObject {
             try? widgetPublisher?.publish(nil)
             throw error
         }
-        do { try reconcileWidgetPendingRecords() }
+        do {
+            try recoverInterruptedWidgetDeletion()
+            try reconcileWidgetPendingRecords()
+        }
         catch {
-            // [44] A bad handoff is not a damaged private history. Keep both saved files,
-            // and avoid publishing an older garden over work that has not been checked yet.
+            // [44] The phone can still share its last saved day if it cannot read the widget handoff.
             errorMessage = "The widget update could not be checked. Your saved history is kept."
-            return
         }
         publishWidgetSnapshot()
+    }
+
+    // [52] After an interrupted delete, the private archive says which side of the reset won.
+    // Never drop the widget's pending days if the archive replacement did not reach disk.
+    private func recoverInterruptedWidgetDeletion() throws {
+        guard let automaticWidgetExchange, let deletion = try automaticWidgetExchange.pendingDeletion() else { return }
+        let committed = deletion.archiveReplacementID.map { archive?.widgetDeletionID == $0 } ?? (archive == nil)
+        if committed {
+            try automaticWidgetExchange.finishDeletion(deletion, archive: archive, calendar: aggregationCalendar,
+                classificationRevision: AutomaticActivityClassification.revision)
+            widgetPublisher?.reloadAfterClearing()
+        } else {
+            try automaticWidgetExchange.cancelDeletion()
+        }
     }
 
     // [25] Treat the saved file as untrusted input. Invalid dates, repeated days or an unknown
@@ -681,6 +716,9 @@ final class FootprintStore: ObservableObject {
     }
 
     private func commit(_ next: FootprintArchive) throws {
+        // [53] Finish an earlier erase before creating a new archive. The missing old file
+        // is how recovery knows that delete reached disk.
+        if archive == nil { try recoverInterruptedWidgetDeletion() }
         var committed = next
         // [28] A manual correction must not remove an earlier import's origin.
         committed.screenTimeDataImported = next.containsScreenTimeDerivedData

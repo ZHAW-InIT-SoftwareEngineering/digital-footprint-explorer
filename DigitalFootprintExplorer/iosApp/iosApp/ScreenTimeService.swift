@@ -598,11 +598,26 @@ final class ScreenTimeService: ObservableObject {
         #endif
         return state.canImport
     }
+
+    // [93] A cold launch can briefly have no answer from Apple. Keep the last
+    // shared result as it is until there is a definite permission decision.
+    var watchScreenTimeAccess: Bool? {
+        #if SCREEN_TIME_ENABLED
+        if isDisconnecting { return false }
+        guard #available(iOS 26.4, *) else { return false }
+        let status = AuthorizationCenter.shared.authorizationStatus
+        if status == .notDetermined { return nil }
+        return status == .approvedWithDataAccess
+        #else
+        return false
+        #endif
+    }
     @Published private(set) var state: ScreenTimeState = .unavailable
     @Published private(set) var isRequesting = false
     @Published private(set) var isImporting = false
     @Published private(set) var lastImportDate: Date?
     @Published private(set) var lastError: String?
+    private var isDisconnecting = false
     private let defaults: UserDefaults
     private let historyKey = "dfe.screenTime.wasAuthorized"
     private let selectionKey = "dfe.screenTime.categorySelections.v1"
@@ -799,6 +814,12 @@ final class ScreenTimeService: ObservableObject {
         guard !uiTestIsolation.isActive else { return }
         #endif
         #if SCREEN_TIME_ENABLED
+        guard !isDisconnecting else { return }
+        isDisconnecting = true
+        defer {
+            isDisconnecting = false
+            refreshAuthorization()
+        }
         // [91] A storage problem must never prevent the person from withdrawing Apple's permission.
         do { try beforeWidgetAccessEnds?() }
         catch { lastError = "The widget could not be paused. Screen Time disconnection will still be requested." }
@@ -820,9 +841,7 @@ final class ScreenTimeService: ObservableObject {
             #endif
         } catch {
             lastError = "Screen Time could not be disconnected. \(error.localizedDescription)"
-            refreshAuthorization()
         }
-        refreshAuthorization()
         #endif
     }
 

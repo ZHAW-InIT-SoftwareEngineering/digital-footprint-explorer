@@ -96,8 +96,17 @@ final class FootprintWidgetPublisher: WidgetSnapshotPublishing {
         #if DFE_WIDGET_AUTOMATIC_IMPORT
         // [10] A widget may have saved a completed day while the app was opening.
         // Keep that durable result until the private history has caught up with it.
-        if let pending = try WidgetAutomaticExchange(directory: checks.directory)
-            .pendingRecordsDuringCoordinatedAccess().max(by: { $0.record.day < $1.record.day }) {
+        let pending: WidgetAutomaticPendingRecord?
+        do {
+            pending = try WidgetAutomaticExchange(directory: checks.directory)
+                .latestPendingForSnapshotDuringCoordinatedAccess(now: clock())
+        } catch {
+            // [12] A saved phone result can still be shared. With no phone result, keep
+            // the last picture because we cannot tell whether there is a newer widget day.
+            guard snapshot != nil else { throw error }
+            pending = nil
+        }
+        if let pending {
             let saved = GardenWidgetSnapshot(record: pending.record)
             if snapshot == nil || saved.day > snapshot!.day
                 || (saved.day == snapshot!.day && snapshot!.source != .manual

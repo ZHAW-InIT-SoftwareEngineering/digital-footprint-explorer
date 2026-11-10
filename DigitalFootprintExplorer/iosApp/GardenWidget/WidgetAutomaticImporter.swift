@@ -39,12 +39,13 @@ enum WidgetAutomaticImporter {
             var calendar = FootprintCalendar.localCalendar
             // [12] Freeze the zone for this query, so travelling cannot move its day halfway through.
             calendar.timeZone = TimeZone(identifier: calendar.timeZone.identifier) ?? .current
+            let now = Date()
             let request: WidgetAutomaticRequest
             do {
                 // [10] A previous interrupted write may already have saved the day in the mailbox.
                 // Repair its picture before deciding whether another query is needed.
-                _ = try exchange.recoverPendingSnapshot()
-                let eligible = try exchange.contextForYesterday(now: Date(), calendar: calendar)
+                _ = try exchange.recoverPendingSnapshot(now: now, calendar: calendar)
+                let eligible = try exchange.contextForYesterday(now: now, calendar: calendar)
                 guard let eligible else {
                     completion()
                     return

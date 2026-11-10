@@ -3,171 +3,149 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="Explore how Digital Footprint Explorer estimates the impact of your phone use. Find the Android app and learn about the planned iPhone release." />
   <title>Digital Footprint Explorer</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="ios-pages.css" />
-  <script src="ios-pages.js" defer></script>
 </head>
-<body class="dfe-site">
-  <a class="skip-link" href="#project-content">Skip to project information</a>
-  <header class="site-header">
-    <div class="site-bar">
-      <a class="site-brand" href="index.html" aria-label="Digital Footprint Explorer home">
-        <img src="images/zhaw_rgb.png" alt="ZHAW" />
-      </a>
-      <strong class="site-title">Digital Footprint Explorer</strong>
-      <nav class="site-nav" aria-label="Project pages">
-        <a href="index.html" aria-current="page">Project</a>
+<body>
+  <header>
+    <div class="container nav" style="flex-wrap:wrap;">
+      <div>
+        <!-- Replace src with the correct path to the official ZHAW logo if available -->
+        <img src="images/zhaw_rgb.png" alt="ZHAW Logo" style="height:48px; width:auto;" />
+      </div>
+      <div>
+        <strong>Digital Footprint Explorer</strong>
+      </div>
+      <!-- [01] Make the iOS help and privacy choices easy to find from the project page. -->
+      <nav class="ios-public-links" aria-label="iOS information">
         <a href="support-ios.html">iOS support</a>
         <a href="privacy-policy.html">iOS privacy</a>
       </nav>
     </div>
   </header>
 
-  <main id="project-content" class="container site-content" tabindex="-1">
-    <section class="page-intro">
-      <h1>Explore the footprint of your phone use</h1>
+  <main class="container">
+    <section class="card">
+      <h1>What is the Digital Footprint Explorer?</h1>
       <p>
-        <strong>Digital Footprint Explorer (DFE)</strong> is a research app from the Zurich University of Applied Sciences
-        (ZHAW). It estimates greenhouse gas emissions linked to everyday phone activities such as messaging,
-        social media and video streaming.
+        The <strong>Digital Footprint Explorer (DFE)</strong> is a research-driven mobile application developed at the
+        Zurich University of Applied Sciences (ZHAW). It helps make the normally invisible environmental impacts of
+        everyday digital activities—such as messaging, social media use, video streaming, and cloud-based AI—more
+        tangible and understandable.
       </p>
       <p>
-        A digital garden shows how each day compares with up to seven earlier days on your phone. It looks greener
-        when the estimate falls well below your recent average. You can also open the app to see the figures behind
-        the garden.
+        DFE visualizes these impacts using an intuitive and emotionally engaging metaphor: a <em>living digital
+        garden</em>. When a user's mobile data usage is low, the garden flourishes; when usage increases significantly,
+        the garden gradually deteriorates. This gentle form of eco-feedback encourages reflection and supports more
+        mindful digital habits without relying on guilt or numerical overload.
       </p>
-      <nav class="topic-links" aria-label="Project topics">
-        <a href="#get-the-app">Get the app</a>
-        <a href="#estimate-method">How estimates work</a>
-      </nav>
     </section>
 
-    <section id="get-the-app" class="card">
-      <h2>Get the app</h2>
-      <div class="platforms">
-        <section>
-          <h3>Android</h3>
-          <p>
-            Download DFE for free from <a href="https://play.google.com/store/apps/details?id=ch.zhaw.digitalfootprintexplorer&amp;pcampaignid=web_share">Google Play</a>
-            or scan the QR code.
-          </p>
-          <p>
-            Open DFE and follow the steps to allow usage access. An Android service tracks the activity used by the
-            model. Add the garden widget to your Home Screen or open the app to see a breakdown of your estimate.
-          </p>
-          <img class="install-code" src="images/qr-code-3.png" alt="QR code for DFE on Google Play" />
-        </section>
-        <section>
-          <h3>iPhone</h3>
-          <p>
-            The iPhone app is being prepared for release in Switzerland. It requires iOS 26.4 or later. Automatic
-            daily estimates use the Screen Time activity Apple makes available after you give permission.
-          </p>
-          <p>
-            We tested with development access in Switzerland. Access for Swiss App Store users is still awaiting
-            confirmation. Visit <a href="support-ios.html">iOS support</a> for setup and device details.
-          </p>
-        </section>
-      </div>
-      <div class="platforms platform-previews">
-        <section aria-labelledby="android-preview">
-          <h3 id="android-preview">Android preview</h3>
-          <div class="app-screens">
-            <figure>
-              <div class="preview-frame android-frame">
-                <img src="images/widget.png" width="1840" height="3600" alt="DFE garden widget on an Android Home Screen" loading="lazy" />
-              </div>
-              <figcaption>Android garden widget</figcaption>
-            </figure>
-            <figure>
-              <div class="preview-frame android-frame">
-                <img src="images/stats.png" width="1840" height="3600" alt="Breakdown of an estimate in the Android app" loading="lazy" />
-              </div>
-              <figcaption>Android statistics screen</figcaption>
-            </figure>
-          </div>
-        </section>
-        <section class="ios-preview" aria-labelledby="ios-preview">
-          <h3 id="ios-preview">iPhone preview</h3>
-          <div class="app-screens">
-            <figure>
-              <div class="preview-frame">
-                <img src="images/dfe-ios-today.jpg" width="660" height="1435" loading="lazy" alt="Today screen showing a green garden and the daily carbon footprint estimate" />
-              </div>
-              <figcaption>Today and your garden</figcaption>
-            </figure>
-            <figure>
-              <div class="preview-frame">
-                <img src="images/dfe-ios-history.jpg" width="660" height="1435" loading="lazy" alt="History screen with a saved daily estimate and a tip for the next day" />
-              </div>
-              <figcaption>History and daily tips</figcaption>
-            </figure>
-          </div>
-        </section>
-      </div>
-    </section>
-
-    <section id="estimate-method" class="card">
-      <h2>How DFE estimates your footprint</h2>
-      <p>
-        The model estimates emissions from running apps, using the screen and background activity. It also accounts
-        for the energy used by networks and servers. Results are shown in
-        <a href="https://www.myclimate.org/en/information/faq/faq-detail/what-are-co2-equivalents/">carbon dioxide equivalents (CO₂e)</a>,
-        a common unit for comparing greenhouse gases.
-      </p>
-      <p>
-        The phone supplies some of the activity data. The model uses assumptions for other inputs, such as data
-        traffic on iPhone. A result helps you compare days, while the garden shows how the estimate changes over time.
-      </p>
-    </section>
+    <div class="spacer"></div>
 
     <section class="card">
-      <h2>Data and privacy</h2>
+      <h1>How to Use</h1>
       <p>
-        DFE calculates estimates on your phone using the activity data you give it permission to access. It keeps your
-        history on the device and has no project server for usage data. If you enable Apple Watch sharing, your paired
-        Watch receives a summary of the latest saved result.
+        DFE is available for Android. It can be downloaded for free on <a href="https://play.google.com/store/apps/details?id=ch.zhaw.digitalfootprintexplorer&pcampaignid=web_share">Google Play</a>.
+        Scan the QR code to get the app:
       </p>
-      <p class="muted">
-        Your device settings may include app data in a backup. GitHub Pages handles connections to this site, and
-        email services handle any message you choose to send. See the <a href="privacy-policy.html">iOS privacy policy</a>
-        for details about the iPhone app and its widgets.
+      <p>
+        <img src="images/qr-code-3.png" alt="QR code for DFE on Google Play" style="height:128px; width:auto;" />
+      </p>
+      <p>
+        The iPhone version is being prepared for release. Apple limits expanded Screen Time access for App Store customers to devices in the EU with an EU Apple Account. Our development tests in Switzerland do not establish access for Swiss customers. See <a href="support-ios.html">iOS support</a> for setup and device requirements.
+      </p>
+      <p>
+        After downloading, open the Digital Footprint Explorer app. It will ask you for permissions to access usage data and to run as a foreground service.
+        It will also offer you to place a widget on your homescreen. When opening the app (or tapping the widget), you can see detailed statistics about your environmental footprint.
+      </p>
+      <p>
+        <img src="images/widget.png" alt="Screenshot of the widget on a mobile phone" style="width:228px;" />
+        <img src="images/stats.png" alt="Screenshot of the statistics view" style="width:228px;" />
       </p>
     </section>
+
+    <div class="spacer"></div>
+
+     <section class="card">
+      <h1>Your Digital Footprint</h1>
+      <p>
+        Our activities directly or indirectly produce greenhouse gases. Here is a comparison of the footprint of smartphone use
+        compared to the footprint of other activities.
+      </p>
+      <p>
+        <table>
+          <thead>
+            <tr>
+              <th>Activity</th>
+              <th>Footprint <a href="https://www.myclimate.org/en/information/faq/faq-detail/what-are-co2-equivalents/">CO₂e</a></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1 day of smartphone use</td>
+              <td>0.2 kg</td>
+            </tr>
+            <tr>
+              <td>10 km car ride (petrol)</td>
+              <td>3.0 kg</td>
+            </tr>
+            <tr>
+              <td>100 g beef steak</td>
+              <td>15.5 kg</td>
+            </tr>
+          </tbody>
+        </table>
+      </p>
+
+    </section>
+
+    <div class="spacer"></div>
+
+
+    <section class="card">
+      <h2>Data Privacy & On-Device Processing</h2>
+      <p>
+        Data protection and privacy-by-design are core principles of the Digital Footprint Explorer.
+      </p>
+      <ul>
+        <li>
+          The app requests permission to access <strong>usage statistics</strong> on your mobile phone in order to
+          estimate data transmission volumes.
+        </li>
+        <li>
+          <strong>All data is processed locally on the device.</strong> Environmental impact estimates are computed on
+          the phone itself.
+        </li>
+        <li>
+          <strong>No DFE server receives your usage history</strong>. If you turn on Apple Watch sharing, Apple manages delivery of the latest saved estimate to your paired Watch.
+        </li>
+      </ul>
+      <p class="muted">
+        The app processes usage locally. Opening this website or sending a support email is separate: the hosting and email services receive the details needed to provide those services. The <a href="privacy-policy.html">iOS privacy policy</a> explains these choices.
+      </p>
+    </section>
+
+    <div class="spacer"></div>
 
     <section class="card">
       <h2>Contact</h2>
-      <div class="platforms contact-options">
-        <div class="contact-option">
-          <h3>Email the DFE Team</h3>
-          <p>Send us questions, feedback about the app or research enquiries.</p>
-          <a href="mailto:digital-footprint-explorer.init@zhaw.ch">digital-footprint-explorer.init@zhaw.ch</a>
-        </div>
-        <div class="contact-option">
-          <h3>Find answers</h3>
-          <p>Get help with Screen Time, widgets and Apple Watch, or see how DFE handles your data.</p>
-          <div class="contact-links">
-            <a href="support-ios.html">Get iPhone help</a>
-            <a href="privacy-policy.html">Read the privacy policy</a>
-          </div>
-        </div>
-      </div>
+      <p>
+        If you have questions, feedback, or research-related inquiries, please contact the DFE team:
+      </p>
+      <p>
+        DFE Team<br />
+        <a href="mailto:digital-footprint-explorer.init@zhaw.ch">digital-footprint-explorer.init@zhaw.ch</a>
+      </p>
     </section>
   </main>
 
   <footer class="footer">
-    <div class="container footer-inner">
-      <div>
-        <strong class="footer-name">Digital Footprint Explorer</strong>
-        <p class="muted">© 2026 Zurich University of Applied Sciences (ZHAW)</p>
-      </div>
-      <nav class="footer-links" aria-label="Footer navigation">
-        <a href="support-ios.html">iOS support</a>
-        <a href="privacy-policy.html">iOS privacy</a>
-        <a href="mailto:digital-footprint-explorer.init@zhaw.ch">Email the DFE Team</a>
-      </nav>
+    <div class="container">
+      <p class="muted">
+        © 2026 Zurich University of Applied Sciences (ZHAW) · Digital Footprint Explorer
+      </p>
     </div>
   </footer>
 </body>

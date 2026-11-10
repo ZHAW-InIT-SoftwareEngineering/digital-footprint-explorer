@@ -34,6 +34,9 @@ final class WatchGardenModel: NSObject, ObservableObject, WCSessionDelegate {
     private var refreshAttempt = CompanionRefreshAttempt()
     private var timeout: Task<Void, Never>?
     private var activationFailed = false
+    private var sceneIsActive = false
+    private var triedActiveRecovery = false
+    private var needsProducerReply = false
 
     override init() {
         #if DEBUG
@@ -57,7 +60,11 @@ final class WatchGardenModel: NSObject, ObservableObject, WCSessionDelegate {
         if let localStorage {
             do {
                 initialInbox = try localStorage.loadInbox()
-                if initialInbox.envelope?.snapshot != nil { initialNote = "Showing the last saved phone result." }
+                if initialInbox.requiresInteractiveResume {
+                    initialNote = "Tap Refresh to reconnect to your iPhone."
+                } else if initialInbox.envelope?.snapshot != nil {
+                    initialNote = "Showing the last saved phone result."
+                }
             } catch {
                 initialInbox = .blocked
                 initialNote = "The saved phone result could not be read. Try refreshing."
@@ -101,6 +108,27 @@ final class WatchGardenModel: NSObject, ObservableObject, WCSessionDelegate {
         session.delegate = self
         session.activate()
         receive(session.receivedApplicationContext, allowProducerChange: false)
+    }
+
+    func setSceneActive(_ active: Bool) {
+        guard active != sceneIsActive else { return }
+        sceneIsActive = active
+        if active {
+            start()
+            recoverIfNeeded()
+        } else {
+            triedActiveRecovery = false
+        }
+    }
+
+    // [06] Ask the current phone once per visit if the Watch cannot accept a
+    // passive update or is still showing an older day. Keep the Refresh button for retries.
+    private func recoverIfNeeded() {
+        guard sceneIsActive, !isPreviewing, !triedActiveRecovery, !isRefreshing,
+              inbox.requiresInteractiveResume || needsProducerReply
+                || envelope?.snapshot?.isOlderThanLatestCompletedDay(now: Date()) == true else { return }
+        triedActiveRecovery = true
+        refresh()
     }
 
     // [03] watchOS can launch us without showing a view. Keep this task alive until Apple's pending context has been handled and saved.
@@ -187,7 +215,9 @@ final class WatchGardenModel: NSObject, ObservableObject, WCSessionDelegate {
         timeout?.cancel()
         timeout = nil
         isRefreshing = false
-        connectionNote = note
+        connectionNote = inbox.requiresInteractiveResume || needsProducerReply
+            ? "Open DFE on your iPhone, then tap Refresh here to reconnect."
+            : note
     }
 
     // [02] Save before changing the screen so the Watch app and its complications see the same accepted result.
@@ -198,13 +228,23 @@ final class WatchGardenModel: NSObject, ObservableObject, WCSessionDelegate {
         do {
             let next = try CompanionGardenEnvelope.decode(data)
             guard let storage else { return false }
+            if !allowProducerChange, inbox.needsDirectReply(for: next) {
+                needsProducerReply = true
+                if !isRefreshing { connectionNote = "Tap Refresh to reconnect to your iPhone." }
+                return false
+            }
             let previous = inbox
             guard try inbox.receive(next, trustedReply: allowProducerChange,
                                     persist: { try storage.saveInbox($0) },
                                     invalidateSavedResult: { try storage.invalidateSavedResult() }) else { return false }
+            if allowProducerChange { needsProducerReply = false }
             guard inbox != previous else { return true }
             envelope = inbox.envelope
-            connectionNote = next.snapshot == nil ? next.availability.explanation : "Showing the latest saved phone result."
+            if inbox.requiresInteractiveResume || needsProducerReply {
+                connectionNote = "Tap Refresh to reconnect to your iPhone."
+            } else {
+                connectionNote = next.snapshot == nil ? next.availability.explanation : "Showing the latest saved phone result."
+            }
             WidgetCenter.shared.reloadTimelines(ofKind: CompanionGardenEnvelope.widgetKind)
             return true
         } catch {
@@ -228,12 +268,17 @@ final class WatchGardenModel: NSObject, ObservableObject, WCSessionDelegate {
             self.receive(session.receivedApplicationContext, allowProducerChange: false)
             if session.activationState == .activated, let id = self.refreshAttempt.id {
                 self.sendRefreshRequest(id)
+            } else {
+                self.recoverIfNeeded()
             }
         }
     }
 
     nonisolated func session(_ session: WCSession, didReceiveApplicationContext applicationContext: [String: Any]) {
-        Task { @MainActor [weak self] in self?.receive(applicationContext, allowProducerChange: false) }
+        Task { @MainActor [weak self] in
+            self?.receive(applicationContext, allowProducerChange: false)
+            self?.recoverIfNeeded()
+        }
     }
 
     nonisolated func sessionReachabilityDidChange(_ session: WCSession) {

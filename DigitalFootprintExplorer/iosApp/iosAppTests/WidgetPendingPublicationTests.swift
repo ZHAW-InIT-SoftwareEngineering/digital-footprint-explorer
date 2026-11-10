@@ -69,6 +69,9 @@ final class WidgetPendingPublicationTests: XCTestCase {
             source: .manual, calculatedAt: now.addingTimeInterval(-10), isCompleted: true)
         try publisher.publish(manual)
         XCTAssertEqual(WidgetSnapshotStorage(directory: folder).read().snapshot, manual)
+        let exchange = WidgetAutomaticExchange(directory: folder)
+        XCTAssertEqual(try exchange.recoverPendingSnapshot(now: now.addingTimeInterval(86_400)), manual)
+        XCTAssertEqual(WidgetSnapshotStorage(directory: folder).read().snapshot, manual)
     }
 
     // [03] If the shared handoff is damaged, keep the last picture instead of overwriting it blindly.

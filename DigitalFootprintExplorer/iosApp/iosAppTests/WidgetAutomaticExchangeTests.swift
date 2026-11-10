@@ -31,6 +31,12 @@ final class WidgetAutomaticExchangeTests: XCTestCase {
         addTeardownBlock { try? FileManager.default.removeItem(at: url) }
         return url
     }
+
+    private func clear(_ exchange: WidgetAutomaticExchange) throws {
+        let deletion = try exchange.beginDeletion(archiveReplacementID: nil, widgetAccess: false)
+        try exchange.finishDeletion(deletion, archive: nil, calendar: calendar,
+            classificationRevision: "fixture-classification", now: now)
+    }
     private func inputs() -> FootprintInputs {
         FootprintInputs(usages: [CategoryUsage(category: .video, gigabytesPerHour: 0.5, wifiShare: 0.8)],
             brightness: 0.5, gpsHours: 0, bluetoothHours: 0)
@@ -79,7 +85,7 @@ final class WidgetAutomaticExchangeTests: XCTestCase {
         let exchange = WidgetAutomaticExchange(directory: folder())
         try prepare(exchange)
         let request = try XCTUnwrap(exchange.contextForYesterday(now: now, calendar: calendar))
-        try exchange.disableAndClear()
+        try clear(exchange)
         XCTAssertFalse(try exchange.currentContext()?.enabled ?? true)
         let file = exchange.directory!.appendingPathComponent(WidgetAutomaticExchange.fileName)
         #if os(iOS)
@@ -95,7 +101,7 @@ final class WidgetAutomaticExchangeTests: XCTestCase {
         #endif
         try Data(repeating: 0x20, count: 524_289).write(to: file)
         XCTAssertThrowsError(try exchange.currentContext())
-        try exchange.disableAndClear()
+        try clear(exchange)
         XCTAssertFalse(try exchange.currentContext()?.enabled ?? true)
         XCTAssertFalse(try exchange.validateRequest(request, now: now, calendar: calendar))
         XCTAssertThrowsError(try exchange.commit(record(request), expected: request, at: now, calendar: calendar))
@@ -167,7 +173,10 @@ final class WidgetAutomaticExchangeTests: XCTestCase {
         XCTAssertTrue(try exchange.commit(record(request), expected: request, at: now, calendar: calendar))
         _ = try WidgetSnapshotStorage(directory: exchange.directory).write(nil)
         XCTAssertNil(WidgetSnapshotStorage(directory: exchange.directory).read().snapshot)
-        XCTAssertEqual(try exchange.recoverPendingSnapshot()?.day, request.day)
+        XCTAssertNil(try exchange.recoverPendingSnapshot(now: now.addingTimeInterval(-60), calendar: calendar))
+        XCTAssertNil(WidgetSnapshotStorage(directory: exchange.directory).read().snapshot)
+        XCTAssertEqual(try exchange.pendingRecords().count, 1)
+        XCTAssertEqual(try exchange.recoverPendingSnapshot(now: now, calendar: calendar)?.day, request.day)
         XCTAssertEqual(WidgetSnapshotStorage(directory: exchange.directory).read().snapshot?.day, request.day)
     }
 
@@ -182,7 +191,7 @@ final class WidgetAutomaticExchangeTests: XCTestCase {
         XCTAssertThrowsError(try exchange.currentContext())
         XCTAssertThrowsError(try prepare(exchange))
         XCTAssertEqual(try Data(contentsOf: file), damaged)
-        try exchange.disableAndClear()
+        try clear(exchange)
         XCTAssertFalse(try exchange.currentContext()?.enabled ?? true)
     }
 

@@ -31,8 +31,13 @@ struct CompanionGardenInbox: Codable, Equatable, Sendable {
 
     static var blocked: Self { Self(requiresInteractiveResume: true) }
 
+    func needsDirectReply(for next: CompanionGardenEnvelope) -> Bool {
+        guard next.snapshot != nil else { return false }
+        return requiresInteractiveResume || envelope.map { $0.producer != next.producer } == true
+    }
+
     private mutating func accept(_ next: CompanionGardenEnvelope, trustedReply: Bool) -> Bool {
-        if next.snapshot != nil, requiresInteractiveResume, !trustedReply { return false }
+        if !trustedReply, needsDirectReply(for: next) { return false }
         guard next.canReplace(envelope, allowProducerChange: trustedReply) else { return false }
         if trustedReply {
             requiresInteractiveResume = false

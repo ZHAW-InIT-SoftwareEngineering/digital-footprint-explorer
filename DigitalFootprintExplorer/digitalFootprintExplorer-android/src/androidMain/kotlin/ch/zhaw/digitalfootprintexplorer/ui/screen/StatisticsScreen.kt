@@ -245,11 +245,10 @@ fun StatisticsScreen(
                 HorizontalDivider()
                 Spacer(Modifier.height(12.dp))
 
-                val selectedLabel = dayLabel(selectedDate)
                 EmissionBreakdown(
                     title = if (selectedDate == today) {
-                        stringResource(R.string.history_today_so_far, selectedLabel)
-                    } else selectedLabel,
+                        stringResource(R.string.history_today_progress)
+                    } else dayLabel(selectedDate),
                     summary = days[selectedDate]?.let { listOf(it).dailyAverage() }
                 )
 

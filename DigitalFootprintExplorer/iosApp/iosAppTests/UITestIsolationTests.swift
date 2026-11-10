@@ -175,23 +175,52 @@ final class UITestIsolationTests: XCTestCase {
         XCTAssertNil(service.diagnosticScopeMutation)
     }
 
-    // [09] Resetting local preview choices must not remove history or unrelated preferences.
-    func testLocalPreviewResetRemovesScopeWhileKeepingHistoryAndUnrelatedPreferences() throws {
+    // [09] Delete uses a fresh routine and a later start date, while the saved connection stays usable.
+    func testDeleteKeepsConnectedSetupAfterReopeningWithoutRestoringErasedDays() throws {
         let preferences = try defaults()
         let history = store()
         let service = ScreenTimeService(isolatedUIArguments: arguments, defaults: preferences)
-        try saveSetup(service, history: history)
+        var earlierInputs = AutomaticActivityClassification.assumptions(preserving: nil)
+        earlierInputs.brightness = 0.9
+        try service.saveControlledAllActivitySetup(inputs: earlierInputs, store: history, now: first)
+        var minutes = Dictionary(uniqueKeysWithValues: FootprintCategory.allCases.map { ($0.rawValue, 0.0) })
+        minutes[FootprintCategory.video.rawValue] = 20
+        try history.importAutomaticUsage(day: first, minutesByCategory: minutes, now: next)
+        XCTAssertEqual(history.records.count, 1)
+        preferences.set(Data("{}".utf8), forKey: "dfe.screenTime.categorySelections.v1")
+        preferences.set(history.dayKey(for: next), forKey: "dfe.screenTime.backfillCursorDay.v1")
         preferences.set("keep", forKey: "unrelated")
-        let bytes = try Data(contentsOf: history.fileURL)
-        service.resetLocalData()
-        XCTAssertEqual(service.state, .notRequested)
-        XCTAssertEqual(service.activityScope, .selectedApps)
-        XCTAssertFalse(service.hasSavedAutomaticSetup(store: history))
-        XCTAssertNil(preferences.object(forKey: scopeKey))
-        XCTAssertNil(preferences.object(forKey: startKey))
+        service.beforeWidgetAccessEnds = { XCTFail("Deletion is not a request to disconnect") }
+        let previousContext = service.refreshContext(store: history, now: later)
+        try service.deleteSavedEntries(in: history, now: later)
+
+        XCTAssertEqual(service.state, .dataAccess)
+        XCTAssertTrue(service.hasSavedAutomaticSetup(store: history))
+        XCTAssertNotEqual(service.refreshContext(store: history, now: later), previousContext)
+        XCTAssertEqual(preferences.string(forKey: scopeKey), ScreenTimeActivityScope.allAuthorizedApps.rawValue)
+        XCTAssertEqual(preferences.string(forKey: startKey), history.dayKey(for: first))
+        XCTAssertNil(preferences.object(forKey: "dfe.screenTime.categorySelections.v1"))
+        XCTAssertNil(preferences.object(forKey: "dfe.screenTime.backfillCursorDay.v1"))
         XCTAssertEqual(preferences.string(forKey: "unrelated"), "keep")
-        XCTAssertEqual(try Data(contentsOf: history.fileURL), bytes)
         XCTAssertEqual(service.diagnosticScopeMutation?.reason, .localReset)
+        XCTAssertNil(history.importVerification.record(for: history.dayKey(for: first)))
+
+        let reopened = FootprintStore(fileURL: history.fileURL,
+            calculator: PreviewIsolationCalculator(), calendar: calendar)
+        let reopenedService = ScreenTimeService(isolatedUIArguments: arguments, defaults: preferences)
+        XCTAssertEqual(reopenedService.state, .dataAccess)
+        XCTAssertTrue(reopenedService.hasSavedAutomaticSetup(store: reopened))
+        XCTAssertTrue(reopened.records.isEmpty)
+        XCTAssertFalse(reopened.archive?.containsScreenTimeDerivedData ?? true)
+        XCTAssertEqual(reopened.archive?.revisions.map(\.inputs),
+            [AutomaticActivityClassification.assumptions(preserving: nil)])
+        XCTAssertEqual(reopened.firstDay, reopened.dayKey(for: later))
+        XCTAssertFalse(reopenedService.hasEligibleCompletedDay(store: reopened, now: later))
+        XCTAssertThrowsError(try reopened.importAutomaticUsage(day: first, minutesByCategory: minutes, now: later))
+        XCTAssertThrowsError(try reopened.importAutomaticUsage(day: later, minutesByCategory: minutes, now: later))
+        let tomorrow = try XCTUnwrap(calendar.date(byAdding: .day, value: 1, to: later))
+        try reopened.importAutomaticUsage(day: later, minutesByCategory: minutes, now: tomorrow)
+        XCTAssertEqual(reopened.records.map(\.day), [reopened.dayKey(for: later)])
     }
 }
 #endif

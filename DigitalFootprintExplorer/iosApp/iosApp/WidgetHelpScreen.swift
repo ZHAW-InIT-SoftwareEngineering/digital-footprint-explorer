@@ -58,14 +58,15 @@ struct WidgetHelpScreen: View {
                 }
                 Section("What it shows") {
                     Text("The widget shows your latest saved garden, estimate, date and input source. Tap it to open Today.")
-                    Text("Only this small summary is shared with the widget. Your detailed inputs and garden preferences stay in the app.")
-                    Text("It updates after the app imports a completed day. iOS decides when the change appears, so it may take a little time.")
+                    Text("Automatic estimates share protected local setup, calculation inputs and category totals. The widget can keep a completed day for DFE to add to History. These shared files contain no app names or full history.")
+                        .accessibilityIdentifier("widget-help.sharedData")
+                    Text("The widget can refresh without opening DFE when iOS allows it. Check the saved date; an update at a fixed time is not guaranteed.")
                     if !FootprintWidgetPublisher.isAvailable {
                         Text("Widget updates are not available in this build. Your garden and entries still work in the app.")
                     }
                 }
                 Section {
-                    Link("Open Apple's widget guide", destination: URL(string: "https://support.apple.com/en-ie/guide/iphone/iphb8f1bf206/27/ios/27")!)
+                    Link("Open Apple's widget guide", destination: DeviceHelpLinks.widgets)
                         .frame(minHeight: 44).accessibilityIdentifier("widget-help.appleGuide")
                 } footer: {
                     Text("You choose where the widget belongs. iOS asks you to add it from the Home Screen; the app cannot place it for you.")

@@ -104,14 +104,14 @@ struct DailyGardenNotificationPlan: Codable, Equatable, Sendable {
     private static func reminderMessage(deliveryDay: String) -> (title: String, body: String) {
         choose([
             ("A Moment for Your Garden", "Curious about your digital footprint? Open your garden and explore your latest estimate."),
-            ("See Your Day Differently", "Take a fresh look at your phone habits. Your garden is a place to start."),
+            ("See Your Day Differently", "Take a fresh look at your device habits. Your garden is a place to start."),
             ("Step Into Your Garden", "What can your digital day tell you? Take a moment to explore your garden."),
             ("A Little Time to Reflect", "More than minutes on a screen. Open your garden for another view of your day."),
             ("What Does Your Day Leave Behind?", "Explore your digital footprint and find one small idea for today."),
             ("Your Garden, a Tap Away", "Pause for a moment and check in with your garden. Explore at your own pace."),
             ("A New Morning, a Small Step", "Make room for a small change today. Open your garden to explore the latest estimate."),
             ("Come Take a Look Around", "Your digital footprint is worth a moment. Visit your garden and see the latest estimate."),
-            ("Another View of Your Day", "Curious about your phone habits? Open your garden for a different view."),
+            ("Another View of Your Day", "Curious about your device habits? Open your garden for a different view."),
             ("A Quiet Moment for Your Day", "Take a breath and visit your garden. Explore your digital day at your own pace.")
         ], day: deliveryDay)
     }

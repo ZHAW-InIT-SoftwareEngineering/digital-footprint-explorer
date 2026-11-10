@@ -175,8 +175,8 @@ final class AutomaticOnboardingUITests: XCTestCase {
     private func assertSetupExplanation(in app: XCUIApplication) {
         let privacyHeading = AutomaticUITestSupport.element("automatic.localPrivacy", in: app)
         AutomaticUITestSupport.reach(privacyHeading, in: app)
-        XCTAssertTrue(privacyHeading.label.contains("Your activity stays on your iPhone"))
-        AutomaticUITestSupport.capture("Local privacy with locked iPhone")
+        XCTAssertTrue(privacyHeading.label.contains("Your activity stays on this device"))
+        AutomaticUITestSupport.capture("Local privacy with a distinct shield icon")
         let scope = app.staticTexts["automatic.estimateScope"]
         AutomaticUITestSupport.reach(scope, in: app)
         XCTAssertTrue(scope.label.contains("remain estimates"))

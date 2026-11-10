@@ -16,13 +16,19 @@ mkdir -p "$GRADLE_USER_HOME" "$KONAN_DATA_DIR"
 export GRADLE_USER_HOME="$(cd "$GRADLE_USER_HOME" && pwd -P)"
 export KONAN_DATA_DIR="$(cd "$KONAN_DATA_DIR" && pwd -P)"
 # [04] Use the requested simulator, or choose an available iPhone simulator without touching a real phone.
-simulator_id="${DFE_SIMULATOR_ID:-}"
-if [ -z "$simulator_id" ]; then
-  simulator_id="$(xcrun simctl list devices available -j | python3 -c 'import json,sys; data=json.load(sys.stdin)["devices"]; groups=sorted(((key, value) for key,value in data.items() if "iOS" in key), reverse=True); phones=[device for _,devices in groups for device in devices if device.get("isAvailable") and "iPhone" in device["name"]]; print(next((device["udid"] for device in phones if device["state"]=="Booted"), phones[0]["udid"] if phones else ""))')"
-fi
+simulator_id="$(xcrun simctl list devices available -j \
+  | python3 "$ios_dir/scripts/select-ios-simulator.py" --preferred-id "${DFE_SIMULATOR_ID:-}")"
 # [05] Explain the missing simulator instead of trying a build with no test destination.
 if [ -z "$simulator_id" ]; then
   echo "Install an iOS simulator runtime in Xcode Settings, then run this check again." >&2
+  exit 1
+fi
+# [08] Finish the first boot before Xcode starts its shorter test-launch timer.
+# Some runtimes report a migration failure with exit zero, so keep that failure visible too.
+boot_log="$cache_dir/simulator-boot.log"
+xcrun simctl bootstatus "$simulator_id" -b 2>&1 | tee "$boot_log"
+if grep -q 'Data Migration Failed' "$boot_log"; then
+  echo "The selected simulator could not finish data migration. Restart it before running the tests again." >&2
   exit 1
 fi
 # [06] Check the shared calculation first, then run controlled native tests without requesting personal Screen Time access.
@@ -36,3 +42,6 @@ xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp-ScreenTime -configura
   -skip-testing:iosAppTests/LiveScreenTimeImportTests \
   -skip-testing:iosAppTests/LiveAllActivityImportTests test
 echo "Test results: $result_bundle"
+# [07] A green Xcode exit must not hide skipped feature checks or an empty controlled suite.
+xcrun xcresulttool get test-results summary --path "$result_bundle" --compact \
+  | python3 "$ios_dir/scripts/check-controlled-test-summary.py"

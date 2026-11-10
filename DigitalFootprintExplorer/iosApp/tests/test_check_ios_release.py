@@ -33,10 +33,14 @@ class ReleaseChecksTests(unittest.TestCase):
         self.archive = self.root / 'DFE.xcarchive'
         self.app = self.archive / 'Products/Applications/DFE.app'
         self.widget = self.app / 'PlugIns/GardenWidget.appex'
+        self.watch = self.app / 'Watch/DFEWatch.app'
+        self.watch_widget = self.watch / 'PlugIns/WatchGardenWidget.appex'
         self.widget.mkdir(parents=True)
+        self.watch_widget.mkdir(parents=True)
         self.info = {
             'CFBundleIdentifier': release.APP_ID, 'CFBundleShortVersionString': '1.0',
             'CFBundleVersion': '1', 'CFBundleExecutable': 'DFE',
+            'DFESourceRevision': 'sha256:' + 'a' * 64,
             'DFEAppGroupIdentifier': release.GROUP_ID, 'UIDeviceFamily': [1],
             'MinimumOSVersion': '26.4', 'ITSAppUsesNonExemptEncryption': False,
             'DFEPrivacyPolicyURL': 'https://zhaw-init-softwareengineering.github.io/digital-footprint-explorer/privacy-policy.html',
@@ -44,6 +48,18 @@ class ReleaseChecksTests(unittest.TestCase):
             'CFBundleIcons': {'CFBundlePrimaryIcon': {'CFBundleIconName': 'AppIcon'}},
         }
         self.widget_info = dict(self.info, CFBundleIdentifier=release.WIDGET_ID, CFBundleExecutable='GardenWidget')
+        self.watch_info = {
+            'CFBundleIdentifier': release.WATCH_ID, 'CFBundleShortVersionString': '1.0',
+            'CFBundleVersion': '1', 'CFBundleExecutable': 'DFEWatch', 'CFBundlePackageType': 'APPL',
+            'CFBundleSupportedPlatforms': ['WatchOS'], 'UIDeviceFamily': [4], 'MinimumOSVersion': '10.0',
+            'WKApplication': True, 'WKCompanionAppBundleIdentifier': release.APP_ID,
+            'WKRunsIndependentlyOfCompanionApp': False, 'DFESourceRevision': self.info['DFESourceRevision'],
+            release.WATCH_GROUP_INFO_KEY: release.WATCH_GROUP_ID,
+            'CFBundleIcons': {'CFBundlePrimaryIcon': {'CFBundleIconName': 'AppIcon'}},
+        }
+        self.watch_widget_info = dict(self.watch_info,
+            CFBundleIdentifier=release.WATCH_WIDGET_ID, CFBundleExecutable='WatchGardenWidget',
+            CFBundlePackageType='XPC!', NSExtension={'NSExtensionPointIdentifier': 'com.apple.widgetkit-extension'})
         self.host_manifest = {
             'NSPrivacyTracking': False, 'NSPrivacyTrackingDomains': [],
             'NSPrivacyCollectedDataTypes': [],
@@ -53,22 +69,38 @@ class ReleaseChecksTests(unittest.TestCase):
             }],
         }
         self.widget_manifest = dict(self.host_manifest, NSPrivacyAccessedAPITypes=[])
+        self.watch_manifest = dict(self.widget_manifest, NSPrivacyAccessedAPITypes=[{
+            'NSPrivacyAccessedAPIType': 'NSPrivacyAccessedAPICategorySystemBootTime',
+            'NSPrivacyAccessedAPITypeReasons': ['35F9.1'],
+        }])
         self.write_bundle()
-        for bundle, executable in ((self.app, 'DFE'), (self.widget, 'GardenWidget')):
+        for bundle, executable in ((self.app, 'DFE'), (self.widget, 'GardenWidget'),
+                                   (self.watch, 'DFEWatch'), (self.watch_widget, 'WatchGardenWidget')):
             (bundle / executable).write_bytes(b'synthetic release executable')
             (bundle / 'embedded.mobileprovision').write_bytes(b'synthetic profile')
         (self.app / 'Assets.car').write_bytes(b'synthetic asset catalog')
+        (self.watch / 'Assets.car').write_bytes(b'synthetic watch asset catalog')
+        (self.watch_widget / 'Assets.car').write_bytes(b'synthetic watch widget asset catalog')
         self.app_entitlements = self.entitlements(release.APP_ID, True)
         self.widget_entitlements = self.entitlements(release.WIDGET_ID, False)
+        self.watch_entitlements = self.entitlements(release.WATCH_ID, False, release.WATCH_GROUP_ID)
+        self.watch_widget_entitlements = self.entitlements(release.WATCH_WIDGET_ID, False, release.WATCH_GROUP_ID)
         self.signing_certificates = {
             str(self.app): b'synthetic host signing certificate',
             str(self.widget): b'synthetic widget signing certificate',
+            str(self.watch): b'synthetic watch signing certificate',
+            str(self.watch_widget): b'synthetic watch widget signing certificate',
         }
         self.profiles = {
             str(self.app): self.profile(self.app_entitlements, self.signing_certificates[str(self.app)]),
             str(self.widget): self.profile(self.widget_entitlements, self.signing_certificates[str(self.widget)]),
+            str(self.watch): self.profile(self.watch_entitlements, self.signing_certificates[str(self.watch)]),
+            str(self.watch_widget): self.profile(self.watch_widget_entitlements, self.signing_certificates[str(self.watch_widget)]),
         }
         self.signature_valid = True
+        self.invalid_signatures = set()
+        self.forbidden_watch_libraries = b''
+        self.watch_link_inspection_succeeds = True
         self.certificate_extraction_succeeds = True
         self.certificate_export_writes_leaf = True
         self.certificate_export_paths = []
@@ -81,19 +113,23 @@ class ReleaseChecksTests(unittest.TestCase):
     def write_bundle(self):
         put_plist(self.app / 'Info.plist', self.info)
         put_plist(self.widget / 'Info.plist', self.widget_info)
+        put_plist(self.watch / 'Info.plist', self.watch_info)
+        put_plist(self.watch_widget / 'Info.plist', self.watch_widget_info)
         put_plist(self.app / 'PrivacyInfo.xcprivacy', self.host_manifest)
         put_plist(self.widget / 'PrivacyInfo.xcprivacy', self.widget_manifest)
+        put_plist(self.watch / 'PrivacyInfo.xcprivacy', self.watch_manifest)
+        put_plist(self.watch_widget / 'PrivacyInfo.xcprivacy', self.widget_manifest)
         put_plist(self.archive / 'Info.plist', {'ApplicationProperties': {
             key: self.info[key] for key in ('CFBundleIdentifier', 'CFBundleShortVersionString', 'CFBundleVersion')
         }})
 
     # [05] The pretend host may read activity; the pretend widget receives only the shared garden group.
     @staticmethod
-    def entitlements(identifier, usage):
+    def entitlements(identifier, usage, group=release.GROUP_ID):
         value = {
             'application-identifier': release.TEAM_ID + '.' + identifier,
             release.TEAM_KEY: release.TEAM_ID,
-            release.GROUP_KEY: [release.GROUP_ID], 'get-task-allow': False,
+            release.GROUP_KEY: [group], 'get-task-allow': False,
         }
         if usage:
             value.update({release.FAMILY_KEY: True, release.USAGE_KEY: True})
@@ -111,7 +147,10 @@ class ReleaseChecksTests(unittest.TestCase):
     # [07] Stand in for Apple's inspection tools. Any unexpected request fails instead of reaching real signing resources.
     def fake_command(self, command, **kwargs):
         if command[:3] == ['/usr/bin/codesign', '-d', '--entitlements']:
-            entitlements = self.app_entitlements if command[-1] == str(self.app) else self.widget_entitlements
+            entitlements = {
+                str(self.app): self.app_entitlements, str(self.widget): self.widget_entitlements,
+                str(self.watch): self.watch_entitlements, str(self.watch_widget): self.watch_widget_entitlements,
+            }[command[-1]]
             return subprocess.CompletedProcess(command, 0, plistlib.dumps(entitlements), b'')
         if command[:2] == ['/usr/bin/codesign', '-d'] and command[2].startswith('--extract-certificates'):
 
@@ -130,7 +169,12 @@ class ReleaseChecksTests(unittest.TestCase):
             bundle = str(Path(command[-1]).parent)
             return subprocess.CompletedProcess(command, 0, plistlib.dumps(self.profiles[bundle]), b'')
         if command[:2] == ['/usr/bin/codesign', '--verify']:
-            return subprocess.CompletedProcess(command, 0 if self.signature_valid else 1, b'', b'')
+            valid = self.signature_valid and command[-1] not in self.invalid_signatures
+            return subprocess.CompletedProcess(command, 0 if valid else 1, b'', b'')
+        if command[:2] == ['/usr/bin/otool', '-L']:
+            output = b'synthetic executable:\n\t/System/Library/Frameworks/Foundation.framework/Foundation\n'
+            return subprocess.CompletedProcess(command, 0 if self.watch_link_inspection_succeeds else 1,
+                output + self.forbidden_watch_libraries, b'')
         self.fail('Unexpected external command: ' + command[0])
 
     # [09] All tests use the same release entry point that checks a built app for a real review.
@@ -245,11 +289,13 @@ class ReleaseChecksTests(unittest.TestCase):
     def test_every_known_debug_marker_is_rejected_in_each_executable(self):
 
         markers = sorted(set(release.PREVIEW_MARKERS) | {
-            b'dfe.isolated-ui-screen-time', b'dfe.isolated-unit-screen-time.',
+            b'dfe.isolated-ui-screen-time', b'dfe.isolated-unit-screen-time.', b'DFE_WATCH_ENV',
             b'scheduleForceQuitReminderTest', b'DFE Reminder Test', b'-dfe-force-quit-reminder-test',
             b'ScreenTimeCoverageDiagnostics', b'DFEScreenTimeCoverageDiagnostics',
             b'-dfe-coverage-alternatives', b'ScreenTimeCoverageProbeReport', b'alternatives-v1.json'})
-        for bundle, executable in ((self.app, 'DFE'), (self.widget, 'GardenWidget')):
+        for bundle, executable in (
+                (self.app, 'DFE'), (self.widget, 'GardenWidget'),
+                (self.watch, 'DFEWatch'), (self.watch_widget, 'WatchGardenWidget')):
             for marker in markers:
                 with self.subTest(bundle=bundle.name, marker=marker.decode()):
                     (bundle / executable).write_bytes(b'executable ' + marker)
@@ -266,10 +312,12 @@ class ReleaseChecksTests(unittest.TestCase):
 
     # [23] The package should promise only the devices and system versions this automatic path supports.
     def test_wrong_device_family_and_minimum_ios_fail(self):
-        for key, value in (('UIDeviceFamily', [1, 2]), ('MinimumOSVersion', '16.0')):
-            with self.subTest(key=key):
-                put_plist(self.widget / 'Info.plist', dict(self.widget_info, **{key: value}))
-                self.assertFalse(self.inspect()['preparation_ok'])
+        for bundle, info in ((self.app, self.info), (self.widget, self.widget_info)):
+            for key, value in (('UIDeviceFamily', [1, 2]), ('MinimumOSVersion', '16.0')):
+                with self.subTest(bundle=bundle.name, key=key):
+                    put_plist(bundle / 'Info.plist', dict(info, **{key: value}))
+                    self.assertFalse(self.inspect()['preparation_ok'])
+                    put_plist(bundle / 'Info.plist', info)
 
     # [24] A changed filename must not turn a release check into a read of unrelated local files.
     def test_executable_cannot_escape_the_bundle(self):
@@ -318,6 +366,84 @@ class ReleaseChecksTests(unittest.TestCase):
         self.widget_entitlements['get-task-allow'] = True
         self.assertFalse(self.inspect()['store_checks']['debugger_disabled'])
 
+    # [33] A widget importer must declare its own route and carry its own approved Store profile.
+    def test_explicit_widget_import_route_accepts_its_own_valid_rights_and_profile(self):
+        self.info[release.WIDGET_AUTOMATIC_KEY] = True
+        self.widget_info[release.WIDGET_AUTOMATIC_KEY] = True
+        self.write_bundle()
+        self.widget_entitlements = self.entitlements(release.WIDGET_ID, True)
+        self.profiles[str(self.widget)] = self.profile(self.widget_entitlements,
+            self.signing_certificates[str(self.widget)])
+        result = self.inspect()
+        self.assertTrue(result['preparation_ok'])
+        self.assertTrue(result['store_static_checks_passed'])
+        self.assertTrue(result['widget_automatic_import_enabled'])
+        self.assertTrue(result['store_checks']['widget_protected_access_matches_mode'])
+        self.assertTrue(result['store_checks']['widget_distribution_profile'])
+        # A host profile with the same rights is still the wrong identity for the widget.
+        self.profiles[str(self.widget)] = deepcopy(self.profiles[str(self.app)])
+        self.assertFalse(self.inspect()['store_checks']['widget_distribution_profile'])
+
+    # [34] Declaring the new route cannot replace either Apple right or turn phone-test signing into Store signing.
+    def test_widget_import_route_rejects_missing_rights_and_development_profile(self):
+        self.info[release.WIDGET_AUTOMATIC_KEY] = True
+        self.widget_info[release.WIDGET_AUTOMATIC_KEY] = True
+        self.write_bundle()
+        baseline = self.entitlements(release.WIDGET_ID, True)
+        for key in (release.FAMILY_KEY, release.USAGE_KEY):
+            with self.subTest(missing_signed_right=key):
+                self.widget_entitlements = deepcopy(baseline)
+                self.widget_entitlements.pop(key)
+                self.profiles[str(self.widget)] = self.profile(baseline,
+                    self.signing_certificates[str(self.widget)])
+                result = self.inspect()
+                self.assertFalse(result['store_checks']['widget_protected_access_matches_mode'])
+                self.assertFalse(result['store_static_checks_passed'])
+            with self.subTest(missing_profile_right=key):
+                self.widget_entitlements = deepcopy(baseline)
+                incomplete = deepcopy(baseline)
+                incomplete.pop(key)
+                self.profiles[str(self.widget)] = self.profile(incomplete,
+                    self.signing_certificates[str(self.widget)])
+                self.assertFalse(self.inspect()['store_checks']['widget_distribution_profile'])
+        self.widget_entitlements = deepcopy(baseline)
+        self.profiles[str(self.widget)] = self.profile(baseline,
+            self.signing_certificates[str(self.widget)])
+        self.profiles[str(self.widget)]['ProvisionedDevices'] = ['synthetic-device']
+        self.assertFalse(self.inspect()['store_checks']['widget_distribution_profile'])
+        self.widget_entitlements['get-task-allow'] = True
+        self.assertFalse(self.inspect()['store_checks']['debugger_disabled'])
+
+    # [35] A host/widget disagreement or a non-Boolean flag must fail before Store signing is considered.
+    def test_widget_import_flags_must_match_and_be_actual_booleans(self):
+        for host, widget in ((True, False), (False, True), (True, 'true'), (1, True), (False, 0)):
+            with self.subTest(host=host, widget=widget):
+                self.info[release.WIDGET_AUTOMATIC_KEY] = host
+                self.widget_info[release.WIDGET_AUTOMATIC_KEY] = widget
+                self.write_bundle()
+                result = self.inspect()
+                self.assertFalse(result['bundle_checks']['widget_automatic_import_configuration_matches'])
+                self.assertFalse(result['preparation_ok'])
+                self.assertFalse(result['store_static_checks_passed'])
+
+    # [36] Giving the old cache-only widget both protected rights must still be rejected.
+    def test_legacy_widget_rejects_protected_rights_even_with_a_matching_profile(self):
+        self.widget_entitlements = self.entitlements(release.WIDGET_ID, True)
+        self.profiles[str(self.widget)] = self.profile(self.widget_entitlements,
+            self.signing_certificates[str(self.widget)])
+        for explicit_false in (False, True):
+            with self.subTest(explicit_false=explicit_false):
+                if explicit_false:
+                    self.info[release.WIDGET_AUTOMATIC_KEY] = False
+                    self.widget_info[release.WIDGET_AUTOMATIC_KEY] = False
+                    self.write_bundle()
+                result = self.inspect()
+                self.assertFalse(result['widget_automatic_import_enabled'])
+                self.assertFalse(result['store_checks']['widget_has_no_screen_time_keys'])
+                self.assertFalse(result['store_checks']['widget_protected_access_matches_mode'])
+                self.assertFalse(result['store_checks']['widget_distribution_profile'])
+                self.assertFalse(result['store_static_checks_passed'])
+
     # [29] Draft links and private addresses would leave customers without useful support or privacy information.
     def test_https_urls_reject_unpublished_placeholders_and_nonpublic_addresses(self):
         invalid = ['', 'http://zhaw.ch', 'https://example.com/policy', 'https://sub.example.org/',
@@ -364,6 +490,212 @@ class ReleaseChecksTests(unittest.TestCase):
             self.assertEqual(release.main(), 0)
         with patch('sys.argv', ['check-ios-release.py', '--archive', str(self.archive), '--require-store']), patch('builtins.print'):
             self.assertEqual(release.main(), 2)
+
+    # [37] A local source fingerprint and a committed revision are both useful, when both bundles carry the same value.
+    def test_automatic_widget_accepts_matching_hash_and_git_source_labels(self):
+        self.info[release.WIDGET_AUTOMATIC_KEY] = True
+        self.widget_info[release.WIDGET_AUTOMATIC_KEY] = True
+        for revision in ('sha256:' + 'a' * 64, '312922853d923e0b8fa4bb3bc1a7bc0d870c202b'):
+            with self.subTest(revision=revision):
+                self.info[release.SOURCE_REVISION_KEY] = revision
+                self.widget_info[release.SOURCE_REVISION_KEY] = revision
+                self.watch_info[release.SOURCE_REVISION_KEY] = revision
+                self.watch_widget_info[release.SOURCE_REVISION_KEY] = revision
+                self.write_bundle()
+                report = self.inspect()
+                self.assertTrue(report['bundle_checks']['source_identity_matches'])
+                self.assertTrue(report['preparation_ok'])
+                self.assertEqual(report['source_revision'], revision)
+
+    # [38] Two matching defaults are not proof of which source produced an automatic widget.
+    def test_automatic_widget_rejects_missing_placeholder_or_mismatched_source_labels(self):
+        self.info[release.WIDGET_AUTOMATIC_KEY] = True
+        self.widget_info[release.WIDGET_AUTOMATIC_KEY] = True
+        valid = 'sha256:' + 'a' * 64
+        invalid_pairs = (
+            (None, valid), (valid, None), ('', ''), (' ', ' '),
+            ('unavailable', 'unavailable'), ('UNKNOWN', 'UNKNOWN'),
+            ('$(DFE_SOURCE_REVISION)', '$(DFE_SOURCE_REVISION)'), ('${SOURCE_REVISION}', '${SOURCE_REVISION}'),
+            ('YOUR_SOURCE_REVISION', 'YOUR_SOURCE_REVISION'),
+            ('VERIFIED_SOURCE_FINGERPRINT', 'VERIFIED_SOURCE_FINGERPRINT'),
+            (True, True), (1, 1), (valid, 'sha256:' + 'b' * 64),
+            (valid + '\n', valid + '\n'),
+        )
+        for host, widget in invalid_pairs:
+            with self.subTest(host=host, widget=widget):
+                for info, revision in ((self.info, host), (self.widget_info, widget)):
+                    if revision is None:
+                        info.pop(release.SOURCE_REVISION_KEY, None)
+                    else:
+                        info[release.SOURCE_REVISION_KEY] = revision
+                self.write_bundle()
+                report = self.inspect()
+                self.assertFalse(report['bundle_checks']['source_identity_matches'])
+                self.assertFalse(report['preparation_ok'])
+
+    # [39] The older phone-only check stays usable, but a new watch companion needs the shared source label too.
+    def test_legacy_cache_only_widget_does_not_require_the_new_source_label(self):
+        self.info.pop(release.SOURCE_REVISION_KEY)
+        self.widget_info.pop(release.SOURCE_REVISION_KEY)
+        self.write_bundle()
+        report = self.inspect()
+        self.assertFalse(report['widget_automatic_import_enabled'])
+        self.assertTrue(report['bundle_checks']['source_identity_matches'])
+        self.assertFalse(report['bundle_checks']['watch_source_matches'])
+        self.assertFalse(report['preparation_ok'])
+
+    # [40] A phone widget at the wrong level cannot stand in for the watch app and its own extension.
+    def test_watch_companion_and_widget_must_have_the_expected_embedding(self):
+        moved_watch = self.app / 'DFEWatch.app'
+        self.watch.rename(moved_watch)
+        self.assertFalse(self.inspect()['preparation_ok'])
+        moved_watch.rename(self.watch)
+        moved_widget = self.app / 'PlugIns/WatchGardenWidget.appex'
+        self.watch_widget.rename(moved_widget)
+        self.assertFalse(self.inspect()['preparation_ok'])
+        moved_widget.rename(self.watch_widget)
+        extra = self.watch / 'PlugIns/Other.appex'
+        extra.mkdir()
+        self.assertFalse(self.inspect()['preparation_ok'])
+        extra.rmdir()
+        self.assertTrue(self.inspect()['preparation_ok'])
+
+    # [41] Watch users should see a phone companion, not a promise of independent watch activity measurement.
+    def test_watch_metadata_rejects_wrong_companion_platform_or_activity_route(self):
+        changes = (
+            (self.watch, self.watch_info, 'WKApplication', False),
+            (self.watch, self.watch_info, 'WKCompanionAppBundleIdentifier', 'another.ios.app'),
+            (self.watch, self.watch_info, 'WKRunsIndependentlyOfCompanionApp', True),
+            (self.watch, self.watch_info, 'WKWatchOnly', True),
+            (self.watch, self.watch_info, 'UIDeviceFamily', [1, 2]),
+            (self.watch, self.watch_info, 'MinimumOSVersion', '9.0'),
+            (self.watch_widget, self.watch_widget_info, 'CFBundleSupportedPlatforms', ['iPhoneOS']),
+            (self.watch_widget, self.watch_widget_info, 'CFBundlePackageType', 'APPL'),
+            (self.watch_widget, self.watch_widget_info, 'NSExtension', 'malformed'),
+            (self.watch_widget, self.watch_widget_info, release.WATCH_GROUP_INFO_KEY, release.GROUP_ID),
+            (self.watch_widget, self.watch_widget_info, release.WIDGET_AUTOMATIC_KEY, True),
+            (self.watch_widget, self.watch_widget_info, release.WIDGET_AUTOMATIC_KEY, 'false'),
+        )
+        for bundle, baseline, key, value in changes:
+            with self.subTest(bundle=bundle.name, key=key):
+                put_plist(bundle / 'Info.plist', dict(baseline, **{key: value}))
+                self.assertFalse(self.inspect()['bundle_checks']['watch_companion_metadata'])
+                put_plist(bundle / 'Info.plist', baseline)
+
+    # [42] An older watch executable can otherwise look fine beside the current phone build.
+    def test_watch_identifiers_versions_and_source_must_match_the_phone(self):
+        for bundle, baseline in ((self.watch, self.watch_info), (self.watch_widget, self.watch_widget_info)):
+            for key, value, check in (
+                ('CFBundleIdentifier', 'another.watch.app', 'watch_identifiers'),
+                ('CFBundleVersion', '2', 'watch_build_matches'),
+                ('CFBundleShortVersionString', '1.1', 'watch_version_matches'),
+                (release.SOURCE_REVISION_KEY, 'sha256:' + 'b' * 64, 'watch_source_matches'),
+                (release.SOURCE_REVISION_KEY, '$(DFE_SOURCE_REVISION)', 'watch_source_matches'),
+            ):
+                with self.subTest(bundle=bundle.name, key=key, value=value):
+                    put_plist(bundle / 'Info.plist', dict(baseline, **{key: value}))
+                    self.assertFalse(self.inspect()['bundle_checks'][check])
+                    put_plist(bundle / 'Info.plist', baseline)
+
+    # [43] The watch has its own protected local group; neither a phone profile nor extra activity rights belong there.
+    def test_watch_profile_identity_group_and_rights_are_checked_separately(self):
+        for bundle, entitlements, check in (
+            (self.watch, self.watch_entitlements, 'watch_distribution_profile'),
+            (self.watch_widget, self.watch_widget_entitlements, 'watch_widget_distribution_profile'),
+        ):
+            original = deepcopy(self.profiles[str(bundle)])
+            for key, value in ((release.GROUP_KEY, [release.GROUP_ID]),
+                               (release.GROUP_KEY, [release.WATCH_GROUP_ID, release.GROUP_ID]),
+                               (release.FAMILY_KEY, True), (release.USAGE_KEY, True),
+                               ('get-task-allow', True),
+                               ('application-identifier', release.TEAM_ID + '.' + release.APP_ID)):
+                with self.subTest(bundle=bundle.name, key=key):
+                    changed = deepcopy(original)
+                    changed['Entitlements'][key] = value
+                    self.profiles[str(bundle)] = changed
+                    self.assertFalse(self.inspect()['store_checks'][check])
+            self.profiles[str(bundle)] = original
+            entitlements[release.FAMILY_KEY] = True
+            self.assertFalse(self.inspect()['store_checks']['watch_has_no_screen_time_keys'])
+            entitlements.pop(release.FAMILY_KEY)
+        self.assertTrue(self.inspect()['store_static_checks_passed'])
+
+    # [44] The parent app's signature alone must not hide a broken or differently signed watch program.
+    def test_each_watch_signature_and_signing_leaf_must_match_its_own_profile(self):
+        for bundle, check in ((self.watch, 'watch_certificate_matches_profile'),
+                              (self.watch_widget, 'watch_widget_certificate_matches_profile')):
+            with self.subTest(bundle=bundle.name):
+                self.invalid_signatures.add(str(bundle))
+                self.assertFalse(self.inspect()['store_checks']['watch_signatures_valid'])
+                self.invalid_signatures.clear()
+                profile = self.profiles[str(bundle)]
+                original = profile['DeveloperCertificates']
+                profile['DeveloperCertificates'] = [self.signing_certificates[str(self.app)]]
+                self.assertFalse(self.inspect()['store_checks'][check])
+                profile['DeveloperCertificates'] = original
+        self.assertTrue(self.inspect()['store_static_checks_passed'])
+
+    # [45] A simulator or unsigned app can be inspected locally, but that is not verified watch Store signing.
+    def test_unsigned_watch_never_passes_store_signing_even_without_an_archive(self):
+        for bundle in (self.watch, self.watch_widget):
+            (bundle / 'embedded.mobileprovision').unlink()
+            self.invalid_signatures.add(str(bundle))
+        self.watch_entitlements.clear()
+        self.watch_widget_entitlements.clear()
+        result = release.inspect_bundle(self.app)
+        self.assertTrue(result['preparation_ok'])
+        self.assertEqual(result['inspection_scope'], 'local bundle')
+        self.assertNotIn('archive_identity_matches', result['bundle_checks'])
+        self.assertFalse(result['store_checks']['watch_signatures_valid'])
+        self.assertFalse(result['store_checks']['watch_distribution_profile'])
+        self.assertFalse(result['store_checks']['watch_widget_distribution_profile'])
+        self.assertFalse(result['store_static_checks_passed'])
+
+    # [46] The watch displays the phone's saved result; linking its importer would give a misleading architecture.
+    def test_watch_framework_review_rejects_phone_imports_and_missing_inspection(self):
+        for framework in ('FamilyControls', 'DeviceActivity', 'ManagedSettings', 'Shared'):
+            with self.subTest(framework=framework):
+                self.forbidden_watch_libraries = f'/Frameworks/{framework}.framework/{framework}'.encode()
+                self.assertFalse(self.inspect()['bundle_checks']['watch_framework_links_reviewed'])
+        self.forbidden_watch_libraries = b''
+        self.watch_link_inspection_succeeds = False
+        self.assertFalse(self.inspect()['bundle_checks']['watch_framework_links_reviewed'])
+
+    # [47] Local phone results and test examples belong in private storage, never inside a submitted app bundle.
+    def test_watch_payloads_examples_and_unreviewed_privacy_fail_preparation(self):
+        payload = self.watch / 'phone-garden-companion-v1.json'
+        payload.write_text('{}')
+        self.assertFalse(self.inspect()['bundle_checks']['watch_payload_not_packaged'])
+        payload.unlink()
+        (self.watch_widget / 'WatchGardenWidget').write_bytes(b'executable -ui-example-history')
+        self.assertFalse(self.inspect()['bundle_checks']['watch_preview_absent'])
+        (self.watch_widget / 'WatchGardenWidget').write_bytes(b'synthetic release executable')
+        put_plist(self.watch / 'PrivacyInfo.xcprivacy', self.host_manifest)
+        self.assertFalse(self.inspect()['bundle_checks']['watch_privacy_manifests'])
+        put_plist(self.watch / 'PrivacyInfo.xcprivacy', self.watch_manifest)
+        (self.watch_widget / 'Assets.car').unlink()
+        self.assertFalse(self.inspect()['bundle_checks']['watch_assets_packaged'])
+
+    # [48] Only the Watch app measures its local refresh wait. Copying that reason to its widget would hide new API use.
+    def test_watch_elapsed_time_reason_is_required_only_where_used(self):
+        for manifest in (self.widget_manifest, self.host_manifest,
+                         dict(self.watch_manifest, NSPrivacyAccessedAPITypes=[{
+                             'NSPrivacyAccessedAPIType': 'NSPrivacyAccessedAPICategorySystemBootTime',
+                             'NSPrivacyAccessedAPITypeReasons': ['CA92.1'],
+                         }])):
+            with self.subTest(manifest=manifest):
+                put_plist(self.watch / 'PrivacyInfo.xcprivacy', manifest)
+                self.assertFalse(self.inspect()['bundle_checks']['watch_privacy_manifests'])
+        put_plist(self.watch / 'PrivacyInfo.xcprivacy', self.watch_manifest)
+        put_plist(self.watch_widget / 'PrivacyInfo.xcprivacy', self.watch_manifest)
+        self.assertFalse(self.inspect()['bundle_checks']['watch_privacy_manifests'])
+        put_plist(self.watch_widget / 'PrivacyInfo.xcprivacy', self.widget_manifest)
+        self.assertTrue(self.inspect()['bundle_checks']['watch_privacy_manifests'])
+        ios_root = SCRIPT.parents[1]
+        self.assertTrue(release.privacy_manifest_matches(
+            release.read_plist(ios_root / 'WatchApp/PrivacyInfo.xcprivacy'), False, needs_elapsed_time=True))
+        self.assertTrue(release.privacy_manifest_matches(
+            release.read_plist(ios_root / 'WatchWidgets/PrivacyInfo.xcprivacy'), False))
 
 
 if __name__ == '__main__':

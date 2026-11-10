@@ -154,9 +154,15 @@ final class DeleteConfirmationUITests: XCTestCase {
     }
 
     private func assertLocalReset(in app: XCUIApplication) {
-        show("Today", contentID: "today.content", in: app)
-        XCTAssertTrue(app.buttons["onboarding.automatic"].waitForExistence(timeout: 8))
-        XCTAssertFalse(app.staticTexts["footprint.total"].exists)
+        let today = show("Today", contentID: "today.content", in: app)
+        // [07] Erasing the saved days leaves permission in place, so the garden can start again.
+        let pending = today.staticTexts["today.automaticPending"]
+        XCTAssertTrue(pending.waitForExistence(timeout: 8))
+        XCTAssertEqual(pending.label, "Let your next day take shape")
+        XCTAssertFalse(today.buttons["onboarding.automatic"].exists)
+        XCTAssertFalse(today.buttons["today.automaticSetup"].exists)
+        XCTAssertFalse(today.buttons["today.dayDetails"].exists)
+        XCTAssertFalse(today.staticTexts["footprint.total"].exists)
         let history = show("History", contentID: "history.content", in: app)
         let empty = history.staticTexts["history.empty"]
         AutomaticUITestSupport.reach(empty, in: app, inside: history,
@@ -164,9 +170,10 @@ final class DeleteConfirmationUITests: XCTestCase {
         XCTAssertEqual(empty.label, "No saved days yet")
         XCTAssertEqual(history.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "history.day.")).count, 0)
         let settings = show("Settings", contentID: "settings.form", in: app)
-        let setup = AutomaticUITestSupport.element("settings.automaticSetup", in: settings)
-        reachSettings(setup, in: app)
-        XCTAssertEqual(setup.label, "Enable automatic estimates")
+        let status = AutomaticUITestSupport.element("screen-time.status", in: settings)
+        reachSettings(status, in: app)
+        XCTAssertEqual(status.label, "Connected")
+        XCTAssertFalse(settings.buttons["settings.automaticSetup"].exists)
         let notification = settings.switches["settings.dailyGardenNotification"]
         reachSettings(notification, in: app)
         waitForNotification("0", in: notification)

@@ -9,7 +9,35 @@
 /* Begin PBXBuildFile section */
 		DFE00000000000000000010E /* GardenWidget.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = DFE000000000000000000100 /* GardenWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		DFE000000000000000000112 /* Shared garden assets in Resources */ = {isa = PBXBuildFile; fileRef = DFE000000000000000000113 /* Shared garden assets */; };
+		DFE000000000000000000260 /* Watch garden assets in Resources */ = {
+			isa = PBXBuildFile;
+			fileRef = DFE000000000000000000261;
+		};
+		DFE000000000000000000262 /* Embedded Watch product */ = {
+			isa = PBXBuildFile;
+			fileRef = DFE000000000000000000202;
+			settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); };
+		};
+		DFE000000000000000000263 /* Embedded Watch product */ = {
+			isa = PBXBuildFile;
+			fileRef = DFE000000000000000000203;
+			settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); };
+		};
 /* End PBXBuildFile section */
+
+/* Begin PBXAggregateTarget section */
+		DFE000000000000000000130 /* SharedFrameworkProducer */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = DFE000000000000000000131 /* Build configuration list for PBXAggregateTarget "SharedFrameworkProducer" */;
+			buildPhases = (
+				30F37E60F75DDBAEADE13C7E /* Compile Kotlin Framework */,
+			);
+			dependencies = (
+			);
+			name = SharedFrameworkProducer;
+			productName = SharedFrameworkProducer;
+		};
+/* End PBXAggregateTarget section */
 
 /* Begin PBXContainerItemProxy section */
 		DFE000000000000000000017 /* PBXContainerItemProxy */ = {
@@ -33,6 +61,34 @@
 			remoteGlobalIDString = DFE000000000000000000108;
 			remoteInfo = GardenWidget;
 		};
+		DFE000000000000000000138 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 06217D302ADDD51FA38E60D1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = DFE000000000000000000130;
+			remoteInfo = SharedFrameworkProducer;
+		};
+		DFE000000000000000000282 /* WatchApp */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 06217D302ADDD51FA38E60D1;
+			proxyType = 1;
+			remoteGlobalIDString = DFE000000000000000000200;
+			remoteInfo = WatchApp;
+		};
+		DFE000000000000000000283 /* WatchGardenWidget */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 06217D302ADDD51FA38E60D1;
+			proxyType = 1;
+			remoteGlobalIDString = DFE000000000000000000201;
+			remoteInfo = WatchGardenWidget;
+		};
+		DFE000000000000000000316 /* WatchAppUITests host proxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 06217D302ADDD51FA38E60D1;
+			proxyType = 1;
+			remoteGlobalIDString = DFE000000000000000000200;
+			remoteInfo = WatchApp;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -47,6 +103,24 @@
 			name = "Embed App Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		DFE000000000000000000270 /* Embed Watch widget */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (DFE000000000000000000263, );
+			name = "Embed Watch widget";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DFE000000000000000000271 /* Embed Watch app */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (DFE000000000000000000262, );
+			name = "Embed Watch app";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
@@ -55,6 +129,32 @@
 		DFE000000000000000000002 /* iosAppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; path = iosAppUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		DFE000000000000000000100 /* GardenWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = GardenWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		DFE000000000000000000113 /* Shared garden assets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = "Shared garden assets"; path = iosApp/Assets.xcassets; sourceTree = SOURCE_ROOT; };
+		DFE000000000000000000202 /* DFEWatch.app */ = {
+			isa = PBXFileReference;
+			explicitFileType = wrapper.application;
+			includeInIndex = 0;
+			path = DFEWatch.app;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		DFE000000000000000000203 /* WatchGardenWidget.appex */ = {
+			isa = PBXFileReference;
+			explicitFileType = "wrapper.app-extension";
+			includeInIndex = 0;
+			path = WatchGardenWidget.appex;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		DFE000000000000000000261 /* Watch garden assets */ = {
+			isa = PBXFileReference;
+			lastKnownFileType = folder.assetcatalog;
+			path = WatchApp/Assets.xcassets;
+			sourceTree = SOURCE_ROOT;
+		};
+		DFE000000000000000000302 /* WatchAppUITests.xctest */ = {
+			isa = PBXFileReference;
+			explicitFileType = wrapper.cfbundle;
+			path = WatchAppUITests.xctest;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -71,6 +171,16 @@
 				Info.plist,
 			);
 			target = F2331A42642BB616260C67E2 /* iosApp */;
+		};
+		DFE000000000000000000220 /* Exceptions for WatchApp */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (Info.plist, );
+			target = DFE000000000000000000200;
+		};
+		DFE000000000000000000221 /* Exceptions for WatchGardenWidget */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (Info.plist, );
+			target = DFE000000000000000000201;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -111,6 +221,28 @@
 			path = WidgetShared;
 			sourceTree = "<group>";
 		};
+		DFE000000000000000000210 /* WatchApp */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (DFE000000000000000000220, );
+			path = WatchApp;
+			sourceTree = "<group>";
+		};
+		DFE000000000000000000211 /* WatchWidgets */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (DFE000000000000000000221, );
+			path = WatchWidgets;
+			sourceTree = "<group>";
+		};
+		DFE000000000000000000212 /* CompanionShared */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = CompanionShared;
+			sourceTree = "<group>";
+		};
+		DFE000000000000000000301 /* WatchAppUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = WatchAppUITests;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -142,12 +274,33 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		DFE000000000000000000240 /* PBXFrameworksBuildPhase */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = ();
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DFE000000000000000000241 /* PBXFrameworksBuildPhase */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = ();
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DFE000000000000000000304 /* WatchAppUITests PBXFrameworksBuildPhase */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = ();
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		B913F09CE4AEDA480B1B57FF /* Products */ = {
 			isa = PBXGroup;
 			children = (
+				DFE000000000000000000302 /* WatchAppUITests.xctest */,
+				DFE000000000000000000202,
+				DFE000000000000000000203,
 				DE089A095E9934C524C1625B /* digitalfootprintexplorer.app */,
 				DFE000000000000000000001 /* iosAppTests.xctest */,
 				DFE000000000000000000002 /* iosAppUITests.xctest */,
@@ -159,6 +312,11 @@
 		E13B7F4A89C6F16BD8145452 = {
 			isa = PBXGroup;
 			children = (
+				DFE000000000000000000301 /* WatchAppUITests */,
+				DFE000000000000000000210,
+				DFE000000000000000000211,
+				DFE000000000000000000212,
+				DFE000000000000000000261,
 				623FC11B3F0EFD86F88B9F9B /* Configuration */,
 				DFE000000000000000000003 /* iosAppTests */,
 				DFE000000000000000000004 /* iosAppUITests */,
@@ -226,6 +384,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				DFE000000000000000000137 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				DFE000000000000000000101 /* GardenWidget */,
@@ -240,7 +399,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 739EBB14C0F0161F51DF3FA8 /* Build configuration list for PBXNativeTarget "iosApp" */;
 			buildPhases = (
-				30F37E60F75DDBAEADE13C7E /* Compile Kotlin Framework */,
+				DFE000000000000000000271,
 				B0FB53BF4D4DB05D51E09E2E /* Sources */,
 				777D4A825D7AA51E67C1F7F6 /* Frameworks */,
 				028A1912568E442F7738CC6C /* Resources */,
@@ -249,9 +408,12 @@
 			buildRules = (
 			);
 			dependencies = (
+				DFE000000000000000000280,
 				DFE000000000000000000110 /* PBXTargetDependency */,
+				DFE000000000000000000136 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
+				DFE000000000000000000212,
 				4089A98A4390BC63C941E6A6 /* iosApp */,
 				DFE000000000000000000102 /* WidgetShared */,
 			);
@@ -261,6 +423,42 @@
 			productName = iosApp;
 			productReference = DE089A095E9934C524C1625B /* digitalfootprintexplorer.app */;
 			productType = "com.apple.product-type.application";
+		};
+		DFE000000000000000000200 /* WatchApp */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = DFE000000000000000000290;
+			buildPhases = (DFE000000000000000000230, DFE000000000000000000240, DFE000000000000000000250, DFE000000000000000000270, );
+			buildRules = ();
+			dependencies = (DFE000000000000000000281, );
+			fileSystemSynchronizedGroups = (DFE000000000000000000210, DFE000000000000000000212, );
+			name = WatchApp;
+			productName = WatchApp;
+			productReference = DFE000000000000000000202;
+			productType = "com.apple.product-type.application";
+		};
+		DFE000000000000000000201 /* WatchGardenWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = DFE000000000000000000291;
+			buildPhases = (DFE000000000000000000231, DFE000000000000000000241, DFE000000000000000000251, );
+			buildRules = ();
+			dependencies = ();
+			fileSystemSynchronizedGroups = (DFE000000000000000000211, DFE000000000000000000212, );
+			name = WatchGardenWidget;
+			productName = WatchGardenWidget;
+			productReference = DFE000000000000000000203;
+			productType = "com.apple.product-type.app-extension";
+		};
+		DFE000000000000000000300 /* WatchAppUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = DFE000000000000000000314;
+			buildPhases = (DFE000000000000000000303, DFE000000000000000000304, DFE000000000000000000305, );
+			buildRules = ();
+			dependencies = (DFE000000000000000000315, );
+			fileSystemSynchronizedGroups = (DFE000000000000000000301, );
+			name = WatchAppUITests;
+			productName = WatchAppUITests;
+			productReference = DFE000000000000000000302;
+			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 /* End PBXNativeTarget section */
 
@@ -272,6 +470,10 @@
 				LastSwiftUpdateCheck = 1620;
 				LastUpgradeCheck = 1620;
 				TargetAttributes = {
+					DFE000000000000000000300 = {
+						CreatedOnToolsVersion = 27.2;
+						TestTargetID = DFE000000000000000000200;
+					};
 					DFE000000000000000000108 = {
 						CreatedOnToolsVersion = 27.0;
 						SystemCapabilities = {
@@ -304,10 +506,14 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
+				DFE000000000000000000300 /* WatchAppUITests */,
+				DFE000000000000000000200,
+				DFE000000000000000000201,
 				F2331A42642BB616260C67E2 /* iosApp */,
 				DFE00000000000000000000B /* iosAppTests */,
 				DFE00000000000000000000C /* iosAppUITests */,
 				DFE000000000000000000108 /* GardenWidget */,
+				DFE000000000000000000130 /* SharedFrameworkProducer */,
 			);
 		};
 /* End PBXProject section */
@@ -342,10 +548,28 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		DFE000000000000000000250 /* PBXResourcesBuildPhase */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = ();
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DFE000000000000000000251 /* PBXResourcesBuildPhase */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (DFE000000000000000000260, );
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DFE000000000000000000305 /* WatchAppUITests PBXResourcesBuildPhase */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = ();
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-/* [01] Build the neighbouring shared model so iOS uses the same calculation rules as Android. */
+/* [01] Build the shared calculation once, before either the app or widget needs it on a clean checkout. */
 		30F37E60F75DDBAEADE13C7E /* Compile Kotlin Framework */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
@@ -396,6 +620,24 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		DFE000000000000000000230 /* PBXSourcesBuildPhase */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = ();
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DFE000000000000000000231 /* PBXSourcesBuildPhase */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = ();
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DFE000000000000000000303 /* WatchAppUITests PBXSourcesBuildPhase */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = ();
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -414,6 +656,31 @@
 			target = DFE000000000000000000108 /* GardenWidget */;
 			targetProxy = DFE000000000000000000111 /* PBXContainerItemProxy */;
 		};
+		DFE000000000000000000136 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = DFE000000000000000000130 /* SharedFrameworkProducer */;
+			targetProxy = DFE000000000000000000138 /* PBXContainerItemProxy */;
+		};
+		DFE000000000000000000137 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = DFE000000000000000000130 /* SharedFrameworkProducer */;
+			targetProxy = DFE000000000000000000138 /* PBXContainerItemProxy */;
+		};
+		DFE000000000000000000280 /* WatchApp */ = {
+			isa = PBXTargetDependency;
+			target = DFE000000000000000000200;
+			targetProxy = DFE000000000000000000282;
+		};
+		DFE000000000000000000281 /* WatchGardenWidget */ = {
+			isa = PBXTargetDependency;
+			target = DFE000000000000000000201;
+			targetProxy = DFE000000000000000000283;
+		};
+		DFE000000000000000000315 /* WatchAppUITests host */ = {
+			isa = PBXTargetDependency;
+			target = DFE000000000000000000200;
+			targetProxy = DFE000000000000000000316;
+		};
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
@@ -429,12 +696,11 @@
 				DEVELOPMENT_TEAM = "${TEAM_ID}";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = iosApp/Info.plist;
+				INFOPLIST_FILE = Configuration/AppCacheOnlyInfo.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Digital Footprint";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -518,12 +784,11 @@
 				DEVELOPMENT_TEAM = "${TEAM_ID}";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = iosApp/Info.plist;
+				INFOPLIST_FILE = Configuration/AppCacheOnlyInfo.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Digital Footprint";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -814,6 +1079,7 @@
 		DFE000000000000000000022 /* ScreenTimeDebug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) SCREEN_TIME_ENABLED DFE_WIDGET_AUTOMATIC_IMPORT";
 				ARCHS = arm64;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -828,7 +1094,6 @@
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -845,11 +1110,12 @@
 		DFE000000000000000000023 /* ScreenTimeRelease */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) SCREEN_TIME_ENABLED DFE_WIDGET_AUTOMATIC_IMPORT";
+				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				ARCHS = arm64;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_ASSET_PATHS = "\"iosApp/Preview Content\"";
 				DEVELOPMENT_TEAM = "${TEAM_ID}";
 				ENABLE_PREVIEWS = YES;
@@ -859,7 +1125,6 @@
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -958,14 +1223,16 @@
 		DFE00000000000000000010A /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				/* [03] Match the arm64 phone model bridge; the shared project does not build an Intel simulator framework. */
+				ARCHS = arm64;
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Configuration/Widget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = "$(TEAM_ID)";
-				FRAMEWORK_SEARCH_PATHS = "";
+				FRAMEWORK_SEARCH_PATHS = "$(inherited) $(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)";
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = GardenWidget/Info.plist;
+				INFOPLIST_FILE = Configuration/WidgetCacheOnlyInfo.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Footprint Explorer";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -973,7 +1240,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				OTHER_LDFLAGS = "";
+				OTHER_LDFLAGS = "$(inherited) -framework Shared -lsqlite3";
 				PRODUCT_BUNDLE_IDENTIFIER = "$(DFE_APP_BUNDLE_IDENTIFIER).GardenWidget";
 				PRODUCT_MODULE_NAME = GardenWidget;
 				PRODUCT_NAME = GardenWidget;
@@ -987,14 +1254,16 @@
 		DFE00000000000000000010B /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				/* [03] Match the arm64 phone model bridge; the shared project does not build an Intel simulator framework. */
+				ARCHS = arm64;
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Configuration/Widget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = "$(TEAM_ID)";
-				FRAMEWORK_SEARCH_PATHS = "";
+				FRAMEWORK_SEARCH_PATHS = "$(inherited) $(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)";
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = GardenWidget/Info.plist;
+				INFOPLIST_FILE = Configuration/WidgetCacheOnlyInfo.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Footprint Explorer";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1002,7 +1271,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				OTHER_LDFLAGS = "";
+				OTHER_LDFLAGS = "$(inherited) -framework Shared -lsqlite3";
 				PRODUCT_BUNDLE_IDENTIFIER = "$(DFE_APP_BUNDLE_IDENTIFIER).GardenWidget";
 				PRODUCT_MODULE_NAME = GardenWidget;
 				PRODUCT_NAME = GardenWidget;
@@ -1016,12 +1285,18 @@
 		DFE00000000000000000010C /* ScreenTimeDebug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				/* [03] Match the arm64 phone model bridge; the shared project does not build an Intel simulator framework. */
+				ARCHS = arm64;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) SCREEN_TIME_ENABLED WIDGET_EXTENSION DFE_WIDGET_AUTOMATIC_IMPORT";
+				FRAMEWORK_SEARCH_PATHS = "$(inherited) $(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)";
+				OTHER_LDFLAGS = "$(inherited) -framework Shared -lsqlite3";
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = Configuration/Widget.entitlements;
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_ENTITLEMENTS = Configuration/WidgetAutomatic.entitlements;
+				CODE_SIGN_STYLE = "$(DFE_WIDGET_CODE_SIGN_STYLE)";
+				CODE_SIGN_IDENTITY = "$(DFE_WIDGET_CODE_SIGN_IDENTITY)";
+				PROVISIONING_PROFILE_SPECIFIER = "$(DFE_WIDGET_PROFILE_SPECIFIER)";
 				DEVELOPMENT_TEAM = "$(TEAM_ID)";
-				FRAMEWORK_SEARCH_PATHS = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = GardenWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Footprint Explorer";
@@ -1031,7 +1306,6 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				OTHER_LDFLAGS = "";
 				PRODUCT_BUNDLE_IDENTIFIER = "$(DFE_APP_BUNDLE_IDENTIFIER).GardenWidget";
 				PRODUCT_MODULE_NAME = GardenWidget;
 				PRODUCT_NAME = GardenWidget;
@@ -1045,12 +1319,18 @@
 		DFE00000000000000000010D /* ScreenTimeRelease */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				/* [03] Match the arm64 phone model bridge; the shared project does not build an Intel simulator framework. */
+				ARCHS = arm64;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) SCREEN_TIME_ENABLED WIDGET_EXTENSION DFE_WIDGET_AUTOMATIC_IMPORT";
+				FRAMEWORK_SEARCH_PATHS = "$(inherited) $(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)";
+				OTHER_LDFLAGS = "$(inherited) -framework Shared -lsqlite3";
+				CODE_SIGN_STYLE = "$(DFE_WIDGET_CODE_SIGN_STYLE)";
+				CODE_SIGN_IDENTITY = "$(DFE_WIDGET_CODE_SIGN_IDENTITY)";
+				PROVISIONING_PROFILE_SPECIFIER = "$(DFE_WIDGET_PROFILE_SPECIFIER)";
+				CODE_SIGN_ENTITLEMENTS = Configuration/WidgetAutomatic.entitlements;
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = Configuration/Widget.entitlements;
-				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = "$(TEAM_ID)";
-				FRAMEWORK_SEARCH_PATHS = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = GardenWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Footprint Explorer";
@@ -1060,7 +1340,6 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				OTHER_LDFLAGS = "";
 				PRODUCT_BUNDLE_IDENTIFIER = "$(DFE_APP_BUNDLE_IDENTIFIER).GardenWidget";
 				PRODUCT_MODULE_NAME = GardenWidget;
 				PRODUCT_NAME = GardenWidget;
@@ -1068,6 +1347,410 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = ScreenTimeRelease;
+		};
+		DFE000000000000000000132 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = arm64;
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGN_ENTITLEMENTS = "";
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				/* [02] Kotlin needs a framework destination even for static code; keep it outside app bundles. */
+				FRAMEWORKS_FOLDER_PATH = "$(TARGET_NAME)/Frameworks";
+				KOTLIN_FRAMEWORK_BUILD_TYPE = Debug;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+			};
+			name = Debug;
+		};
+		DFE000000000000000000133 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = arm64;
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGN_ENTITLEMENTS = "";
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				/* [02] Kotlin needs a framework destination even for static code; keep it outside app bundles. */
+				FRAMEWORKS_FOLDER_PATH = "$(TARGET_NAME)/Frameworks";
+				KOTLIN_FRAMEWORK_BUILD_TYPE = Release;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+			};
+			name = Release;
+		};
+		DFE000000000000000000134 /* ScreenTimeDebug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = arm64;
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGN_ENTITLEMENTS = "";
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				/* [02] Kotlin needs a framework destination even for static code; keep it outside app bundles. */
+				FRAMEWORKS_FOLDER_PATH = "$(TARGET_NAME)/Frameworks";
+				KOTLIN_FRAMEWORK_BUILD_TYPE = Debug;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+			};
+			name = ScreenTimeDebug;
+		};
+		DFE000000000000000000135 /* ScreenTimeRelease */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = arm64;
+				CODE_SIGNING_ALLOWED = NO;
+				CODE_SIGN_ENTITLEMENTS = "";
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				/* [02] Kotlin needs a framework destination even for static code; keep it outside app bundles. */
+				FRAMEWORKS_FOLDER_PATH = "$(TARGET_NAME)/Frameworks";
+				KOTLIN_FRAMEWORK_BUILD_TYPE = Release;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+			};
+			name = ScreenTimeRelease;
+		};
+		DFE0000000000000000002A0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReferenceAnchor = 623FC11B3F0EFD86F88B9F9B;
+			baseConfigurationReferenceRelativePath = Watch.xcconfig;
+			buildSettings = {
+				SDKROOT = watchos;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				DEVELOPMENT_TEAM = "$(TEAM_ID)";
+				CODE_SIGN_ENTITLEMENTS = Configuration/Watch.entitlements;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = WatchApp/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Digital Footprint";
+				PRODUCT_NAME = DFEWatch;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(DFE_APP_BUNDLE_IDENTIFIER).watchkitapp";
+				PRODUCT_MODULE_NAME = WatchApp;
+				SWIFT_VERSION = 5.0;
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				OTHER_LDFLAGS = "";
+				FRAMEWORK_SEARCH_PATHS = "";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+			};
+			name = Debug;
+		};
+		DFE0000000000000000002A2 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReferenceAnchor = 623FC11B3F0EFD86F88B9F9B;
+			baseConfigurationReferenceRelativePath = Watch.xcconfig;
+			buildSettings = {
+				SDKROOT = watchos;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				DEVELOPMENT_TEAM = "$(TEAM_ID)";
+				CODE_SIGN_ENTITLEMENTS = Configuration/Watch.entitlements;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = WatchApp/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Digital Footprint";
+				PRODUCT_NAME = DFEWatch;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(DFE_APP_BUNDLE_IDENTIFIER).watchkitapp";
+				PRODUCT_MODULE_NAME = WatchApp;
+				SWIFT_VERSION = 5.0;
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				OTHER_LDFLAGS = "";
+				FRAMEWORK_SEARCH_PATHS = "";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+			};
+			name = Release;
+		};
+		DFE0000000000000000002A4 /* ScreenTimeDebug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReferenceAnchor = 623FC11B3F0EFD86F88B9F9B;
+			baseConfigurationReferenceRelativePath = Watch.xcconfig;
+			buildSettings = {
+				SDKROOT = watchos;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				DEVELOPMENT_TEAM = "$(TEAM_ID)";
+				CODE_SIGN_ENTITLEMENTS = Configuration/Watch.entitlements;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = WatchApp/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Digital Footprint";
+				PRODUCT_NAME = DFEWatch;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(DFE_APP_BUNDLE_IDENTIFIER).watchkitapp";
+				PRODUCT_MODULE_NAME = WatchApp;
+				SWIFT_VERSION = 5.0;
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				OTHER_LDFLAGS = "";
+				FRAMEWORK_SEARCH_PATHS = "";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+			};
+			name = ScreenTimeDebug;
+		};
+		DFE0000000000000000002A6 /* ScreenTimeRelease */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReferenceAnchor = 623FC11B3F0EFD86F88B9F9B;
+			baseConfigurationReferenceRelativePath = Watch.xcconfig;
+			buildSettings = {
+				SDKROOT = watchos;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				DEVELOPMENT_TEAM = "$(TEAM_ID)";
+				CODE_SIGN_ENTITLEMENTS = Configuration/Watch.entitlements;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = WatchApp/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Digital Footprint";
+				PRODUCT_NAME = DFEWatch;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(DFE_APP_BUNDLE_IDENTIFIER).watchkitapp";
+				PRODUCT_MODULE_NAME = WatchApp;
+				SWIFT_VERSION = 5.0;
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				OTHER_LDFLAGS = "";
+				FRAMEWORK_SEARCH_PATHS = "";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+			};
+			name = ScreenTimeRelease;
+		};
+		DFE0000000000000000002A1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReferenceAnchor = 623FC11B3F0EFD86F88B9F9B;
+			baseConfigurationReferenceRelativePath = Watch.xcconfig;
+			buildSettings = {
+				SDKROOT = watchos;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				DEVELOPMENT_TEAM = "$(TEAM_ID)";
+				CODE_SIGN_ENTITLEMENTS = Configuration/Watch.entitlements;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = WatchWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Digital Footprint";
+				PRODUCT_NAME = WatchGardenWidget;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(DFE_APP_BUNDLE_IDENTIFIER).watchkitapp.GardenWidget";
+				PRODUCT_MODULE_NAME = WatchGardenWidget;
+				SWIFT_VERSION = 5.0;
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				OTHER_LDFLAGS = "";
+				FRAMEWORK_SEARCH_PATHS = "";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				APPLICATION_EXTENSION_API_ONLY = YES;
+			};
+			name = Debug;
+		};
+		DFE0000000000000000002A3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReferenceAnchor = 623FC11B3F0EFD86F88B9F9B;
+			baseConfigurationReferenceRelativePath = Watch.xcconfig;
+			buildSettings = {
+				SDKROOT = watchos;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				DEVELOPMENT_TEAM = "$(TEAM_ID)";
+				CODE_SIGN_ENTITLEMENTS = Configuration/Watch.entitlements;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = WatchWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Digital Footprint";
+				PRODUCT_NAME = WatchGardenWidget;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(DFE_APP_BUNDLE_IDENTIFIER).watchkitapp.GardenWidget";
+				PRODUCT_MODULE_NAME = WatchGardenWidget;
+				SWIFT_VERSION = 5.0;
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				OTHER_LDFLAGS = "";
+				FRAMEWORK_SEARCH_PATHS = "";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				APPLICATION_EXTENSION_API_ONLY = YES;
+			};
+			name = Release;
+		};
+		DFE0000000000000000002A5 /* ScreenTimeDebug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReferenceAnchor = 623FC11B3F0EFD86F88B9F9B;
+			baseConfigurationReferenceRelativePath = Watch.xcconfig;
+			buildSettings = {
+				SDKROOT = watchos;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				DEVELOPMENT_TEAM = "$(TEAM_ID)";
+				CODE_SIGN_ENTITLEMENTS = Configuration/Watch.entitlements;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = WatchWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Digital Footprint";
+				PRODUCT_NAME = WatchGardenWidget;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(DFE_APP_BUNDLE_IDENTIFIER).watchkitapp.GardenWidget";
+				PRODUCT_MODULE_NAME = WatchGardenWidget;
+				SWIFT_VERSION = 5.0;
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				OTHER_LDFLAGS = "";
+				FRAMEWORK_SEARCH_PATHS = "";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				APPLICATION_EXTENSION_API_ONLY = YES;
+			};
+			name = ScreenTimeDebug;
+		};
+		DFE0000000000000000002A7 /* ScreenTimeRelease */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReferenceAnchor = 623FC11B3F0EFD86F88B9F9B;
+			baseConfigurationReferenceRelativePath = Watch.xcconfig;
+			buildSettings = {
+				SDKROOT = watchos;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				DEVELOPMENT_TEAM = "$(TEAM_ID)";
+				CODE_SIGN_ENTITLEMENTS = Configuration/Watch.entitlements;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = WatchWidgets/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Digital Footprint";
+				PRODUCT_NAME = WatchGardenWidget;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(DFE_APP_BUNDLE_IDENTIFIER).watchkitapp.GardenWidget";
+				PRODUCT_MODULE_NAME = WatchGardenWidget;
+				SWIFT_VERSION = 5.0;
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks @executable_path/../../Frameworks";
+				OTHER_LDFLAGS = "";
+				FRAMEWORK_SEARCH_PATHS = "";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				APPLICATION_EXTENSION_API_ONLY = YES;
+			};
+			name = ScreenTimeRelease;
+		};
+		DFE000000000000000000310 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReferenceAnchor = 623FC11B3F0EFD86F88B9F9B;
+			baseConfigurationReferenceRelativePath = Watch.xcconfig;
+			buildSettings = {
+				SDKROOT = watchos;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_ENTITLEMENTS = "";
+				DEVELOPMENT_TEAM = "$(TEAM_ID)";
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(DFE_APP_BUNDLE_IDENTIFIER).watchkitappUITests";
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = WatchApp;
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG";
+				OTHER_LDFLAGS = "";
+				FRAMEWORK_SEARCH_PATHS = "";
+			};
+			name = Debug;
+		};
+		DFE000000000000000000311 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReferenceAnchor = 623FC11B3F0EFD86F88B9F9B;
+			baseConfigurationReferenceRelativePath = Watch.xcconfig;
+			buildSettings = {
+				SDKROOT = watchos;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_ENTITLEMENTS = "";
+				DEVELOPMENT_TEAM = "$(TEAM_ID)";
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(DFE_APP_BUNDLE_IDENTIFIER).watchkitappUITests";
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = WatchApp;
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
+				OTHER_LDFLAGS = "";
+				FRAMEWORK_SEARCH_PATHS = "";
+			};
+			name = Release;
+		};
+		DFE000000000000000000312 /* ScreenTimeDebug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReferenceAnchor = 623FC11B3F0EFD86F88B9F9B;
+			baseConfigurationReferenceRelativePath = Watch.xcconfig;
+			buildSettings = {
+				SDKROOT = watchos;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_ENTITLEMENTS = "";
+				DEVELOPMENT_TEAM = "$(TEAM_ID)";
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(DFE_APP_BUNDLE_IDENTIFIER).watchkitappUITests";
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = WatchApp;
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG";
+				OTHER_LDFLAGS = "";
+				FRAMEWORK_SEARCH_PATHS = "";
+			};
+			name = ScreenTimeDebug;
+		};
+		DFE000000000000000000313 /* ScreenTimeRelease */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReferenceAnchor = 623FC11B3F0EFD86F88B9F9B;
+			baseConfigurationReferenceRelativePath = Watch.xcconfig;
+			buildSettings = {
+				SDKROOT = watchos;
+				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_ENTITLEMENTS = "";
+				DEVELOPMENT_TEAM = "$(TEAM_ID)";
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(DFE_APP_BUNDLE_IDENTIFIER).watchkitappUITests";
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = WatchApp;
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
+				OTHER_LDFLAGS = "";
+				FRAMEWORK_SEARCH_PATHS = "";
 			};
 			name = ScreenTimeRelease;
 		};
@@ -1126,6 +1809,35 @@
 				DFE00000000000000000010C /* ScreenTimeDebug */,
 				DFE00000000000000000010D /* ScreenTimeRelease */,
 			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		DFE000000000000000000131 /* Build configuration list for PBXAggregateTarget "SharedFrameworkProducer" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DFE000000000000000000132 /* Debug */,
+				DFE000000000000000000133 /* Release */,
+				DFE000000000000000000134 /* ScreenTimeDebug */,
+				DFE000000000000000000135 /* ScreenTimeRelease */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		DFE000000000000000000290 /* Build configuration list for WatchApp */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (DFE0000000000000000002A0, DFE0000000000000000002A2, DFE0000000000000000002A4, DFE0000000000000000002A6, );
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		DFE000000000000000000291 /* Build configuration list for WatchGardenWidget */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (DFE0000000000000000002A1, DFE0000000000000000002A3, DFE0000000000000000002A5, DFE0000000000000000002A7, );
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		DFE000000000000000000314 /* Build configuration list for WatchAppUITests */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (DFE000000000000000000310, DFE000000000000000000311, DFE000000000000000000312, DFE000000000000000000313, );
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};

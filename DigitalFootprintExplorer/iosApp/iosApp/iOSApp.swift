@@ -18,6 +18,7 @@
 import SwiftUI
 import UIKit
 import UserNotifications
+import Combine
 
 @MainActor
 // [01] Share one history, connection and notification service across all tabs and system callbacks.
@@ -26,15 +27,44 @@ final class AppServices {
     let store: FootprintStore
     let screenTime: ScreenTimeService
     let notifications: GardenNotificationService
+    let watch = WatchCompanionService()
     let navigation = AppNavigationState()
     lazy var background = BackgroundScheduler(store: store, screenTime: screenTime, notifications: notifications)
     private let refreshCoordinator = RefreshCoordinator<Void>()
     private let refreshKey = UUID()
+    private var watchStateObservation: AnyCancellable?
+    private var watchEnabledForProcess = false
+    static let watchSharingKey = WatchSharingPreference.key
 
     init(store suppliedStore: FootprintStore? = nil, screenTime suppliedScreenTime: ScreenTimeService? = nil) {
         store = suppliedStore ?? FootprintStore()
         screenTime = suppliedScreenTime ?? ScreenTimeService()
         notifications = GardenNotificationService(store: store)
+        // [16] Sharing a phone result with a paired Watch is a separate, saved choice.
+        // Test launches keep the real Watch session untouched.
+        #if DEBUG
+        let isTest = ProcessInfo.processInfo.arguments.contains("-ui-testing")
+            || ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+            || ProcessInfo.processInfo.environment["XCTestBundlePath"] != nil
+        #else
+        let isTest = false
+        #endif
+        if !isTest, WatchCompanionService.isSupported {
+            watchEnabledForProcess = true
+            watch.restoreSharingPreference(WatchSharingPreference.defaults.bool(forKey: Self.watchSharingKey))
+            watch.onRefreshRequested = { [weak self] in await self?.refresh() }
+            watchStateObservation = Publishers.CombineLatest(store.$archive, screenTime.$state).dropFirst().sink { [weak self] _ in
+                // [17] Read the settled values on the next turn. A cold launch may learn
+                // the Screen Time decision after it has loaded the last saved day.
+                Task { @MainActor [weak self] in self?.publishWatchGarden() }
+            }
+        }
+        screenTime.beforeWidgetAccessEnds = { [weak self] in
+            #if DFE_WIDGET_AUTOMATIC_IMPORT
+            self?.store.blockWidgetAutomaticInput()
+            #endif
+            self?.publishWatchGarden()
+        }
         #if DEBUG
         let args = ProcessInfo.processInfo.arguments
         if args.contains("-ui-testing"), args.contains("-ui-automatic-preview"),
@@ -45,6 +75,26 @@ final class AppServices {
             catch { store.report(error) }
         }
         #endif
+    }
+
+    func startWatchCompanion() {
+        guard watchEnabledForProcess else { return }
+        publishWatchGarden()
+        watch.start()
+    }
+
+    func setWatchSharing(_ enabled: Bool) {
+        guard watchEnabledForProcess else { return }
+        WatchSharingPreference.defaults.set(enabled, forKey: Self.watchSharingKey)
+        watch.setSharingEnabled(enabled)
+        if enabled { publishWatchGarden() }
+    }
+
+    private func publishWatchGarden() {
+        guard watchEnabledForProcess, watch.sharingEnabled else { return }
+        guard store.archive != nil else { watch.clear(); return }
+        watch.publish(snapshot: store.latest.map { GardenWidgetSnapshot(record: $0) },
+                      screenTimeAccess: screenTime.watchScreenTimeAccess)
     }
 
     // [03] One update path keeps the pull gesture, launch recovery and daily results in step.
@@ -98,11 +148,23 @@ final class AppServices {
         }
         // [07] Older routines stay readable, but this interface creates automatic days only.
         screenTime.refreshAuthorization()
+        publishWatchGarden()
+        #if DFE_WIDGET_AUTOMATIC_IMPORT
+        // [15] Only a confirmed all-app connection enables independent widget reads.
+        // The widget still asks Apple's API; this shared ticket cannot grant protected access.
+        do {
+            try store.configureWidgetAutomaticInput(enabled: screenTime.widgetAutomaticAccessDecision,
+                earliestDay: screenTime.widgetAutomaticStartDay)
+        } catch {
+            // [22] The phone can still import Screen Time if the widget's handoff is unreadable.
+            store.errorMessage = "The widget update could not be checked. Your saved history is kept."
+        }
+        #endif
         if store.usesAutomaticInput {
             do {
                 let backfillLimit = AppRefreshBackfillPolicy.limit(
                     isApplicationActive: UIApplication.shared.applicationState == .active)
-                result = try await screenTime.refreshAutomaticDays(store: store, backfillLimit: backfillLimit)
+                result = try await screenTime.refreshAutomaticDays(store: store, backfillLimit: backfillLimit, origin: .foreground)
             } catch is CancellationError {
                 #if DEBUG
                 outcome = "cancelled"
@@ -131,6 +193,9 @@ final class AppServices {
 final class ApplicationDelegate: NSObject, UIApplicationDelegate {
     private var gardenNotificationDelegate: GardenNotificationDelegate?
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+        #if DFE_WIDGET_AUTOMATIC_IMPORT
+        WidgetAutomaticReceiptMirror.copyIfPresent()
+        #endif
         // [09] iOS requires registration before application launch finishes.
         let services = AppServices.shared
         #if DEBUG
@@ -151,6 +216,7 @@ final class ApplicationDelegate: NSObject, UIApplicationDelegate {
         gardenNotificationDelegate = notificationDelegate
         UNUserNotificationCenter.current().delegate = notificationDelegate
         services.background.register()
+        services.startWatchCompanion()
         #if DEBUG
         // [12] A named development launch can prepare one labelled delivery check without
         // keeping a debugger attached. Ordinary launches never request this test reminder.
@@ -174,6 +240,7 @@ struct iOSApp: App {
     @StateObject private var screenTime = AppServices.shared.screenTime
     @StateObject private var navigation = AppServices.shared.navigation
     @StateObject private var notifications = AppServices.shared.notifications
+    @StateObject private var watch = AppServices.shared.watch
     @AppStorage(AppAppearance.storageKey, store: AppAppearance.preferenceStore)
     private var appearance: AppAppearance = AppAppearance.defaultPreference
 
@@ -186,6 +253,7 @@ struct iOSApp: App {
                 .environmentObject(screenTime)
                 .environmentObject(navigation)
                 .environmentObject(notifications)
+                .environmentObject(watch)
                 .task {
                     // [12] If iOS opens the app in the background, leave the daily work to that system request.
                     // If the screen becomes active later, the change handler below starts the open-app update.

@@ -31,7 +31,7 @@ struct DisconnectScreenTimeConfirmation: ViewModifier {
             Button("Disconnect", role: .destructive, action: disconnect)
                 .accessibilityIdentifier("screen-time.confirmDisconnect")
         } message: {
-            Text("Automatic estimates will pause. Your saved days will stay on this iPhone.")
+            Text("Automatic estimates will pause. Your saved days will stay on this device.")
         }
     }
 }

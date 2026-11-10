@@ -2,6 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!-- [12] The automatic widget route requires its own approved activity-access profile. -->
+	<!-- [13] Keep the actual source identity with technical checks, without guessing an absent value. -->
+	<key>DFESourceRevision</key>
+	<string>$(DFE_SOURCE_REVISION)</string>
+	<key>DFEWidgetAutomaticImportEnabled</key>
+	<true/>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<!-- [01] These modes let iOS consider background work. They do not promise an exact morning run or continuous

@@ -89,7 +89,7 @@ final class ConnectionConfirmationUITests: XCTestCase {
         assertSavedConnection(in: reopened, savedTotal: savedTotal)
     }
 
-    private let confirmationMessage = "Automatic estimates will pause. Your saved days will stay on this iPhone."
+    private let confirmationMessage = "Automatic estimates will pause. Your saved days will stay on this device."
     private typealias Confirmation = (alert: XCUIElement, backgroundHistoryFrame: CGRect)
 
     @discardableResult

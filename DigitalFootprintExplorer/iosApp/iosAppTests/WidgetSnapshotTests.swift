@@ -72,7 +72,7 @@ final class WidgetSnapshotTests: XCTestCase {
     func testPublisherReloadsOnlyWhenSavedContentChangesAndClearsData() throws {
         let storage = WidgetSnapshotStorage(directory: directory())
         var reloads = 0
-        let publisher = FootprintWidgetPublisher(storage: storage) { reloads += 1 }
+        let publisher = FootprintWidgetPublisher(storage: storage, reload: { reloads += 1 })
         try publisher.publish(snapshot())
         try publisher.publish(snapshot())
         XCTAssertEqual(reloads, 1)
@@ -90,7 +90,7 @@ final class WidgetSnapshotTests: XCTestCase {
     func testPublisherSavesNewCheckTimeWithoutReloadingTheSameGarden() throws {
         let storage = WidgetSnapshotStorage(directory: directory())
         var reloads = 0
-        let publisher = FootprintWidgetPublisher(storage: storage) { reloads += 1 }
+        let publisher = FootprintWidgetPublisher(storage: storage, reload: { reloads += 1 })
         let original = snapshot()
         let checkedAgain = GardenWidgetSnapshot(day: original.day, totalKg: original.totalKg,
             garden: original.garden, source: original.source,
@@ -113,7 +113,7 @@ final class WidgetSnapshotTests: XCTestCase {
         let folder = directory()
         let storage = WidgetSnapshotStorage(directory: folder.appendingPathComponent("widget"))
         var reloads = 0
-        let publisher = FootprintWidgetPublisher(storage: storage) { reloads += 1 }
+        let publisher = FootprintWidgetPublisher(storage: storage, reload: { reloads += 1 })
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0)!
         let store = FootprintStore(fileURL: folder.appendingPathComponent("history.json"),
@@ -159,7 +159,7 @@ final class WidgetSnapshotTests: XCTestCase {
         for (name, changed) in changes {
             let storage = WidgetSnapshotStorage(directory: directory())
             var reloads = 0
-            let publisher = FootprintWidgetPublisher(storage: storage) { reloads += 1 }
+            let publisher = FootprintWidgetPublisher(storage: storage, reload: { reloads += 1 })
             try publisher.publish(original)
             try publisher.publish(changed)
             XCTAssertEqual(reloads, 2, "A changed \(name) needs a new widget timeline")
@@ -172,7 +172,7 @@ final class WidgetSnapshotTests: XCTestCase {
     func testPublisherReloadsAfterRepairingAMissingOrDamagedSummary() throws {
         let storage = WidgetSnapshotStorage(directory: directory())
         var reloads = 0
-        let publisher = FootprintWidgetPublisher(storage: storage) { reloads += 1 }
+        let publisher = FootprintWidgetPublisher(storage: storage, reload: { reloads += 1 })
         let value = snapshot()
         try publisher.publish(value)
         let file = try XCTUnwrap(storage.fileURL)

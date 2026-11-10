@@ -1,8 +1,9 @@
 // [01] This build uses the Screen Time route. Its profile must allow both capabilities, and Apple's rules and
 // the user's permission still apply.
 #include "Config.xcconfig"
-// [02] The build flag includes the Screen Time connection code; it does not grant access on its own.
-SWIFT_ACTIVE_COMPILATION_CONDITIONS = $(inherited) SCREEN_TIME_ENABLED
+// [02] Compile the app and its widget checks with the same automatic route.
+// These flags include the code; Apple's permission still decides access.
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = $(inherited) SCREEN_TIME_ENABLED DFE_WIDGET_AUTOMATIC_IMPORT
 CODE_SIGN_ENTITLEMENTS = Configuration/ScreenTime.entitlements
 
 // [03] A local signing choice may select a different entitlement file. Check the finished signed app, not just

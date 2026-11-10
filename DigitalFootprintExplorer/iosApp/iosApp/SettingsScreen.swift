@@ -22,6 +22,8 @@ struct SettingsScreen: View {
     @ObservedObject var store: FootprintStore
     @ObservedObject var screenTime: ScreenTimeService
     @EnvironmentObject private var notifications: GardenNotificationService
+    @EnvironmentObject private var watch: WatchCompanionService
+    @AppStorage(AppServices.watchSharingKey, store: WatchSharingPreference.defaults) private var watchSharing = false
     @AppStorage(AppAppearance.storageKey, store: AppAppearance.preferenceStore)
     private var appearance: AppAppearance = .light
     @State private var delete = false
@@ -37,7 +39,7 @@ struct SettingsScreen: View {
                         .font(.title3.weight(.semibold))
                         .accessibilityAddTraits(.isHeader)
                         .accessibilityIdentifier("settings.intro")
-                    Text("Check your connection, choose a look you like, and manage the estimates saved on this iPhone.")
+                    Text("Check your connection, choose a look you like, and manage the estimates saved on this device.")
                         .font(.subheadline)
                         .foregroundStyle(.primary)
                         .accessibilityIdentifier("settings.introExplanation")
@@ -56,6 +58,9 @@ struct SettingsScreen: View {
                             Text("The iOS app uses the same category-based calculation as the Android app. It combines app use, estimated data traffic, screen brightness and background activity.")
                             Text("Traffic rates are fixed starting scenarios. They are not measured averages. A different rate can change the result a lot, especially for video.")
                             Text("The garden compares each day's estimate with your average from up to seven earlier days. Lower estimates help it grow, while higher estimates make it wilt. It shows a change in model estimates, rather than a measured environmental impact.")
+                            if let note = AdaptiveDeviceLayout.modelScopeNote(isPad: UIDevice.current.userInterfaceIdiom == .pad) {
+                                Text(note)
+                            }
                         }
                         .font(.subheadline)
                         .fixedSize(horizontal: false, vertical: true)
@@ -82,6 +87,28 @@ struct SettingsScreen: View {
 
                 GardenNotificationSettingsSection(notifications: notifications) {
                     await AppServices.shared.refresh()
+                }
+
+                if WatchCompanionService.isSupported && watch.watchIsPaired {
+                    settingsSection("On your Apple Watch", id: "watch") {
+                        Toggle(isOn: $watchSharing) {
+                            SettingsActionLabel("Show my garden on Apple Watch", symbol: "applewatch")
+                        }
+                        .tint(.green)
+                        .accessibilityIdentifier("settings.watchSharing")
+                        .onChange(of: watchSharing) { _, enabled in
+                            AppServices.shared.setWatchSharing(enabled)
+                        }
+                        Text(watchSharing
+                             ? "Only the latest saved estimate, date and garden are sent to your paired Watch. Updates may wait for a connection."
+                             : "Share your latest garden with your paired Watch when you choose. App names and activity times stay on your iPhone.")
+                            .font(.subheadline)
+                            .fixedSize(horizontal: false, vertical: true)
+                        if watchSharing {
+                            Text(watch.transferStatus).font(.footnote).foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
                 }
 
                 settingsSection("About this app", id: "about") {
@@ -114,11 +141,11 @@ struct SettingsScreen: View {
                 }
 
                 settingsSection("Your data", id: "data") {
-                    Text("Your daily estimates are stored on this iPhone and are not sent to a server. Earlier saved entries remain available to read.")
+                    Text("Your daily estimates are stored on this device and are not sent to a server. Earlier saved entries remain available to read.")
                         .font(.subheadline)
                         .fixedSize(horizontal: false, vertical: true)
                     if store.archive?.containsScreenTimeDerivedData == true {
-                        Text("History with Screen Time data stays on this iPhone. Export is not available.")
+                        Text("History with Screen Time data stays on this device. Export is not available.")
                             .font(.footnote).foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
                             .accessibilityIdentifier("settings.exportUnavailable")
@@ -157,8 +184,10 @@ struct SettingsScreen: View {
                     defer { isDeleting = false }
                     do {
                         // [05] Clear saved data first; only a successful deletion should reset the related local choices and notices.
-                        try store.deleteAll()
-                        screenTime.resetLocalData()
+                        try screenTime.deleteSavedEntries(in: store)
+                        AppServices.shared.watch.clear()
+                        watchSharing = false
+                        AppServices.shared.setWatchSharing(false)
                         AppAppearance.resetLocalPreferences()
                         await notifications.resetAfterDeletingHistory()
                     } catch { store.report(error) }

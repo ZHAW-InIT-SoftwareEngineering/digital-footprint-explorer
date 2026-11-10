@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- [01] The automatic widget needs both its own activity capability and the separate usage-data capability below. -->
+	<key>com.apple.developer.family-controls</key>
+	<true/>
+	<!-- [02] This requests expanded usage access. The profile, user consent and Apple's regional conditions still
+	     decide whether it is available. -->
+	<key>com.apple.developer.family-controls.app-and-website-usage</key>
+	<true/>
+	<!-- [03] Keep the saved setup, pending day and garden summary in the app's protected shared group. -->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>$(DFE_APP_GROUP_IDENTIFIER)</string>
+	</array>
+</dict>
+</plist>

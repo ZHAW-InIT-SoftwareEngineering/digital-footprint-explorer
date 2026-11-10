@@ -65,6 +65,8 @@ struct ContentView: View {
                     NavigationStack { SettingsScreen(store: store, screenTime: screenTime) }
                 }
             }
+            // [24] iPad and wide windows can use the native sidebar. iOS keeps compact windows as tabs.
+            .tabViewStyle(.sidebarAdaptable)
         } else {
             TabView(selection: $navigation.selectedTab) {
                 todayNavigation.tabItem { Label("Today", systemImage: "leaf") }.tag(FootprintTab.today)
@@ -152,7 +154,7 @@ private struct WelcomeScreen: View {
                         .frame(height: gardenHeight).accessibilityHidden(true)
                     Text("Make yourself at home.").font(.headline)
                         .fixedSize(horizontal: false, vertical: true)
-                    Text("A little space to notice your phone habits, one day at a time. Allow Screen Time once and let your garden take it from there.")
+                    Text("A little space to notice your device habits, one day at a time. Allow Screen Time once and let your garden take it from there.")
                         .font(.subheadline).fixedSize(horizontal: false, vertical: true)
                     Button { automaticSetup = true } label: {
                         Label("Automatic setup", systemImage: "clock.badge.checkmark")
@@ -188,103 +190,64 @@ private struct WelcomeScreen: View {
     }
 }
 
+// [23] The date and waiting message describe the saved period, regardless of the garden artwork.
+// A legacy entry saved today must not hide the unfinished automatic day or look like a completed import.
+struct TodayPresentation: Equatable {
+    let periodTitle: String?
+    let showsPendingMessage: Bool
+
+    init(record: FootprintRecord?, today: String, usesAutomaticInput: Bool) {
+        if let record {
+            if record.isCompleted && record.day < today { periodTitle = "Latest completed day" }
+            else if record.day == today { periodTitle = "Saved today" }
+            else { periodTitle = "Saved day" }
+        } else { periodTitle = nil }
+        let hasSavedToday = record.map { $0.day == today } ?? false
+        showsPendingMessage = usesAutomaticInput || !hasSavedToday
+    }
+}
+
 private struct TodayScreen: View {
     @ObservedObject var store: FootprintStore
     @ObservedObject var screenTime: ScreenTimeService
     @State private var automaticSetup = false
     @State private var widgetHelp = false
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.dynamicTypeSize) private var textSize
     private var todayRecord: FootprintRecord? { store.records.first { $0.day == store.today } }
     // [11] While today is unfinished, keep the latest saved garden visible with its actual date.
     private var displayedRecord: FootprintRecord? { todayRecord ?? store.latest }
+    private var presentation: TodayPresentation {
+        TodayPresentation(record: displayedRecord, today: store.today, usesAutomaticInput: store.usesAutomaticInput)
+    }
     // [12] Waiting for the first usable day should not ask the person to complete setup again.
     private var needsAutomaticSetup: Bool { !screenTime.hasSavedAutomaticSetup(store: store) }
 
     var body: some View {
         GeometryReader { viewport in
-            // [13] Leave the first action clear of the native floating tabs on small phones.
-            let gardenHeight = TodayGardenLayout.height(in: viewport.size.height)
+            let layout = AdaptiveDeviceLayout(width: viewport.size.width, height: viewport.size.height,
+                regularWidth: horizontalSizeClass == .regular, accessibilityText: textSize.isAccessibilitySize)
+            let overviewRecord = layout.usesSideBySideEstimate ? displayedRecord : nil
             ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    TodayWelcome()
-                    if let record = displayedRecord {
-                        VStack(spacing: 12) {
-                            if todayRecord == nil {
-                                ViewThatFits(in: .horizontal) {
-                                    HStack(spacing: 12) {
-                                        Text("Latest completed day").foregroundStyle(.secondary)
-                                        Spacer(minLength: 8)
-                                        Text(dayLabel(record.day)).fontWeight(.semibold)
-                                    }
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text("Latest completed day").foregroundStyle(.secondary)
-                                        Text(dayLabel(record.day)).fontWeight(.semibold)
-                                    }.frame(maxWidth: .infinity, alignment: .leading)
-                                }.font(.subheadline).padding(.bottom, 8)
-                            }
-                            FootprintSummary(record: record, gardenHeight: gardenHeight,
-                                             showsComparison: false, gardenWidth: TodayGardenLayout.maximumWidth)
-                        }
-                        // [14] Group the summary as one container, so iOS 17 keeps its accessibility identity
-                        // separate from the amount and garden state inside it.
-                        .accessibilityElement(children: .contain)
-                        .accessibilityIdentifier(todayRecord == nil ? "today.latestResult" : "today.currentResult")
+                Group {
+                    if layout.usesColumns {
+                        wideContent(layout: layout, overviewRecord: overviewRecord)
                     } else {
-                        VStack(spacing: 12) {
-                            GardenArtwork(state: .stable, maximumWidth: TodayGardenLayout.maximumWidth)
-                                .frame(height: gardenHeight).accessibilityHidden(true)
-                            Text("Your garden starts here").font(.headline)
-                                .multilineTextAlignment(.center)
-                            Text("Your garden is waiting with you. Your first estimate needs a completed day and usable activity from Apple.")
-                                .font(.subheadline).foregroundStyle(.secondary)
-                                .multilineTextAlignment(.center)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }.frame(maxWidth: .infinity)
+                        compactContent(gardenHeight: TodayGardenLayout.height(in: viewport.size.height))
                     }
-                    if needsAutomaticSetup {
-                        Button { automaticSetup = true } label: {
-                            Label("Automatic setup", systemImage: "clock.badge.checkmark")
-                                .font(.headline).frame(maxWidth: .infinity, minHeight: 28)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }.modifier(TodayActionStyle()).controlSize(.large)
-                            .accessibilityIdentifier("today.automaticSetup")
-                            .padding(.top, 12).padding(.bottom, 12)
-                    }
-                    if todayRecord == nil {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Label(store.usesAutomaticInput ? "Let your next day take shape" : "Let your garden follow your day",
-                                  systemImage: store.usesAutomaticInput ? "clock" : "leaf")
-                                .font(.subheadline.weight(.semibold)).fixedSize(horizontal: false, vertical: true)
-                                .accessibilityIdentifier("today.automaticPending")
-                            Text(store.usesAutomaticInput
-                                 ? "Today's estimate waits until this day ends and Apple provides usable activity. Missing activity stays pending."
-                                 : "Allow Screen Time once to start automatic estimates. No app-by-app selection or daily forms.")
-                                .font(.footnote).foregroundStyle(.secondary)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }.padding(.top, needsAutomaticSetup ? 0 : 12)
-                    }
-                    Spacer(minLength: 0)
-                    Button { widgetHelp = true } label: {
-                        Label("Set up a garden widget", systemImage: "square.grid.2x2")
-                            .font(.subheadline.weight(.semibold)).frame(minHeight: 44)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }.accessibilityIdentifier("today.widgetHelp")
-                    if let record = displayedRecord {
-                        // [15] Today stays a short overview; the saved day holds the full explanation.
-                        NavigationLink { RecordScreen(store: store, day: record.day) } label: {
-                            HStack(spacing: 12) {
-                                Text("View this day").font(.subheadline.weight(.semibold))
-                                Spacer(minLength: 8)
-                                Image(systemName: "chevron.right").font(.caption.weight(.semibold))
-                            }.frame(minHeight: 44)
-                        }.accessibilityIdentifier("today.dayDetails")
-                    }
-                }.padding(.horizontal, 20).padding(.top, TabPageLayout.todayTop).padding(.bottom, 24)
-                    .frame(maxWidth: 600).frame(maxWidth: .infinity)
-                    .frame(minHeight: viewport.size.height, alignment: .top)
+                }
+                .padding(.horizontal, layout.horizontalPadding)
+                .padding(.top, layout.usesSideBySideEstimate ? 36 : TabPageLayout.todayTop)
+                .padding(.bottom, TabPageLayout.bottom)
+                .frame(maxWidth: layout.contentWidth).frame(maxWidth: .infinity)
+                .frame(minHeight: viewport.size.height, alignment: .top)
             }.automaticRefresh()
                 .accessibilityIdentifier("today.content")
                 .background(FootprintAppearance.page)
                 .accessibilityHidden(automaticSetup || widgetHelp)
+                .withUITestAdaptiveGeometry(viewport: viewport.size,
+                    regularWidth: horizontalSizeClass == .regular,
+                    accessibilityText: textSize.isAccessibilitySize)
                 .navigationTitle("Today").navigationBarTitleDisplayMode(.inline)
         }.sheet(isPresented: $automaticSetup, onDismiss: { Task { await AppServices.shared.refresh() } }) {
             AutomaticOnboardingView(store: store, service: screenTime).withUITestTextSize()
@@ -292,19 +255,201 @@ private struct TodayScreen: View {
             WidgetHelpScreen().withUITestTextSize()
         }
     }
+
+    // [25] Small screens keep the same reading order, garden size and space above the floating tabs.
+    // Before the first estimate, widget help belongs close to the note about waiting.
+    private func compactContent(gardenHeight: CGFloat) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            TodayWelcome()
+            savedGarden(height: gardenHeight, width: TodayGardenLayout.maximumWidth)
+            setupAction
+            pendingExplanation()
+            if displayedRecord != nil { Spacer(minLength: 0) }
+            widgetAction()
+            dayDetailsAction()
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("today.compactLayout")
+    }
+
+    // [26] A wide window gives the garden its own space, with the next actions beside it.
+    // Both columns still read the same saved day; they never start a second calculation.
+    private func wideContent(layout: AdaptiveDeviceLayout, overviewRecord: FootprintRecord?) -> some View {
+        VStack(alignment: .leading, spacing: layout.usesSideBySideEstimate ? 20 : 24) {
+            TodayWelcome(prominent: layout.usesSideBySideEstimate)
+            HStack(alignment: .top, spacing: AdaptiveDeviceLayout.columnGap) {
+                Group {
+                    if layout.usesSideBySideEstimate {
+                        VStack(spacing: 12) {
+                            if let overviewRecord { savedPeriod(overviewRecord, font: .body) }
+                            GardenArtwork(state: overviewRecord?.garden ?? .stable, maximumWidth: layout.gardenWidth)
+                                .frame(height: layout.gardenHeight).accessibilityHidden(true)
+                        }
+                    } else {
+                        savedGarden(height: layout.gardenHeight, width: layout.gardenWidth)
+                    }
+                }.frame(maxWidth: .infinity, alignment: .top)
+                    .accessibilityElement(children: .contain)
+                    .accessibilityIdentifier("today.gardenColumn")
+                Group {
+                    if layout.usesSideBySideEstimate {
+                        overviewColumn(overviewRecord)
+                    } else {
+                        VStack(alignment: .leading, spacing: 24) {
+                            setupAction
+                            pendingExplanation()
+                            widgetAction()
+                            dayDetailsAction()
+                        }
+                    }
+                }.frame(width: layout.detailWidth, alignment: .leading)
+                    .accessibilityElement(children: .contain)
+                    .accessibilityIdentifier("today.actionsColumn")
+            }
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("today.wideLayout")
+    }
+
+    // [27] Keep the result and its main action together, where both fit beside the garden.
+    // The same saved record supplies the amount, the source and the garden's feedback.
+    private func overviewColumn(_ record: FootprintRecord?) -> some View {
+        VStack(alignment: .leading, spacing: 14) {
+            if let record {
+                FootprintSummary(record: record, showsComparison: false, showsGarden: false, inOverview: true)
+                    .accessibilityElement(children: .contain)
+                    .accessibilityIdentifier(todayRecord == nil ? "today.latestResult" : "today.currentResult")
+                dayDetailsAction(inOverview: true)
+                Divider().accessibilityHidden(true)
+            } else {
+                Text("Your garden starts here").font(.title2.weight(.semibold))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            setupAction
+            pendingExplanation(inOverview: true)
+            widgetAction(inOverview: true)
+        }
+    }
+
+    private func savedPeriod(_ record: FootprintRecord, font: Font = .subheadline) -> some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 12) {
+                Text(presentation.periodTitle ?? "Saved day").foregroundStyle(.secondary)
+                    .accessibilityIdentifier("today.periodLabel")
+                Spacer(minLength: 8)
+                Text(dayLabel(record.day)).fontWeight(.semibold)
+                    .accessibilityIdentifier("today.recordDate")
+            }
+            VStack(alignment: .leading, spacing: 4) {
+                Text(presentation.periodTitle ?? "Saved day").foregroundStyle(.secondary)
+                    .accessibilityIdentifier("today.periodLabel")
+                Text(dayLabel(record.day)).fontWeight(.semibold)
+                    .accessibilityIdentifier("today.recordDate")
+            }.frame(maxWidth: .infinity, alignment: .leading)
+        }.font(font)
+    }
+
+    @ViewBuilder
+    private func savedGarden(height: CGFloat, width: CGFloat) -> some View {
+        if let record = displayedRecord {
+            VStack(spacing: 12) {
+                savedPeriod(record).padding(.bottom, 8)
+                FootprintSummary(record: record, gardenHeight: height,
+                                 showsComparison: false, gardenWidth: width)
+            }
+            // [14] Keep the saved summary separate from the amount and garden state for VoiceOver.
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier(todayRecord == nil ? "today.latestResult" : "today.currentResult")
+        } else {
+            VStack(spacing: 12) {
+                GardenArtwork(state: .stable, maximumWidth: width)
+                    .frame(height: height).accessibilityHidden(true)
+                Text("Your garden starts here").font(.headline)
+                    .multilineTextAlignment(.center)
+                Text("Your garden is waiting with you. Your first estimate needs a completed day and usable activity from Apple.")
+                    .font(.subheadline).foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+            }.frame(maxWidth: .infinity)
+        }
+    }
+
+    @ViewBuilder
+    private var setupAction: some View {
+        if needsAutomaticSetup {
+            Button { automaticSetup = true } label: {
+                Label("Automatic setup", systemImage: "clock.badge.checkmark")
+                    .font(.headline).frame(maxWidth: .infinity, minHeight: 28)
+                    .fixedSize(horizontal: false, vertical: true)
+            }.modifier(TodayActionStyle()).controlSize(.large)
+                .accessibilityIdentifier("today.automaticSetup")
+                .padding(.top, 12).padding(.bottom, 12)
+        }
+    }
+
+    @ViewBuilder
+    private func pendingExplanation(inOverview: Bool = false) -> some View {
+        if presentation.showsPendingMessage {
+            VStack(alignment: .leading, spacing: 8) {
+                Label(store.usesAutomaticInput ? "Let your next day take shape" : "Let your garden follow your day",
+                      systemImage: store.usesAutomaticInput ? "clock" : "leaf")
+                    .font((inOverview ? Font.headline : .subheadline).weight(.semibold))
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("today.automaticPending")
+                Text(store.usesAutomaticInput
+                     ? "Today's estimate waits until this day ends and Apple provides usable activity. Missing activity stays pending."
+                     : "Allow Screen Time once to start automatic estimates. No app-by-app selection or daily forms.")
+                    .accessibilityIdentifier("today.pendingExplanation")
+                    .font(inOverview ? .body : .footnote).foregroundStyle(inOverview ? .primary : .secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }.padding(.top, needsAutomaticSetup || inOverview ? 0 : 12)
+        }
+    }
+
+    private func widgetAction(inOverview: Bool = false) -> some View {
+        Button { widgetHelp = true } label: {
+            Label("Set up a garden widget", systemImage: "square.grid.2x2")
+                .font((inOverview ? Font.body : .subheadline).weight(.semibold)).frame(minHeight: 44)
+                .fixedSize(horizontal: false, vertical: true)
+        }.accessibilityIdentifier("today.widgetHelp")
+    }
+
+    @ViewBuilder
+    private func dayDetailsAction(inOverview: Bool = false) -> some View {
+        if let record = displayedRecord {
+            // [15] Today stays a short overview; the saved day holds the full explanation.
+            let link = NavigationLink { RecordScreen(store: store, day: record.day) } label: {
+                HStack(spacing: inOverview ? 8 : 12) {
+                    Text("View this day").font((inOverview ? Font.body : .subheadline).weight(.semibold))
+                    if !inOverview { Spacer(minLength: 8) }
+                    Image(systemName: "chevron.right").font(.caption.weight(.semibold))
+                        .accessibilityHidden(true)
+                }.frame(minHeight: 44)
+            }.accessibilityIdentifier("today.dayDetails")
+            if inOverview {
+                // Keep this button close to the estimate without stretching it across the column.
+                let button = link.buttonBorderShape(.roundedRectangle(radius: 14))
+                if #available(iOS 26.0, *) { button.buttonStyle(.glass) }
+                else { button.buttonStyle(.bordered) }
+            } else {
+                link
+            }
+        }
+    }
 }
 
 // [16] Keep the greeting and date together; the garden is the main visual below them.
 private struct TodayWelcome: View {
     var title = "Good to have you here"
+    var prominent = false
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
-                .font(.system(.title2, design: .rounded, weight: .semibold))
+                .font(.system(prominent ? .title : .title2, design: .rounded, weight: .semibold))
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityIdentifier("today.welcome")
             Text(Date(), format: .dateTime.weekday(.wide).day().month(.wide))
-                .font(.subheadline).foregroundStyle(.secondary)
+                .font(prominent ? .body : .subheadline).foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityIdentifier("today.date")
         }.frame(maxWidth: .infinity, alignment: .leading)
@@ -349,25 +494,35 @@ private struct FootprintSummary: View {
     var showsComparison = true
     var gardenWidth: CGFloat = 320
     var showsGarden = true
+    var inOverview = false
     private var gardenMessage: String {
         GardenFeedback.message(state: record.garden, totalKg: record.result.totalKg,
                                baselineKg: record.baselineKg)
     }
+    private var estimateLabel: some View {
+        Text("Estimated carbon footprint").font(inOverview ? .headline : .subheadline)
+            .foregroundStyle(.primary).accessibilityHidden(true)
+    }
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(alignment: inOverview ? .leading : .center, spacing: 8) {
+            if inOverview { estimateLabel }
             if showsGarden {
                 GardenArtwork(state: record.garden, maximumWidth: gardenWidth).frame(height: gardenHeight)
                     .accessibilityHidden(true)
             }
             Text(summaryGrams(record.result.totalKg))
-                .font(.system(.title, design: .rounded, weight: .bold))
-                .monospacedDigit().multilineTextAlignment(.center)
+                .font(.system(inOverview ? .largeTitle : .title, design: .rounded, weight: .bold))
+                .monospacedDigit()
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityLabel(summaryGrams(record.result.totalKg))
                 .accessibilityHint("Estimated carbon footprint for this day.")
                 .accessibilityIdentifier("footprint.total")
-            Text("Estimated carbon footprint").font(.subheadline).foregroundStyle(.primary)
-                .accessibilityHidden(true)
+            if !inOverview { estimateLabel }
+            if inOverview {
+                Text(record.source.title).font(.subheadline).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("today.overviewSource")
+            }
             if record.source == .screenTimeWithEstimates {
                 // [20] Show the app time behind this saved estimate, so a weekly Screen Time
                 // average is not mistaken for the input to a different completed day.
@@ -377,29 +532,30 @@ private struct FootprintSummary: View {
                     } else {
                         Text("Activity used for this estimate: \(summaryActivityTime(record.inputs.totalMinutes))")
                     }
-                }.font(.footnote).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                }.font(inOverview ? .body : .footnote).foregroundStyle(inOverview ? .primary : .secondary)
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityIdentifier("footprint.importedActivity")
             }
-            Text(gardenMessage).font(.subheadline)
-                .foregroundStyle(.secondary).multilineTextAlignment(.center)
+            Text(gardenMessage).font(inOverview ? .body : .subheadline)
+                .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityLabel("Garden: \(record.garden.title). \(gardenMessage)")
                 .accessibilityIdentifier("garden.state")
-            if showsGarden, !showsComparison, record.baselineKg != nil {
+            if (showsGarden || inOverview), !showsComparison, record.baselineKg != nil {
                 Text("Your garden follows changes in your own estimates.")
-                    .font(.caption).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                    .font(inOverview ? .subheadline : .caption).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityIdentifier("garden.comparisonBasis")
             }
             if showsComparison, let baseline = record.baselineKg {
                 Text("Your earlier daily average: \(summaryGrams(baseline)).")
-                    .font(.footnote).foregroundStyle(.primary).multilineTextAlignment(.center)
+                    .font(.footnote).foregroundStyle(.primary)
                 Text("The garden compares this estimate with up to seven earlier days.")
-                    .font(.footnote).foregroundStyle(.primary).multilineTextAlignment(.center)
+                    .font(.footnote).foregroundStyle(.primary)
             }
         }.fixedSize(horizontal: false, vertical: true)
-            .frame(maxWidth: .infinity).padding(.bottom, 2)
+            .multilineTextAlignment(inOverview ? .leading : .center)
+            .frame(maxWidth: .infinity, alignment: inOverview ? .leading : .center).padding(.bottom, 2)
     }
 }
 
@@ -441,8 +597,14 @@ private struct SourceCard: View {
             Label(source.title, systemImage: source == .routineEstimate ? "clock.arrow.circlepath" : "info.circle")
                 .font(.subheadline.weight(.semibold))
             Text(source.explanation).font(.footnote).foregroundStyle(.primary)
+            if let modelNote = AdaptiveDeviceLayout.modelScopeNote(isPad: UIDevice.current.userInterfaceIdiom == .pad) {
+                Text(modelNote)
+                    .font(.footnote).foregroundStyle(.primary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("source.referenceModel")
+            }
             if source == .screenTimeWithEstimates {
-                Text("Apple's available app time can differ from the daily total in Screen Time. This estimate covers the app activity provided for the saved date on this iPhone.")
+                Text("Apple's available app time can differ from the daily total in Screen Time. This estimate covers the app activity provided for the saved date on this device.")
                     .font(.footnote).foregroundStyle(.primary)
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityIdentifier("source.activityPeriod")

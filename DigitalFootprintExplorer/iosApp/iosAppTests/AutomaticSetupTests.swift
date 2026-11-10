@@ -190,9 +190,8 @@ final class AutomaticSetupTests: XCTestCase {
     }
     #endif
 
-    // [11] A local reset clears this app's saved choices without silently changing Apple's
-    // permission.
-    @MainActor func testResetLocalScreenTimeDataRemovesScopeAndItsStartDate() async throws {
+    // [11] A leftover preference without a saved setup must not authorize a new import.
+    @MainActor func testDeleteRemovesIncompleteSetupInsteadOfGrantingAccess() async throws {
         let defaults = try isolatedScreenTimeDefaults()
         defaults.set(ScreenTimeActivityScope.allAuthorizedApps.rawValue, forKey: "dfe.screenTime.activityScope.v1")
         defaults.set("2026-10-08", forKey: "dfe.screenTime.allActivityStartDay.v1")
@@ -204,7 +203,9 @@ final class AutomaticSetupTests: XCTestCase {
         XCTAssertNil(service.diagnosticScopeMutation)
         let resetBegan = Date()
         #endif
-        service.resetLocalData()
+        let history = store()
+        try service.deleteSavedEntries(in: history, now: later)
+        XCTAssertFalse(history.isConfigured)
         #if DEBUG
         let receipt = try XCTUnwrap(service.diagnosticScopeMutation)
         XCTAssertEqual(receipt.reason, .localReset)

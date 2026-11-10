@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- [12] The cache-only diagnostic route does not read protected activity in the widget. -->
+	<!-- [13] Keep the actual source identity with technical checks, without guessing an absent value. -->
+	<key>DFESourceRevision</key>
+	<string>$(DFE_SOURCE_REVISION)</string>
+	<key>DFEWidgetAutomaticImportEnabled</key>
+	<false/>
+	<!-- [01] The widget must read the same shared group as the app, otherwise it cannot see the latest saved
+	     garden. -->
+	<key>DFEAppGroupIdentifier</key>
+	<string>$(DFE_APP_GROUP_IDENTIFIER)</string>
+	<!-- [02] Tell iOS that this bundle is a Home Screen widget, rather than a second stand-alone app. -->
+	<key>NSExtension</key>
+	<dict>
+		<key>NSExtensionPointIdentifier</key>
+		<string>com.apple.widgetkit-extension</string>
+	</dict>
+</dict>
+</plist>

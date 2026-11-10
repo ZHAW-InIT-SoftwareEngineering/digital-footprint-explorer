@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- [12] The cache-only diagnostic route does not read protected activity in the widget. -->
+	<!-- [13] Keep the actual source identity with technical checks, without guessing an absent value. -->
+	<key>DFESourceRevision</key>
+	<string>$(DFE_SOURCE_REVISION)</string>
+	<key>DFEWidgetAutomaticImportEnabled</key>
+	<false/>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
+	<!-- [01] These modes let iOS consider background work. They do not promise an exact morning run or continuous
+	     access. -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>processing</string>
+	</array>
+	<!-- [02] Only these named daily jobs may be registered by the app, keeping scheduling tied to the intended
+	     refresh work. -->
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>ch.zhaw.digitalfootprintexplorer.daily-footprint-refresh</string>
+		<string>ch.zhaw.digitalfootprintexplorer.daily-footprint</string>
+	</array>
+	<!-- [03] This is the current export-compliance declaration; it is not a privacy permission and must match the
+	     release's actual encryption use. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<!-- [04] Build settings supply the public policy and support links, so their release values can be checked in
+	     the finished app. -->
+	<key>DFEPrivacyPolicyURL</key>
+	<string>$(DFE_PRIVACY_POLICY_URL)</string>
+	<key>DFESupportURL</key>
+	<string>$(DFE_SUPPORT_URL)</string>
+	<!-- [05] The app and widget must use the same group identity to exchange the saved garden summary. -->
+	<key>DFEAppGroupIdentifier</key>
+	<string>$(DFE_APP_GROUP_IDENTIFIER)</string>
+	<!-- [06] The garden link brings a widget tap back to Today instead of opening an unrelated screen. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>$(PRODUCT_BUNDLE_IDENTIFIER).today</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>digitalfootprint</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>

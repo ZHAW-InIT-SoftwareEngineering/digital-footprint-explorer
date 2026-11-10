@@ -68,13 +68,13 @@ struct AutomaticOnboardingView: View {
                     }
                     Text("Let your garden follow your day")
                         .font(.title2.bold()).fixedSize(horizontal: false, vertical: true)
-                    Text("A little space to notice your phone habits, one day at a time. Allow Screen Time once and leave the daily estimates to the app. No app selection or daily forms.")
+                    Text("A little space to notice your device habits, one day at a time. Allow Screen Time once and leave the daily estimates to the app. No app selection or daily forms.")
                         .fixedSize(horizontal: false, vertical: true)
                     VStack(alignment: .leading, spacing: 12) {
-                        Label("Your activity stays on your iPhone", systemImage: "lock.iphone")
+                        Label("Your activity stays on this device", systemImage: "lock.shield")
                             .font(.subheadline.weight(.semibold))
                             .accessibilityIdentifier("automatic.localPrivacy")
-                        Text("Screen Time supplies available app usage from this iPhone. Carbon emissions, data traffic and the other calculation inputs remain estimates.")
+                        Text("Screen Time supplies available app usage from this device. Carbon emissions, data traffic and the other calculation inputs remain estimates.")
                             .accessibilityIdentifier("automatic.estimateScope")
                         Text("Your first estimate waits for a completed day and usable activity from Apple. Until then, your garden will wait with you.")
                             .accessibilityIdentifier("automatic.firstCompletedDay")

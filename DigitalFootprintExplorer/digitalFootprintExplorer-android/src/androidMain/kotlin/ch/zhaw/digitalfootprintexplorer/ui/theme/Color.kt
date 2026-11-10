@@ -234,9 +234,11 @@ val surfaceContainerDarkHighContrast = Color(0xFF2C322F)
 val surfaceContainerHighDarkHighContrast = Color(0xFF363D3A)
 val surfaceContainerHighestDarkHighContrast = Color(0xFF424845)
 
-val pieChartAppUsageColor =  Color(0xFF6200EE)
-val pieChartDisplayColor = Color(0xFF03DAC6)
-val pieChartBackgroundColor = Color(0xFFBB86FC)
+object ChartColors {
+    val appUsage = Color(0xFF6200EE)
+    val display = Color(0xFF03DAC6)
+    val background = Color(0xFFBB86FC)
+}
 
 
 

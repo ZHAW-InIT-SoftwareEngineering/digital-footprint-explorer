@@ -23,8 +23,15 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import android.content.Context
+import ch.zhaw.digitalfootprintexplorer.demo.DemoPreferences
 import ch.zhaw.digitalfootprintexplorer.permission.hasUsageStatsPermission
 import ch.zhaw.digitalfootprintexplorer.servicelayerplatform.service.TrackingService
+import ch.zhaw.digitalfootprintexplorer.widget.GardenWidget
 import ch.zhaw.digitalfootprintexplorer.worker.DailyFootprintWorker
 
 class MainActivity : ComponentActivity() {
@@ -45,6 +52,33 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         TrackingService.start(this)
+
+        syncWidgetWithLatestGardenState()
+
+        // Statistics only: the current day (midnight → now) is recalculated whenever the app is opened.
+        if (hasUsageStatsPermission(this)) {
+            val app = application as DFEApplication
+            lifecycleScope.launch { app.todayFootprint.refresh() }
+        }
+    }
+
+    /**
+     * The home tab reads the garden state from the database, the widget keeps its own copy.
+     * Pushing the latest stored state on every start keeps both identical, no matter how the
+     * database was changed (worker, restored backup, ...). Demo mode manages the widget itself.
+     */
+    private fun syncWidgetWithLatestGardenState() {
+        val demoActive = getSharedPreferences(DemoPreferences.PREFS_STATE_FILE, Context.MODE_PRIVATE)
+            .getBoolean(DemoPreferences.KEY_ACTIVE, false)
+        if (demoActive) return
+
+        val app = application as DFEApplication
+        lifecycleScope.launch {
+            val latest = withContext(Dispatchers.Default) {
+                app.gardenStateCalculator.getLatestGardenState()
+            } ?: return@launch
+            GardenWidget.updateState(applicationContext, latest)
+        }
     }
 }
 

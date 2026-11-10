@@ -148,7 +148,8 @@ class DailyFootprintWorker(
             measuredAt        = now.toString(),
             gardenState       = gardenState,
             baselineKgCO2e    = baseline,
-            categoryBreakdown = emissionResult.categoryBreakdown
+            categoryBreakdown = emissionResult.categoryBreakdown,
+            appBreakdown      = emissionResult.appBreakdown
         )
         Log.d(TAG, "🌱 GardenState → $gardenState (${f(emissionResult.ghgTotal * 1000)} gCO₂e today, baseline ${f(baseline * 1000)} gCO₂e, measured at $now)")
 

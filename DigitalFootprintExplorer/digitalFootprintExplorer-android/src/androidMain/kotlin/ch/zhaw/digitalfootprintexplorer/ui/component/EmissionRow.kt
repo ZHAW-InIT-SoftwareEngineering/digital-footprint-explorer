@@ -31,12 +31,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.style.BaselineShift
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 
 @Composable
 fun EmissionRow(
     label: String,
-    valueGrams: Double,
+    valueGrams: Double?,
     percentage: Double,
     color: Color
 ) {
@@ -58,8 +64,39 @@ fun EmissionRow(
             modifier = Modifier.weight(1f)
         )
         Text(
-            "${"%.2f".format(valueGrams)} g CO₂e (${"%.2f".format(percentage * 100)}%)",
+            text = formatEmissionAnnotated(percentage, valueGrams),
             style = MaterialTheme.typography.bodyMedium
         )
     }
+}
+
+/** "12.3%" or, when [valueGrams] is given, "4.56 g CO₂e (12.3%)". Plain-string fallback. */
+fun formatEmission(share: Double, valueGrams: Double?): String {
+    val percent = if (share > 0 && share < 0.0005) "<0.1%" else "%.1f%%".format(share * 100)
+    return if (valueGrams != null) "${"%.2f".format(valueGrams)} g CO₂e ($percent)" else percent
+}
+
+/** Same as [formatEmission] but with a subscript "2" in CO₂e. */
+fun formatEmissionAnnotated(share: Double, valueGrams: Double?): AnnotatedString {
+    val percent = if (share > 0 && share < 0.0005) "<0.1%" else "%.1f%%".format(share * 100)
+    return buildAnnotatedString {
+        if (valueGrams != null) {
+            append("%.2f g CO".format(valueGrams))
+            withStyle(SpanStyle(baselineShift = BaselineShift.Subscript, fontSize = 0.5.em)) {
+                append("2")
+            }
+            append("e ($percent)")
+        } else {
+            append(percent)
+        }
+    }
+}
+
+/** Appends " g CO₂e" with a subscript "2" to this builder. */
+fun AnnotatedString.Builder.appendCo2eUnit() {
+    append(" g CO")
+    withStyle(SpanStyle(baselineShift = BaselineShift.Subscript, fontSize = 0.5.em)) {
+        append("2")
+    }
+    append("e")
 }

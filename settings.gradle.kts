@@ -29,4 +29,6 @@ dependencyResolutionManagement {
 }
 
 include(":digitalFootprintExplorer-android")
+// [01] Keep the existing Gradle task names after moving the app into apps/android.
+project(":digitalFootprintExplorer-android").projectDir = file("apps/android")
 include(":shared")

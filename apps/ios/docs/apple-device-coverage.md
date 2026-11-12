@@ -126,7 +126,7 @@ The owner currently has an iPhone only. The paired Watch checks remain open. Loc
 Use an installed simulator destination and the local Xcode toolchain. The tests use isolated example history and never request personal activity.
 
 ```sh
-xcodebuild -project DigitalFootprintExplorer/iosApp/iosApp.xcodeproj \
+xcodebuild -project apps/ios/iosApp.xcodeproj \
   -scheme iosApp-ScreenTime -configuration ScreenTimeDebug \
   -destination 'platform=iOS Simulator,name=iPhone 18 Pro Max' \
   -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO \

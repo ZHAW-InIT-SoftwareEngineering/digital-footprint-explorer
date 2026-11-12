@@ -14,8 +14,8 @@ MARKETING_VERSION = 1.0
 // uploading a release; a configured address does not mean that the page is already live.
 DFE_PRIVACY_POLICY_URL = https:/$()/zhaw-init-softwareengineering.github.io/digital-footprint-explorer/privacy-policy.html
 DFE_SUPPORT_URL = https:/$()/zhaw-init-softwareengineering.github.io/digital-footprint-explorer/support-ios.html
-// [04] The shared model sits beside iosApp and builds for the selected device or simulator.
-FRAMEWORK_SEARCH_PATHS = $(inherited) $(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)
+// [04] Use the shared model built for the selected device or simulator.
+FRAMEWORK_SEARCH_PATHS = $(inherited) $(SRCROOT)/../../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)
 OTHER_LDFLAGS = $(inherited) -framework Shared -lsqlite3
 // [06] The automatic widget uses its own approved profile. Personal signing overrides stay local.
 DFE_WIDGET_CODE_SIGN_STYLE = Automatic

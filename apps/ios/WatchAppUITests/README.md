@@ -6,7 +6,7 @@ Run the suite on a compact and a larger installed Watch simulator. Use one desti
 
 ```sh
 xcodebuild test \
-  -project DigitalFootprintExplorer/iosApp/iosApp.xcodeproj \
+  -project apps/ios/iosApp.xcodeproj \
   -scheme WatchApp \
   -configuration Debug \
   -destination 'platform=watchOS Simulator,id=WATCH_SIMULATOR_ID' \

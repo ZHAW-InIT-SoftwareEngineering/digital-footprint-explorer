@@ -3,7 +3,7 @@
 set -euo pipefail
 # [02] Find the project from this script, allowing the check to run from another folder.
 ios_dir="$(cd "$(dirname "$0")/.." && pwd)"
-project_dir="$(cd "$ios_dir/.." && pwd)"
+project_dir="$(cd "$ios_dir/../.." && pwd)"
 export DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}"
 export JAVA_HOME="${JAVA_HOME:-$(/usr/libexec/java_home -v 17)}"
 # [03] Keep build caches together and resolve their real paths; Kotlin can treat two spellings as different locations.
@@ -35,7 +35,7 @@ fi
 cd "$project_dir"
 ./gradlew :shared:iosSimulatorArm64Test --console=plain
 result_bundle="${DFE_RESULT_BUNDLE:-$cache_dir/ios-tests-$(date +%Y%m%d-%H%M%S).xcresult}"
-xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp-ScreenTime -configuration ScreenTimeDebug \
+xcodebuild -project "$ios_dir/iosApp.xcodeproj" -scheme iosApp-ScreenTime -configuration ScreenTimeDebug \
   -destination "platform=iOS Simulator,id=$simulator_id" -parallel-testing-enabled NO \
   -derivedDataPath "$cache_dir/DerivedData" -resultBundlePath "$result_bundle" CODE_SIGNING_ALLOWED=NO \
   -only-testing:iosAppTests \

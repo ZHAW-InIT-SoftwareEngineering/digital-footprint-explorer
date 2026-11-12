@@ -587,7 +587,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "set -eu\nif [ \"YES\" = \"${OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED:-NO}\" ]; then\n  exit 0\nfi\nif [ -z \"${JAVA_HOME:-}\" ]; then\n  export JAVA_HOME=\"$(/usr/libexec/java_home -v 17)\"\nfi\ncd \"$SRCROOT/..\"\n./gradlew :shared:embedAndSignAppleFrameworkForXcode --console=plain\n";
+			shellScript = "set -eu\nif [ \"YES\" = \"${OVERRIDE_KOTLIN_BUILD_IDE_SUPPORTED:-NO}\" ]; then\n  exit 0\nfi\nif [ -z \"${JAVA_HOME:-}\" ]; then\n  export JAVA_HOME=\"$(/usr/libexec/java_home -v 17)\"\nfi\ncd \"$SRCROOT/../..\"\n./gradlew :shared:embedAndSignAppleFrameworkForXcode --console=plain\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -876,7 +876,7 @@
 				DEVELOPMENT_TEAM = "$(TEAM_ID)";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)",
+					"$(SRCROOT)/../../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)",
 				);
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -897,7 +897,7 @@
 				DEVELOPMENT_TEAM = "$(TEAM_ID)";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)",
+					"$(SRCROOT)/../../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)",
 				);
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -917,7 +917,7 @@
 				DEVELOPMENT_TEAM = "$(TEAM_ID)";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)",
+					"$(SRCROOT)/../../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)",
 				);
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -937,7 +937,7 @@
 				DEVELOPMENT_TEAM = "$(TEAM_ID)";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)",
+					"$(SRCROOT)/../../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)",
 				);
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -1147,7 +1147,7 @@
 				DEVELOPMENT_TEAM = "$(TEAM_ID)";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)",
+					"$(SRCROOT)/../../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)",
 				);
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
@@ -1168,7 +1168,7 @@
 				DEVELOPMENT_TEAM = "$(TEAM_ID)";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)",
+					"$(SRCROOT)/../../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)",
 				);
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
@@ -1188,7 +1188,7 @@
 				DEVELOPMENT_TEAM = "$(TEAM_ID)";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)",
+					"$(SRCROOT)/../../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)",
 				);
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
@@ -1208,7 +1208,7 @@
 				DEVELOPMENT_TEAM = "$(TEAM_ID)";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
-					"$(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)",
+					"$(SRCROOT)/../../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)",
 				);
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
@@ -1230,7 +1230,7 @@
 				CODE_SIGN_ENTITLEMENTS = Configuration/Widget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = "$(TEAM_ID)";
-				FRAMEWORK_SEARCH_PATHS = "$(inherited) $(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)";
+				FRAMEWORK_SEARCH_PATHS = "$(inherited) $(SRCROOT)/../../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Configuration/WidgetCacheOnlyInfo.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Footprint Explorer";
@@ -1261,7 +1261,7 @@
 				CODE_SIGN_ENTITLEMENTS = Configuration/Widget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = "$(TEAM_ID)";
-				FRAMEWORK_SEARCH_PATHS = "$(inherited) $(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)";
+				FRAMEWORK_SEARCH_PATHS = "$(inherited) $(SRCROOT)/../../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Configuration/WidgetCacheOnlyInfo.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Footprint Explorer";
@@ -1288,7 +1288,7 @@
 				/* [03] Match the arm64 phone model bridge; the shared project does not build an Intel simulator framework. */
 				ARCHS = arm64;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) SCREEN_TIME_ENABLED WIDGET_EXTENSION DFE_WIDGET_AUTOMATIC_IMPORT";
-				FRAMEWORK_SEARCH_PATHS = "$(inherited) $(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)";
+				FRAMEWORK_SEARCH_PATHS = "$(inherited) $(SRCROOT)/../../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)";
 				OTHER_LDFLAGS = "$(inherited) -framework Shared -lsqlite3";
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -1322,7 +1322,7 @@
 				/* [03] Match the arm64 phone model bridge; the shared project does not build an Intel simulator framework. */
 				ARCHS = arm64;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) SCREEN_TIME_ENABLED WIDGET_EXTENSION DFE_WIDGET_AUTOMATIC_IMPORT";
-				FRAMEWORK_SEARCH_PATHS = "$(inherited) $(SRCROOT)/../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)";
+				FRAMEWORK_SEARCH_PATHS = "$(inherited) $(SRCROOT)/../../shared/build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)";
 				OTHER_LDFLAGS = "$(inherited) -framework Shared -lsqlite3";
 				CODE_SIGN_STYLE = "$(DFE_WIDGET_CODE_SIGN_STYLE)";
 				CODE_SIGN_IDENTITY = "$(DFE_WIDGET_CODE_SIGN_IDENTITY)";

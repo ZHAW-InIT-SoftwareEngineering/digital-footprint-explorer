@@ -1,9 +1,27 @@
 .idea
 local.properties
+.DS_Store
+*.iml
+
+# Gradle and Android Studio output
+.gradle/
+.kotlin/
+**/build/
+/apps/android/captures/
+/apps/android/.externalNativeBuild/
+/apps/android/.cxx/
+/shared/.externalNativeBuild/
+/shared/.cxx/
+node_modules/
 
 # iOS settings and local build output
-DigitalFootprintExplorer/iosApp/**/xcuserdata/
-DigitalFootprintExplorer/iosApp/DerivedData/
-DigitalFootprintExplorer/iosApp/Configuration/Local.xcconfig
-DigitalFootprintExplorer/iosApp/Configuration/Local.*.xcconfig
-DigitalFootprintExplorer/iosApp/**/*.xcresult/
+/apps/ios/**/xcuserdata/
+/apps/ios/DerivedData/
+/apps/ios/Configuration/Local.xcconfig
+/apps/ios/Configuration/Local.*.xcconfig
+/apps/ios/**/*.xcresult/
+/apps/ios/*.xcodeproj/*
+!/apps/ios/*.xcodeproj/project.pbxproj
+!/apps/ios/*.xcodeproj/xcshareddata/
+!/apps/ios/*.xcodeproj/project.xcworkspace/
+/apps/ios/**/xcshareddata/WorkspaceSettings.xcsettings

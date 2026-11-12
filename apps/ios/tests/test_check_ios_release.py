@@ -464,7 +464,7 @@ class ReleaseChecksTests(unittest.TestCase):
 
     # [31] Try wrong sizes and transparency with a pretend PNG header. This checks packaging only, not image pixels.
     def test_source_marketing_icon_requires_declared_opaque_rgb_1024_png(self):
-        directory = self.root / 'DigitalFootprintExplorer/iosApp/iosApp/Assets.xcassets/AppIcon.appiconset'
+        directory = self.root / 'apps/ios/iosApp/Assets.xcassets/AppIcon.appiconset'
         directory.mkdir(parents=True)
         (directory / 'Contents.json').write_text(json.dumps({'images': [{
             'filename': 'AppIcon.png', 'idiom': 'universal', 'platform': 'ios', 'size': '1024x1024',

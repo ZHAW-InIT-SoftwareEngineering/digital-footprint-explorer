@@ -112,7 +112,7 @@ jobs:
 
           # [08] The general tests use an ordinary iPhone. The Duo runtime is checked separately.
           xcrun simctl list devices available -j > "$results/simulators.json"
-          simulator_id="$(python3 DigitalFootprintExplorer/iosApp/scripts/select-ios-simulator.py \
+          simulator_id="$(python3 apps/ios/scripts/select-ios-simulator.py \
             --standard-iphone-only --minimum-version 27.0 --sdk-version "$ios_sdk_version" \
             < "$results/simulators.json")"
           printf 'DFE_SIMULATOR_ID=%s\n' "$simulator_id" >> "$GITHUB_ENV"
@@ -121,13 +121,12 @@ jobs:
       - name: Check policy copies and local tools
         run: |
           set -euo pipefail
-          python3 -m unittest discover -s DigitalFootprintExplorer/iosApp/tests -v 2>&1 \
+          python3 -m unittest discover -s apps/ios/tests -v 2>&1 \
             | tee "$RUNNER_TEMP/dfe-test-results/python-tests.log"
-          python3 DigitalFootprintExplorer/iosApp/scripts/generate_privacy_policy.py --check --include-web 2>&1 \
+          python3 apps/ios/scripts/generate_privacy_policy.py --check --include-web 2>&1 \
             | tee "$RUNNER_TEMP/dfe-test-results/privacy-check.log"
 
       - name: Prepare the Gradle wrapper
-        working-directory: DigitalFootprintExplorer
         env:
           GRADLE_USER_HOME: ${{ runner.temp }}/dfe-build-cache/gradle
         run: |
@@ -151,7 +150,7 @@ jobs:
           DFE_RESULT_BUNDLE: ${{ runner.temp }}/dfe-test-results/ios-tests.xcresult
         run: |
           set -euo pipefail
-          bash DigitalFootprintExplorer/iosApp/scripts/ios-check.sh 2>&1 \
+          bash apps/ios/scripts/ios-check.sh 2>&1 \
             | tee "$RUNNER_TEMP/dfe-test-results/ios-check.log"
 
       # [04] Keep the failure details too, so a reviewer can inspect the result instead of trusting a count.
@@ -162,7 +161,27 @@ jobs:
           name: ios-shared-test-results-${{ github.run_attempt }}
           path: |
             ${{ runner.temp }}/dfe-test-results/
-            DigitalFootprintExplorer/shared/build/test-results/iosSimulatorArm64Test/
-            DigitalFootprintExplorer/shared/build/reports/tests/iosSimulatorArm64Test/
+            shared/build/test-results/iosSimulatorArm64Test/
+            shared/build/reports/tests/iosSimulatorArm64Test/
           if-no-files-found: warn
           retention-days: 14
+
+  android:
+    name: Android build and unit tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+
+    steps:
+      - name: Check out the proposed code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Java 17
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Build Android and run unit tests
+        run: ./gradlew :digitalFootprintExplorer-android:assembleDebug :digitalFootprintExplorer-android:testDebugUnitTest --console=plain

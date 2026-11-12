@@ -259,6 +259,24 @@ struct WidgetAutomaticExchange {
         }
     }
 
+    /// A restored or older history might not have an automatic start. Stop the old
+    /// ticket without treating this as a withdrawal or erasing saved widget days.
+    func pauseForMissingAutomaticHistory() throws -> Bool {
+        try coordinated { exchange in
+            guard !exchange.hasDeletionMarker, var state = try exchange.read() else { return false }
+            if state.context.enabled {
+                let prior = state.context.configuration
+                let paused = WidgetAutomaticConfiguration(enabled: false,
+                    timeZoneIdentifier: prior.timeZoneIdentifier, eligibleStartDay: prior.eligibleStartDay,
+                    classificationRevision: prior.classificationRevision, modelRevision: prior.modelRevision,
+                    revisions: [], baseline: [], knownRecordDays: [], knownAutomaticRecordDays: [])
+                state.context = WidgetAutomaticContext(epoch: UUID(), configuration: paused)
+                try exchange.write(state)
+            }
+            return !state.pending.isEmpty
+        }
+    }
+
     // [09] The publisher already holds the shared turn. Taking another lock here would block both processes.
     func latestPendingForSnapshotDuringCoordinatedAccess(
         now: Date = Date(), calendar: Calendar = FootprintCalendar.localCalendar

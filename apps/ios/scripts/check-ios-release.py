@@ -245,7 +245,7 @@ def privacy_manifest_matches(manifest, needs_defaults, *, needs_elapsed_time=Fal
 
 # [13] Check the Store artwork size, solid background and PNG structure. This check does not decode pixels or verify image checksums.
 def source_icon_matches(project_root):
-    assets = project_root / 'DigitalFootprintExplorer/iosApp/iosApp/Assets.xcassets/AppIcon.appiconset'
+    assets = project_root / 'apps/ios/iosApp/Assets.xcassets/AppIcon.appiconset'
     try:
         contents = json.loads((assets / 'Contents.json').read_text())
         data = (assets / 'AppIcon.png').read_bytes()

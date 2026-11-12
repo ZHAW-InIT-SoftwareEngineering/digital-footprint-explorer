@@ -29,6 +29,7 @@ final class FootprintStore: ObservableObject {
     @Published var errorMessage: String?
     @Published private(set) var widgetVerification: WidgetPublicationVerification?
     @Published private(set) var widgetCheckSaveFailed = false
+    @Published private(set) var widgetDaysWaitingForAutomaticSetup = false
     let importVerification: AutomaticUpdateVerification
     private let calculator: any FootprintCalculating
     private let widgetPublisher: (any WidgetSnapshotPublishing)?
@@ -64,6 +65,7 @@ final class FootprintStore: ObservableObject {
 
     var isConfigured: Bool { archive != nil }
     var usesAutomaticInput: Bool { archive?.usesAutomaticInput == true }
+    private var hasAutomaticArchiveStart: Bool { usesAutomaticInput && archive?.automaticStartDay != nil }
     // [02] Export only history whose local origin can be checked.
     var canExportHistory: Bool {
         !unreadableArchive && archive.map { !$0.containsScreenTimeDerivedData } == true
@@ -437,6 +439,7 @@ final class FootprintStore: ObservableObject {
         }
         archive = replacement
         unreadableArchive = false
+        widgetDaysWaitingForAutomaticSetup = false
         errorMessage = nil
         // [51] Rotate the ticket after the archive is gone. An earlier withdrawal stays in place.
         if let deletion {
@@ -466,11 +469,15 @@ final class FootprintStore: ObservableObject {
     func configureWidgetAutomaticInput(enabled: Bool?, earliestDay: String? = nil,
                                        allowResumingAfterWithdrawal: Bool = false) throws {
         guard let automaticWidgetExchange else { return }
+        guard hasAutomaticArchiveStart else {
+            try pauseWidgetForMissingAutomaticHistory(in: automaticWidgetExchange)
+            return
+        }
         if let earliestDay { widgetImportStartDay = earliestDay }
         let previous = try automaticWidgetExchange.currentContext()
-        // [49] Installing this feature over an earlier automatic setup is not a withdrawal.
-        // Wait for the real decision before creating either a shared ticket or a deny marker.
-        if enabled == nil && previous == nil {
+        // [49] A missing or paused ticket is not a withdrawal. Wait for a real access
+        // decision before creating an active ticket or writing the deny marker.
+        if enabled == nil && previous?.enabled != true {
             try reconcileWidgetPendingRecords()
             return
         }
@@ -511,11 +518,16 @@ final class FootprintStore: ObservableObject {
 
     private func refreshAutomaticWidgetContext() throws {
         guard let automaticWidgetExchange else { return }
-        guard let current = try automaticWidgetExchange.currentContext() else { return }
-        let wasEnabled = current.enabled
+        guard hasAutomaticArchiveStart else {
+            try pauseWidgetForMissingAutomaticHistory(in: automaticWidgetExchange)
+            return
+        }
+        widgetDaysWaitingForAutomaticSetup = false
+        // A private save can repair the archive before setup confirms the widget's access.
+        // Leave a disabled ticket alone; only the access decision may replace it.
+        guard let current = try automaticWidgetExchange.currentContext(), current.enabled else { return }
         let blocked = try automaticWidgetExchange.newQueriesAreBlocked()
-        let enabled = wasEnabled && !blocked
-        _ = try automaticWidgetExchange.publishContext(from: archive, enabled: enabled,
+        _ = try automaticWidgetExchange.publishContext(from: archive, enabled: !blocked,
             calendar: aggregationCalendar, classificationRevision: AutomaticActivityClassification.revision,
             eligibleStartDay: widgetContextStartDay())
     }
@@ -524,9 +536,13 @@ final class FootprintStore: ObservableObject {
     // separately so a change in the model cannot stop later days from reaching history.
     private func reconcileWidgetPendingRecords() throws {
         guard let automaticWidgetExchange else { return }
+        guard var next = archive, next.usesAutomaticInput, let start = next.automaticStartDay else {
+            try pauseWidgetForMissingAutomaticHistory(in: automaticWidgetExchange)
+            return
+        }
+        widgetDaysWaitingForAutomaticSetup = false
         let pending = try automaticWidgetExchange.pendingRecords()
         guard !pending.isEmpty else { return }
-        guard var next = archive, next.usesAutomaticInput, let start = next.automaticStartDay else { return }
         let now = Date()
         var accepted = Set<UUID>()
         var rejected = Set<UUID>()
@@ -538,8 +554,9 @@ final class FootprintStore: ObservableObject {
                 accepted.insert(item.id)
                 continue
             }
-            guard item.classificationRevision == AutomaticActivityClassification.revision,
-                  item.modelRevision == "shared-ios-v1", record.day >= start,
+            // Classification rules only group raw app activity. Keep saved category totals
+            // across rule changes if the same model can still validate and reproduce them.
+            guard item.modelRevision == "shared-ios-v1", record.day >= start,
                   days.date(record.day) != nil,
                   record.calculatedAt <= item.originSavedAt.addingTimeInterval(5),
                   let sourceCalendar = calendarForWidgetReceipt(item),
@@ -599,6 +616,10 @@ final class FootprintStore: ObservableObject {
         catch { errorMessage = "The widget check could not be saved. Your history is kept." }
         try automaticWidgetExchange.acknowledge(ids: accepted)
         if let retryError { throw retryError }
+    }
+
+    private func pauseWidgetForMissingAutomaticHistory(in exchange: WidgetAutomaticExchange) throws {
+        widgetDaysWaitingForAutomaticSetup = try exchange.pauseForMissingAutomaticHistory()
     }
 
     private func recordWidgetReconciliation(_ pending: [WidgetAutomaticPendingRecord]) throws {

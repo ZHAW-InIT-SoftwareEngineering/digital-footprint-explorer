@@ -93,6 +93,13 @@ struct ScreenTimeSettingsView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .accessibilityElement(children: .contain)
 
+            if store.widgetDaysWaitingForAutomaticSetup {
+                Text("The widget has saved estimates that aren’t in your history. It won’t collect new activity until automatic estimates are set up.")
+                    .font(.subheadline)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("screen-time.widgetDaysWaiting")
+            }
+
             if !connected {
                 Button(action: showSetup) {
                     SettingsActionLabel(service.state == .revoked ? "Reconnect Screen Time"

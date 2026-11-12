@@ -35,7 +35,7 @@ final class WidgetHostReconciliationTests: XCTestCase {
         value.timeZone = TimeZone(identifier: "Europe/Zurich")!
         return value
     }
-    private func fixture(enableWidget: Bool = true, publishWidget: Bool = false) throws
+    private func fixture(enableWidget: Bool = true, publishWidget: Bool = false, setupAge: Int = 3) throws
         -> (FootprintStore, WidgetAutomaticExchange, WidgetReconciliationCalculator, Date) {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         addTeardownBlock { try? FileManager.default.removeItem(at: folder) }
@@ -47,7 +47,7 @@ final class WidgetHostReconciliationTests: XCTestCase {
             calculator: calculator, calendar: calendar, widgetPublisher: publisher, automaticWidgetExchange: exchange,
             automaticWidgetReceiptDirectory: folder.appendingPathComponent("documents"))
         let now = Date()
-        let begin = calendar.date(byAdding: .day, value: -3, to: calendar.startOfDay(for: now))!
+        let begin = calendar.date(byAdding: .day, value: -setupAge, to: calendar.startOfDay(for: now))!
         let inputs = FootprintInputs(usages: [CategoryUsage(category: .video, gigabytesPerHour: 1, wifiShare: 0.8)],
             brightness: 0.5, gpsHours: 0, bluetoothHours: 0)
         try store.saveAutomaticProfile(inputs, now: begin)
@@ -234,12 +234,39 @@ final class WidgetHostReconciliationTests: XCTestCase {
         XCTAssertTrue(try exchange.pendingRecords().isEmpty)
     }
 
-    // [21] A widget result from an older classification cannot block a valid day behind it.
-    func testObsoletePendingDayDoesNotBlockCurrentHandoffOrPhoneImport() throws {
+    func testOlderClassificationSurvivesAlongsideCurrentWidgetDay() throws {
+        let (store, exchange, calculator, now) = try fixture()
+        let earlier = try XCTUnwrap(calendar.date(byAdding: .day, value: -1, to: now))
+        let oldRules = "2026-10-17.1"
+        try exchange.publishContext(from: store.archive, enabled: true, calendar: calendar,
+            classificationRevision: oldRules, now: earlier)
+        let older = try pending(exchange, calculator: calculator, now: earlier)
+        XCTAssertEqual(older.classificationRevision, oldRules)
+        try exchange.publishContext(from: store.archive, enabled: true, calendar: calendar,
+            classificationRevision: AutomaticActivityClassification.revision, now: now)
+        let current = try pending(exchange, calculator: calculator, now: now)
+
+        let reopened = reopen(store, exchange: exchange, calculator: calculator)
+
+        XCTAssertEqual(reopened.records.map(\.day), [older.record.day, current.record.day])
+        XCTAssertEqual(reopened.records.map(\.inputs), [older.record.inputs, current.record.inputs])
+        XCTAssertEqual(reopened.records.map(\.result), [older.record.result, current.record.result])
+        XCTAssertEqual(reopened.records.map(\.calculatedAt), [older.record.calculatedAt, current.record.calculatedAt])
+        XCTAssertEqual(reopened.latest?.baselineKg, older.record.result.totalKg)
+        XCTAssertTrue(try exchange.pendingRecords().isEmpty)
+        XCTAssertNil(reopened.errorMessage)
+        let merged = reopened.records
+        try reopened.reload()
+        XCTAssertEqual(reopened.records, merged)
+    }
+
+    // [21] A result from an incompatible model cannot block a valid day behind it.
+    func testIncompatibleModelDoesNotBlockCurrentHandoffOrPhoneImport() throws {
         let (store, exchange, calculator, now) = try fixture()
         let earlier = try XCTUnwrap(calendar.date(byAdding: .day, value: -1, to: now))
         try exchange.publishContext(from: store.archive, enabled: true, calendar: calendar,
-            classificationRevision: "old-rules", now: earlier)
+            classificationRevision: AutomaticActivityClassification.revision,
+            modelRevision: "old-model", now: earlier)
         let obsolete = try pending(exchange, calculator: calculator, now: earlier)
         try exchange.publishContext(from: store.archive, enabled: true, calendar: calendar,
             classificationRevision: AutomaticActivityClassification.revision, now: now)
@@ -493,6 +520,75 @@ final class WidgetHostReconciliationTests: XCTestCase {
         XCTAssertTrue(try XCTUnwrap(exchange.currentContext()).enabled)
         XCTAssertFalse(try exchange.newQueriesAreBlocked())
         XCTAssertNotNil(try exchange.contextForYesterday(now: now, calendar: calendar))
+    }
+
+    func testHistoryWithoutAutomaticStartPausesTheOldTicketAndKeepsTheSavedDay() throws {
+        for mode in [nil, FootprintInputPreference.manual, .automatic] {
+            let (store, exchange, calculator, now) = try fixture()
+            let saved = try pending(exchange, calculator: calculator, now: now)
+            let tomorrow = try XCTUnwrap(calendar.date(byAdding: .day, value: 1, to: now))
+            let inFlight = try XCTUnwrap(exchange.contextForYesterday(now: tomorrow, calendar: calendar))
+            if let mode {
+                var restored = try XCTUnwrap(store.archive)
+                restored.inputPreference = mode
+                restored.automaticStartDay = nil
+                let encoder = JSONEncoder()
+                encoder.dateEncodingStrategy = .iso8601
+                try encoder.encode(restored).write(to: store.fileURL, options: .atomic)
+            } else {
+                try FileManager.default.removeItem(at: store.fileURL)
+            }
+
+            let reopened = reopen(store, exchange: exchange, calculator: calculator)
+            let paused = try XCTUnwrap(exchange.currentContext())
+
+            XCTAssertNil(reopened.errorMessage)
+            XCTAssertTrue(reopened.records.isEmpty)
+            XCTAssertTrue(reopened.widgetDaysWaitingForAutomaticSetup)
+            XCTAssertFalse(paused.enabled)
+            XCTAssertNotEqual(paused.epoch, inFlight.context.epoch)
+            XCTAssertFalse(try exchange.newQueriesAreBlocked(), "A setup pause is not a withdrawal.")
+            XCTAssertFalse(try exchange.validateRequest(inFlight, now: tomorrow, calendar: calendar))
+            XCTAssertNil(try exchange.recoverPendingSnapshot(now: now, calendar: calendar))
+            XCTAssertEqual(try exchange.pendingRecords(), [saved])
+
+            try reopened.configureWidgetAutomaticInput(enabled: true, allowResumingAfterWithdrawal: true)
+            try reopened.reload()
+            XCTAssertEqual(try exchange.currentContext(), paused)
+            XCTAssertNil(try exchange.contextForYesterday(now: tomorrow, calendar: calendar))
+            XCTAssertEqual(try exchange.pendingRecords(), [saved])
+        }
+    }
+
+    func testFullMailboxWaitsWithoutDroppingDaysAndNewSetupHonorsItsStartDate() throws {
+        let count = WidgetAutomaticExchange.maximumPendingRecords
+        let (store, exchange, calculator, now) = try fixture(setupAge: count + 2)
+        let inputs = try XCTUnwrap(store.archive?.revisions.last?.inputs)
+        let expected = try (0..<count).reversed().map { offset in
+            let queryDay = try XCTUnwrap(calendar.date(byAdding: .day, value: -offset, to: now))
+            return try pending(exchange, calculator: calculator, now: queryDay)
+        }
+        let oldEpoch = try XCTUnwrap(exchange.currentContext()).epoch
+        try FileManager.default.removeItem(at: store.fileURL)
+
+        let reopened = reopen(store, exchange: exchange, calculator: calculator)
+        XCTAssertTrue(reopened.widgetDaysWaitingForAutomaticSetup)
+        XCTAssertEqual(try exchange.pendingRecords(), expected)
+        XCTAssertFalse(try XCTUnwrap(exchange.currentContext()).enabled)
+
+        try reopened.saveAutomaticProfile(inputs, now: now)
+        try reopened.configureWidgetAutomaticInput(enabled: nil)
+        XCTAssertFalse(try exchange.newQueriesAreBlocked())
+        XCTAssertFalse(try XCTUnwrap(exchange.currentContext()).enabled)
+        try reopened.configureWidgetAutomaticInput(enabled: true, earliestDay: reopened.dayKey(for: now),
+            allowResumingAfterWithdrawal: true)
+        let tomorrow = try XCTUnwrap(calendar.date(byAdding: .day, value: 1, to: now))
+        let resumed = try XCTUnwrap(exchange.contextForYesterday(now: tomorrow, calendar: calendar))
+        XCTAssertEqual(resumed.day, reopened.dayKey(for: now))
+        XCTAssertNotEqual(resumed.context.epoch, oldEpoch)
+        XCTAssertFalse(reopened.widgetDaysWaitingForAutomaticSetup)
+        XCTAssertTrue(reopened.records.isEmpty, "Days before the new opt-in must not enter history.")
+        XCTAssertTrue(try exchange.pendingRecords().isEmpty)
     }
 
     // [14] A cached Connected state cannot widen the widget's scope after its all-app start date is missing or damaged.

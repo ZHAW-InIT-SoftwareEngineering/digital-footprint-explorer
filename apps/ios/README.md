@@ -6,66 +6,85 @@ The native iPhone app uses the [shared Kotlin emissions model](../../shared/). I
 | --- | --- | --- |
 | ![Today with a green garden](docs/images/ios-today.png) | ![Saved daily estimates](docs/images/ios-history.png) | ![Connection and privacy settings](docs/images/ios-settings.png) |
 
-These previews show the interface with isolated example history. See the [repository guide](../../README.md) for the Android app and the full source tree.
+The previews use sample history. For the Android app and the full source tree, see the [main README](../../README.md).
+
+## Build and run
+
+Use an Apple silicon Mac with Xcode 27.1 or later, the iOS 27 SDK, JDK 17 and a compatible iPhone simulator. Install the matching watchOS simulator runtime to build the embedded companion. The command-line checks also use Python 3.
+
+Open the project from the repository root.
+
+```sh
+open apps/ios/iosApp.xcodeproj
+```
+
+| Xcode scheme | Minimum OS | What to run |
+| --- | --- | --- |
+| `iosApp-ScreenTime` | iOS 26.4 | The iPhone app and widgets with automatic Screen Time estimates |
+| `iosApp` | iOS 17 | The standard build for development without expanded Screen Time access |
+| `WatchApp` | watchOS 10 | The optional Apple Watch companion |
+
+Select a scheme and its simulator in Xcode, then choose **Run**. The iPhone build uses the Gradle wrapper at the repository root to build the Kotlin framework from `shared/`.
+
+### Run on a physical device
+
+1. Copy `apps/ios/Configuration/Local.xcconfig.example` to `apps/ios/Configuration/Local.xcconfig`. Set your approved Apple team and keep this file out of Git.
+2. Configure the bundle IDs, App Group and provisioning profiles for the targets you are testing. For automatic imports, the iPhone app and its widget each need their own approved Family Controls and App and Website Usage capabilities. Both need access to the same App Group.
+3. On a supported iPhone, tap **Enable automatic estimates** and allow access when Apple asks. DFE then waits for a completed day with usable activity. The user does not need to pick apps or enter daily usage.
+
+For the Watch, use a paired physical iPhone and Apple Watch to check signing and delivery. The iOS unit tests check the data sent by the phone, and the [Watch test guide](WatchAppUITests/README.md) covers the companion and its complications.
 
 ## Apple device coverage
 
-The phone app targets iPhone. Today adapts to compact screens and the wider iPhone Duo display. An optional Apple Watch companion shows the latest saved garden.
+The iPhone app adapts to compact screens and the wider iPhone Duo display. The optional Apple Watch companion shows the latest saved garden.
 
-Today keeps one column on compact screens and at larger accessibility text sizes. A regular window at least 760 points wide places the frameless garden beside the existing actions. On a wide window with moderate height, the result and the link to that day move beside the garden and use larger text. Native tabs can adapt to a sidebar. The same saved dates, pending messages, refresh path and daily calculations apply in each arrangement.
+Today keeps one column on compact screens and at larger accessibility text sizes. A regular window at least 760 points wide places the garden beside its actions. On a wide window with moderate height, the result and the link to that day move beside the garden and use larger text. Native tabs can adapt to a sidebar. The same saved dates, pending messages, refresh path and daily calculations apply in each arrangement.
 
-Screen Time queries use the current device, without adding activity from other devices. The Watch displays a saved iPhone result after the person enables sharing, which is off by default. It does not collect Watch activity or run the Screen Time calculation. WatchConnectivity requires a paired iPhone.
+DFE reads Screen Time for the current iPhone. Watch sharing starts off. If the user turns it on, the paired Watch displays the saved iPhone result through Watch Connectivity.
 
 The acceptance record includes simulator results, signed builds and checks that still need physical devices. [Apple device coverage and acceptance](docs/apple-device-coverage.md#acceptance-record)
 
 ## Independent widget updates
 
-The Screen Time build includes an activity reader in the widget, using the same shared calculation model as the app. With the saved automatic setup and Apple's required widget permissions, it can attempt the previous completed day's calculation when WidgetKit runs it. A protected pending record reaches disk before the garden changes. When the app opens, it checks each pending day against the shared model before saving it to private history. A change to the app category rules keeps earlier estimates that still pass this check. If automatic history is unavailable, the widget pauses new imports and Settings shows that there are pending days to finish saving. Disconnecting stops widget imports. Deleting entries clears old widget work and keeps a valid automatic setup for new days.
+With automatic setup and the required Apple permissions, the widget can calculate the previous completed day's estimate when WidgetKit runs it. It uses the same Kotlin model as the app. The widget saves a protected pending record before it shows the new garden. When the app opens, it checks each pending day before adding it to private history. Estimates saved under older category rules are kept if the model can reproduce them.
 
-iOS chooses widget execution times. This route does not promise an 08:00 refresh, complete Screen Time coverage or customer access in Switzerland. Each release needs its own distribution, TestFlight and new-day checks; a controlled same-day calculation is not evidence of an unattended daily update.
+If automatic history is unavailable, the widget pauses new imports and Settings shows that there are pending days to save. Disconnecting stops widget imports. Deleting entries clears old widget work and keeps a valid automatic setup for new days.
 
-## Build and run
-
-Use an Apple silicon Mac with Xcode 27.1 or later, JDK 17, the iOS 27 SDK and a compatible iPhone simulator. Install the matching watchOS simulator runtime for the embedded companion. The app and widget run on iOS 26.4 or later, and the Watch target requires watchOS 10 or later. Xcode uses the Gradle wrapper at the repository root to build the Kotlin framework from `shared/`.
-
-1. Open `apps/ios/iosApp.xcodeproj` from the repository root.
-2. Select `iosApp-ScreenTime`, then choose an iPhone simulator and run. Xcode builds the shared framework before the app.
-3. For a physical iPhone, copy `Configuration/Local.xcconfig.example` to `Configuration/Local.xcconfig`. Use your approved Apple team and matching app/widget identifiers, App Group and provisioning profiles. Keep this local signing file out of Git.
-4. On a supported device, choose **Enable automatic estimates** and complete Apple's authorization. No daily form or app-by-app selection is required. A completed day stays pending until Apple supplies usable activity.
-
-Use the ordinary `iosApp` scheme for builds that do not need expanded Screen Time access. A device build needs matching signed entitlements, provisioning profiles and permission from the user.
-
-The automatic widget needs its own Family Controls and App and Website Usage rights, as well as the same App Group. Check both signed bundles and their matching profiles; the host's approval alone does not configure the widget.
-
-For the companion, select the `WatchApp` scheme and run it on a Watch simulator. The Watch test guide covers the app, complication layouts and system-host audit. The iOS unit-test target checks the data passed to the Watch. Use a paired physical iPhone and Watch to verify delivery and signing. [Watch test guide](WatchAppUITests/README.md)
+iOS chooses when the widget runs. For each release, use a signed build on a physical iPhone to check that the estimate updates on the next day without opening DFE.
 
 ## Automatic estimates and privacy
 
-Screen Time supplies the app durations that Apple makes available for a completed day on this device. Compare the date shown with the same device's daily Screen Time report, rather than today's changing total or a weekly average across devices. Local exact-ID rules map known apps; unknown IDs keep their time under Other apps. A source with screen-on activity but no positive app time stays pending. This guard does not prove complete coverage of every activity. Matching the same date and device does not guarantee matching totals: Apple's returned app activity can still differ from Settings. The calculation uses those available app rows and does not scale them up or assign unexplained screen time to a category.
+Screen Time supplies the app durations Apple makes available for a completed day. Compare the app time shown in DFE with the daily Screen Time report for the same date and iPhone. The totals can still differ. DFE uses the app activity it receives and leaves any unexplained time out of the estimate.
 
-Traffic uses category-average assumptions. Brightness, GPS, Bluetooth and carbon emissions remain model inputs or estimates, not measurements collected from other apps. The import does not establish all background music listening, call type, video quality or actual traffic. Website rows are excluded. Automatic setup keeps the saved routine's assumptions, including valid zero GB/h, and clears only usage minutes for Apple to supply. New days use their applicable routine; existing days keep their saved assumptions. The garden compares each result with up to seven earlier saved days, rather than grading an absolute measured impact.
+DFE groups recognised apps by category using their app IDs. The time from other apps stays under **Other apps**. If Screen Time reports screen use but supplies no positive app duration, the day stays pending.
 
-The app keeps its full history on the device. Its App Group holds the latest garden summary, the applicable automatic setup and a bounded pending-day handoff from the widget. The handoff uses iOS file protection and contains category totals and calculation inputs. The app checks and recalculates pending results before saving them to history. App names, app IDs and individual app records are excluded. Separate storage/read checks contain dates and fixed statuses, without usage amounts or footprint values. After opt-in, Apple manages delivery of the latest saved summary to the paired Watch through Watch Connectivity. There is no DFE account, activity-upload service or remote push server.
+The model estimates traffic from the average rate for each category. Brightness, GPS and Bluetooth also use model inputs. Apple may not report all background music use, and the import excludes website activity. The available data cannot identify call type, video quality or actual traffic.
 
-Optional morning reminders are local notifications saved for the next 30 mornings, around 08:00 local time. iOS can display them while DFE is closed, including after force-quit. App use or permitted background time renews the schedule. Generic wording varies by the local delivery date, without a personal profile or extra activity collection, and does not claim that a fresh estimate is ready. Known future requests can receive updated wording under the same ID and delivery time. Before a reminder is due, a fresh valid result may replace its message using the same dated request; a later import does not send a second message after that day's reminder may have fired. Turning reminders off cancels pending messages, and deleting entries resets the choice and log. Screen Time access remains a separate choice.
+Automatic setup keeps the saved routine's assumptions, including a valid rate of zero GB/h. It clears usage minutes so Apple can supply them. Existing days keep their saved assumptions. The garden compares each estimate with up to seven earlier saved days.
 
-A saved reminder does not run a new calculation or update a widget. Force-quit normally stops the main app's background launches; the widget can attempt its own query when iOS permits execution. Focus and notification settings can delay or hide reminders. Neither route promises an update at exactly 08:00, indefinite reminders after more than 30 days without runtime, or a fresh result whenever the app is closed.
+The app keeps its history on the device. The App Group is the local space shared by the app and its widget. It holds the latest garden summary, automatic setup and a limited set of pending days. Each protected pending record stores category totals and the inputs for the estimate. The app checks the result before saving it to history. App names, app IDs and individual app records stay out of the pending files.
 
-Family Controls and App and Website Usage need the correct capabilities, profiles and user authorization. Apple's published expanded-access customer conditions include an EU-located device and an EU Apple Account region. Development testing elsewhere does not prove customer availability there. Check [Apple's entitlement guide](https://developer.apple.com/documentation/familycontrols/requesting-the-family-controls-entitlement) and [expanded access conditions](https://developer.apple.com/documentation/familycontrols/authorizationstatus/approvedwithdataaccess) before choosing release countries.
+If the user turns on Watch sharing, Apple delivers the latest saved summary to the paired Watch. DFE uses local storage and local notifications. It runs without a DFE account or a project server.
 
-The offline policy is in the app. The privacy and support addresses are set in the release configuration, and their sources are in the repository website. After the changes are accepted, verify that GitHub Pages serves both updated pages at the addresses listed in App Store Connect before submitting to App Review.
+Optional morning reminders are scheduled locally for the next 30 mornings, around 08:00 local time. iOS can show a scheduled reminder even if the user swipes DFE away. Opening the app or running it in the background renews the schedule. The general message varies with the delivery date. If a valid estimate arrives before a reminder is due, DFE can update that same request. If the estimate arrives later, DFE skips a second message for that day.
+
+Turning reminders off cancels pending messages. Deleting entries resets the reminder setting and log. Screen Time access has its own setting.
+
+A reminder and an estimate update run separately. After force-quit, the widget can request activity if iOS runs it. The main app normally needs to be opened again before it can run in the background. iOS also controls delivery, so Focus and notification settings may delay or hide reminders.
+
+Apple's published conditions for expanded access require a device in the EU and an Apple Account set to an EU country or region. Customer access in Switzerland still needs confirmation. [Apple's entitlement guide](https://developer.apple.com/documentation/familycontrols/requesting-the-family-controls-entitlement) · [Expanded access conditions](https://developer.apple.com/documentation/familycontrols/authorizationstatus/approvedwithdataaccess)
 
 ## Verify an automatic update
 
-In Settings, expand **Connection details → Automatic update checks**. A successful import records its actual completion after the protected history save, with the work's origin and the app state at that time. The first observed save stays unchanged when the app opens later. Previously imported days have no reconstructed first-import time. The app keeps at most 32 completed-day checks, without activity amounts or app identities.
+In Settings, open **Connection details** and then **Automatic update checks**. After saving a completed day, the app records the time, how the import started and whether the app was open. The first recorded time is kept when the app opens again. DFE keeps up to 32 completed-day checks with dates and status details.
 
-The host writes and reads back the shared garden in memory. Small and medium widgets record real timeline reads separately; gallery previews cannot create evidence, and a timeline read is not proof of on-screen rendering. Safe copies of these checks also live beside the app history, so a local test need not export the shared garden values. **Copy update checks** shares only this technical information when the user chooses it. Delete all entries clears the checks too.
+The iPhone app checks that it can read the shared garden after writing it. The small and medium widgets record their timeline reads separately. Check the actual Home Screen to confirm that the updated garden is visible. **Copy update checks** copies the dates and status details without usage amounts, estimates or app identities. **Delete all entries** also clears these checks.
 
-A new build must be tested on a physical phone before treating its receipts as beta evidence. Record the build/configuration, completed day, completion state and timestamps. Keep natural callbacks separate from foreground refreshes or debugger-forced work. These checks cannot recover the original time of an import that happened before they existed, establish complete Screen Time coverage or change Apple's regional access rules.
+Use a physical iPhone to verify each beta build. Record the build, completed day, import state and timestamps. Keep system-scheduled updates separate from refreshes started by opening the app or running a debugger.
 
 ## Run the checks
 
-From the repository root:
+Run these commands from the repository root.
 
 ```sh
 python3 -m unittest discover -s apps/ios/tests -v
@@ -78,7 +97,7 @@ The last command runs the shared calculation tests, including the iOS bridge and
 
 GitHub Actions runs these checks for pull requests to `main` and saves the logs, shared reports and `.xcresult` for 14 days. The runner selects an installed Xcode, a compatible standard iPhone simulator and a matching watchOS runtime. It runs unsigned builds and controlled tests. Live Screen Time checks require a physical phone.
 
-To run the interface tests, replace the destination below with an installed iPhone simulator:
+To run the interface tests, replace the destination below with an installed iPhone simulator.
 
 ```sh
 xcodebuild -project apps/ios/iosApp.xcodeproj \
@@ -88,40 +107,38 @@ xcodebuild -project apps/ios/iosApp.xcodeproj \
   -only-testing:iosAppUITests test
 ```
 
-Live Screen Time import, a natural new-day background update, visible widget refresh and notice delivery need separate physical-device acceptance. Simulator tests and compilation do not establish those results or App Store readiness.
+Use a physical device to check live Screen Time import, a new-day background update, the visible widget and reminder delivery before release.
 
 ## Local tools
 
-Edit the policy in `Configuration/PrivacyPolicyContent.json`, then run `scripts/generate_privacy_policy.py`. The default updates only `iosApp/PrivacyPolicyContent.swift` and leaves the website alone. Add `--include-web` to update the same policy's HTML, Markdown and JSON copies in the repository's root `docs/` folder. No extra public copies are created inside this iOS folder. Use `--check --include-web` to report differences without changing any file.
+Edit `apps/ios/Configuration/PrivacyPolicyContent.json` and run `python3 apps/ios/scripts/generate_privacy_policy.py` from the repository root. This updates the Swift copy in the app. Add `--include-web` to also update `docs/privacy-policy.html`, `docs/privacy-policy.md` and `docs/privacy-policy-content.json`. Add `--check` to report differences without writing files. GitHub Pages serves the public copies from `main`.
 
-The generated public files are `docs/privacy-policy.html`, `docs/privacy-policy.md` and `docs/privacy-policy-content.json` at the repository root. Generating them does not deploy the website. GitHub Pages publishes the repository's approved website source after the pull request is merged.
+`apps/ios/scripts/check-ios-release.py` inspects a built bundle or archive without uploading it or changing signing resources. Pass `--require-store` when a distribution signature, approved public URLs and matching Store profiles are required. Its `--project-root` input is the repository root.
 
-`scripts/check-ios-release.py` inspects a built bundle or archive without uploading it or changing signing resources. Pass `--require-store` when a distribution signature, approved public URLs and matching Store profiles are required. Its `--project-root` input is the repository root.
+The export options and Store checker target the ZHAW release identity. For development, select your approved team in the ignored `apps/ios/Configuration/Local.xcconfig` file.
 
-The export options and Store checker target the ZHAW release identity. Development signing still comes from your ignored `Local.xcconfig`; cloning the project does not select the ZHAW team.
+Before archiving for distribution, choose an unused build number. Set `DFE_SOURCE_REVISION` to the reviewed Git revision or a recorded source fingerprint. Check that the iPhone app, Home Screen widget, Watch app and Watch widget all contain the same value.
 
-Before a distribution archive, choose an unused build number and supply `DFE_SOURCE_REVISION` with the reviewed Git revision or a recorded source fingerprint. The host, Home Screen widget, Watch app and Watch widget must contain the same value. The preparation check rejects missing values and placeholders; it does not calculate or verify the fingerprint for you.
+## Source map
 
 ```text
 apps/ios/
-├── Configuration/     # Capabilities, policy source and local signing example
-├── iosApp.xcodeproj/  # Xcode project and shared schemes
-├── iosApp/            # SwiftUI app, local storage and automatic refresh
-├── GardenWidget/      # Small and medium WidgetKit layouts
-├── WidgetShared/      # Shared calculation inputs, pending imports and widget storage
-├── WatchApp/          # Optional display of a saved paired-iPhone result
-├── WatchAppUITests/   # Isolated Watch views and a separate system-host audit
-├── WatchWidgets/      # Watch complications and Smart Stack layout
-├── CompanionShared/   # Bounded Watch payload and local storage
-├── iosAppTests/       # Controlled model, storage and refresh tests
-├── iosAppUITests/     # Navigation, layout and accessibility tests
-├── scripts/           # Local build, policy and release checks
-├── tests/             # Python tests for those checks
-└── docs/              # Device acceptance notes and example-history previews
+├── Configuration/        # Capabilities, policy source and local signing example
+├── iosApp.xcodeproj/     # Xcode project and shared schemes
+├── iosApp/               # SwiftUI app, local storage and automatic refresh
+├── GardenWidget/         # Small and medium WidgetKit layouts
+├── WidgetShared/         # Shared calculation inputs, pending imports and widget storage
+├── WatchApp/             # Optional display of a saved paired-iPhone result
+├── WatchAppUITests/      # Isolated Watch views and a separate system-host audit
+├── WatchWidgets/         # Watch complications and Smart Stack layout
+├── CompanionShared/      # Bounded Watch payload and local storage
+├── iosAppTests/          # Controlled model, storage and refresh tests
+├── iosAppUITests/        # Navigation, layout and accessibility tests
+├── scripts/              # Local build, policy and release checks
+├── tests/                # Python tests for those checks
+└── docs/                 # Device acceptance notes and example-history previews
 ```
-
-The acceptance record tracks the signed TestFlight build and the remaining checks before App Review.
 
 ## Public pages and contact
 
-The DFE Team maintains the app and answers privacy and support questions at [digital-footprint-explorer.init@zhaw.ch](mailto:digital-footprint-explorer.init@zhaw.ch). See [iOS support](../../docs/support-ios.html) and the [privacy policy](../../docs/privacy-policy.html). The app also includes an offline copy of the policy.
+The DFE Team maintains the app and answers privacy and support questions at [digital-footprint-explorer.init@zhaw.ch](mailto:digital-footprint-explorer.init@zhaw.ch). The app includes an offline copy of the policy. Before App Review, check that the live pages match the URLs in App Store Connect. [iPhone support](https://zhaw-init-softwareengineering.github.io/digital-footprint-explorer/support-ios.html) · [iOS privacy policy](https://zhaw-init-softwareengineering.github.io/digital-footprint-explorer/privacy-policy.html)

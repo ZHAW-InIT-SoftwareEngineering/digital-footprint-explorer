@@ -1,16 +1,16 @@
 # Digital Footprint Explorer for Android
 
-The Android app uses Compose for its screens and Glance for the garden widget. It gathers the activity Android makes available and sends those inputs to the shared Kotlin model for a daily CO₂e estimate. A WorkManager job saves the estimate and updates the widget. The [Google Play listing](https://play.google.com/store/apps/details?id=ch.zhaw.digitalfootprintexplorer) provides the public version.
+The Android app uses Compose for its screens and Glance for the garden widget. It uses the activity Android makes available to calculate a daily CO₂e estimate with the shared Kotlin model. A WorkManager job saves the estimate and updates the widget. The public app is available on [Google Play](https://play.google.com/store/apps/details?id=ch.zhaw.digitalfootprintexplorer).
 
 ## Build and run
 
 Use Android Studio, JDK 17 and Android SDK Platform 36. The minimum supported version is Android 7.0 (API 24). The Gradle wrapper and version catalog are at the [repository root](../../README.md).
 
-1. Open the repository root in Android Studio and select the `digitalFootprintExplorer-android` run configuration.
-2. Start an emulator or connect an Android device. Run the debug app.
+1. Open the repository root in Android Studio and sync Gradle.
+2. Start an emulator or connect an Android device. Select the `digitalFootprintExplorer-android` module and run the debug app.
 3. When the app asks for Usage Access, allow it in Android Settings. Use the launcher widget picker to add the garden widget if you want to see it on the Home Screen.
 
-To build, install or run unit tests from the repository root:
+Run these commands from the repository root. `installDebug` needs a running emulator or a connected device.
 
 ```sh
 ./gradlew :digitalFootprintExplorer-android:assembleDebug
@@ -18,7 +18,7 @@ To build, install or run unit tests from the repository root:
 ./gradlew :digitalFootprintExplorer-android:testDebugUnitTest
 ```
 
-On Windows, use `gradlew.bat` with the same task names. The Gradle module name stays `digitalFootprintExplorer-android` even though its source lives in `apps/android/`. No release signing credentials are needed for a debug build.
+On Windows, use `gradlew.bat` with the same task names. The Gradle module name stays `digitalFootprintExplorer-android` even though its source lives in `apps/android/`. The debug build uses the local Android debug signing key.
 
 ## Source map
 
@@ -46,4 +46,7 @@ The calculation code, SQLDelight schema and shared tests live in [`shared/`](../
 
 ## Device checks
 
-The unit tests cover installed-app lookups, metric collection and network data handling. On a device, check the Usage Access prompt, the daily statistics and the widget. A device or emulator needs usable activity before you can check a real daily estimate. Android can restrict network counters, so traffic data may be unavailable. The model handles missing inputs and presents the result as an estimate.
+The JVM tests cover installed-app lookups and how the app combines activity data. The `NetworkUsageDataSourceTest` is marked `@Ignore`. Check Android's network counters on a physical device, where access can vary.
+
+1. Open the app, allow Usage Access and add the garden widget to the Home Screen.
+2. Use the phone normally. After a completed day with usable activity, check that the app shows daily statistics and that the widget shows the saved garden.

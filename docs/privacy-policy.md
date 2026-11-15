@@ -112,8 +112,6 @@ The current interface does not offer a history export. Screen Time-derived histo
 
 Earlier versions allowed manual history files to be shared. Deleting local data cannot recall those files or remove copies held by other people.
 
-For support, you can choose Copy update checks inside Connection details. It copies only the small technical checks described above, so you can decide whether to share them. It does not copy your history, activity amounts or garden values, and the app does not send the report automatically.
-
 ### Advertising and tracking
 
 The app has no advertising, analytics service or tracking tools. It does not sell your data, send usage history to the project team, or link it to information from other apps. The shared calculation code runs on the device.

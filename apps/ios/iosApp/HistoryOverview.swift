@@ -104,7 +104,7 @@ struct HistoryOverview: View {
         .automaticRefresh()
         .accessibilityIdentifier("history.content")
         .background(FootprintAppearance.page)
-        .navigationTitle("History")
+        .navigationTitle(appLanguage.text("History"))
     }
 
     // [04] Explain why history is empty without filling the list with made-up days.

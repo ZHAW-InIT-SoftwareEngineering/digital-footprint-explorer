@@ -142,7 +142,7 @@ struct ScreenTimeSettingsView: View {
                                                   disconnect: disconnect))
     }
 
-    // [05] Explain the scope and last import in one place, then keep Disconnect behind an explicit confirmation.
+    // [05] Explain the connection, then keep Disconnect behind an explicit confirmation.
     private var connectionDetails: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text(appLanguage.text(service.activityScope == .allAuthorizedApps
@@ -150,7 +150,6 @@ struct ScreenTimeSettingsView: View {
                  : "Your saved activity choices are kept. Review the connection to include all available app activity."))
                 .accessibilityIdentifier("screen-time.allActivity")
             Text("Completed days update when the app opens and when iOS allows background work. Missing or incomplete days stay pending.")
-            AutomaticUpdateChecksView(store: store, verification: store.importVerification)
             if canDisconnect {
                 Divider()
                 Button(role: .destructive) {
@@ -237,163 +236,6 @@ struct ScreenTimeSettingsView: View {
         .foregroundStyle(.primary)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(appLanguage.format("Screen Time notice. %@", appLanguage.screenTimeMessage(error)))
-    }
-}
-
-// [09] Keep saved checks behind the connection details. They explain what ran on this
-// iPhone without exposing app choices, usage amounts or the garden's calculation inputs.
-private struct AutomaticUpdateChecksView: View {
-    @ObservedObject var store: FootprintStore
-    @ObservedObject var verification: AutomaticUpdateVerification
-    @Environment(\.appLanguage) private var appLanguage
-    @State private var expanded = false
-    @State private var copyMessage: String?
-
-    var body: some View {
-        DisclosureGroup(isExpanded: $expanded) {
-            VStack(alignment: .leading, spacing: 18) {
-                importDetails
-                Divider()
-                sharedDetails
-                Button {
-                    copyChecks()
-                } label: {
-                    SettingsActionLabel("Copy update checks", symbol: "doc.on.doc")
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(FootprintAppearance.accent)
-                .accessibilityIdentifier("screen-time.copyUpdateChecks")
-                if let copyMessage {
-                    Text(appLanguage.text(copyMessage)).font(.footnote).foregroundStyle(.secondary)
-                }
-                Text("These checks stay on this device. Times use your current time zone. A widget data read does not tell us exactly when iOS displayed it.")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .padding(.top, 12)
-        } label: {
-            SettingsActionLabel("Automatic update checks", symbol: "clock.arrow.circlepath")
-                .accessibilityIdentifier("screen-time.updateChecks")
-        }
-    }
-
-    @ViewBuilder private var importDetails: some View {
-        if verification.persistenceFailed {
-            Text("The import check could not be saved. Your daily results are kept separately.")
-                .foregroundStyle(.secondary)
-        }
-        if let check = store.latestVerifiedAutomaticSave {
-            checkRow("Completed day", detail: displayedDay(check.day))
-            checkRow("Last verified import", detail: timestamp(check.lastObservedAt) + " · " + appLanguage.text(origin(check.lastOrigin)))
-            checkRow("App at saved time", detail: appLanguage.text(completion(check.lastCompletionState)))
-            checkRow("Recorded by", detail: "DFE " + check.lastProducer.appVersion + " (" + check.lastProducer.appBuild + ")"
-                     + " · " + appLanguage.text(check.lastProducer.isDebug ? "Development check" : "Release check")
-                     + " · " + appLanguage.text(check.lastProducer.isSimulator ? "Simulator" : "Device"))
-            if check.initialSaveObserved {
-                checkRow("First save for this day", detail: timestamp(check.firstObservedAt) + " · " + appLanguage.text(completion(check.firstCompletionState)))
-                if check.firstProducer.isDebug || check.firstProducer.isSimulator {
-                    Text("That first saved check came from a development run.").foregroundStyle(.secondary)
-                }
-            } else {
-                Text("The first import time for this older day was not recorded. The time above belongs to a later verified save.")
-                    .foregroundStyle(.secondary)
-            }
-        } else {
-            Text("No verified import has been recorded for this day yet. Older saved days keep their results, with no guessed import time.")
-                .foregroundStyle(.secondary)
-        }
-    }
-
-    @ViewBuilder private var sharedDetails: some View {
-        if store.widgetCheckSaveFailed {
-            Text("The local copy of the widget check could not be saved.").foregroundStyle(.secondary)
-        }
-        if let check = store.widgetVerification {
-            let current = check.status == .verified && check.day == store.latest?.day && check.receiptStored
-            checkRow("Shared garden data", detail: current ? appLanguage.format("Verified for %@", check.day.map(displayedDay) ?? appLanguage.text("this day"))
-                     : appLanguage.text(sharedStatus(check)))
-            checkRow("Checked on this device", detail: timestamp(check.checkedAt))
-        } else {
-            checkRow("Shared garden data", detail: appLanguage.text(store.widgetStorageAvailable
-                     ? "Not verified on this device yet" : "Shared storage is unavailable"))
-        }
-        ForEach(["small", "medium"], id: \.self) { family in
-            let check = store.widgetReadChecks.first { $0.family == family }
-            let title = family == "small" ? "Small widget data read" : "Medium widget data read"
-            if let check {
-                let current = check.status == .verified && check.day == store.latest?.day
-                checkRow(title, detail: current
-                    ? (check.day.map(displayedDay) ?? "") + " · " + timestamp(check.readAt)
-                    : appLanguage.text("Waiting for the latest saved day"))
-            } else {
-                checkRow(title, detail: appLanguage.text("Waiting for iOS to read the widget data"))
-            }
-        }
-    }
-
-    private func checkRow(_ title: String, detail: String) -> some View {
-        VStack(alignment: .leading, spacing: 5) {
-            Text(appLanguage.text(title)).fontWeight(.medium)
-            Text(detail).foregroundStyle(.secondary)
-        }
-        .accessibilityElement(children: .combine)
-        .fixedSize(horizontal: false, vertical: true)
-    }
-
-    private func timestamp(_ date: Date) -> String {
-        date.formatted(.dateTime.year().month(.abbreviated).day().hour().minute().second().locale(appLanguage.locale))
-    }
-
-    private func displayedDay(_ key: String) -> String {
-        guard let date = store.date(for: key) else { return key }
-        return date.formatted(.dateTime.year().month(.abbreviated).day().locale(appLanguage.locale))
-    }
-    private func origin(_ value: AutomaticUpdateOrigin) -> String {
-        value == .foreground ? "Started while open" : "Started by background work"
-    }
-    private func completion(_ value: AutomaticUpdateCompletionState) -> String {
-        switch value {
-        case .active: return "App open"
-        case .inactive: return "App inactive"
-        case .background: return "App in background"
-        case .unknown: return "Not recorded"
-        }
-    }
-    // [10] Copy only the fixed support fields. The full history and widget values are never part of this report.
-    private func copyChecks() {
-        let report = AutomaticUpdateSupportReport(capturedAt: Date(),
-            producer: .current, latestSavedDay: store.latest?.day,
-            verifiedSave: store.latestVerifiedAutomaticSave,
-            importCheckSaveFailed: verification.persistenceFailed,
-            publication: store.widgetVerification, widgetReads: store.widgetReadChecks,
-            widgetCheckSaveFailed: store.widgetCheckSaveFailed)
-        do {
-            let encoder = JSONEncoder()
-            encoder.dateEncodingStrategy = .millisecondsSince1970
-            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-            let data = try encoder.encode(report)
-            guard let text = String(data: data, encoding: .utf8) else { return }
-            // [11] Keep these copied checks off nearby devices and remove them after a short handover.
-            UIPasteboard.general.setObjects([text], localOnly: true,
-                                           expirationDate: Date().addingTimeInterval(300))
-            copyMessage = "Checks copied. They contain dates and status, with no app usage amounts."
-        } catch {
-            copyMessage = "The update checks could not be copied."
-        }
-    }
-    private func sharedStatus(_ value: WidgetPublicationVerification) -> String {
-        if value.status == .empty { return "No saved garden yet" }
-        if value.status == .unavailable { return "Shared storage is unavailable" }
-        guard value.receiptStored else { return "The data was checked, but its check could not be saved" }
-        switch value.status {
-        case .verified: return "Waiting for the latest saved day"
-        case .empty: return "No saved garden yet"
-        case .unavailable: return "Shared storage is unavailable"
-        case .unreadable: return "Shared data could not be read"
-        case .mismatch: return "Shared data needs another check"
-        case .writeFailed: return "Shared data could not be saved"
-        }
     }
 }
 

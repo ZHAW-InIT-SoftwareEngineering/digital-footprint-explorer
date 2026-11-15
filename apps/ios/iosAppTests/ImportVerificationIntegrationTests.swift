@@ -171,23 +171,6 @@ final class ImportVerificationIntegrationTests: XCTestCase {
         XCTAssertEqual(check.lastOrigin, .backgroundRefresh)
         XCTAssertEqual(check.lastCompletionState, .active, "Started in background does not mean it finished there")
     }
-    // [08] A copied support check must contain dates and status, never the underlying estimate or activity.
-    @MainActor func testSupportReportContainsOnlyVerificationFields() async throws {
-        let store = try makeStore(completedAt: date("2026-11-01T07:12:46Z"))
-        try store.importAutomaticUsage(day: date("2026-10-31T12:00:00Z"), minutesByCategory: minutes,
-            now: date("2026-11-01T07:00:00Z"), origin: .backgroundRefresh)
-        let report = AutomaticUpdateSupportReport(capturedAt: date("2026-11-01T07:13:00Z"),
-            producer: .current, latestSavedDay: store.latest?.day, verifiedSave: store.latestVerifiedAutomaticSave,
-            importCheckSaveFailed: false, publication: store.widgetVerification, widgetReads: [], widgetCheckSaveFailed: false)
-        let data = try JSONEncoder().encode(report)
-        let root = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
-        XCTAssertEqual(Set(root.keys), ["schemaVersion", "capturedAt", "producer", "latestSavedDay", "verifiedSave",
-                                        "importCheckSaveFailed", "publication", "widgetReads", "widgetCheckSaveFailed"])
-        let text = String(decoding: data, as: UTF8.self)
-        for forbidden in ["totalKg", "minutes", "usages", "tokens", "bundleIdentifier", "inputs", "snapshot"] {
-            XCTAssertFalse(text.contains("\"" + forbidden + "\""))
-        }
-    }
 
     // [09] Even an unfinished older automatic day has a past save whose exact time we did not observe.
     @MainActor func testOlderIncompleteAutomaticRecordKeepsUnknownFirstImport() async throws {
@@ -212,13 +195,6 @@ final class ImportVerificationIntegrationTests: XCTestCase {
                           source: .manual, now: date("2026-11-01T07:15:00Z"))
         XCTAssertNotNil(store.importVerification.record(for: "2026-10-31"))
         XCTAssertNil(store.latestVerifiedAutomaticSave)
-        let report = AutomaticUpdateSupportReport(capturedAt: date("2026-11-01T07:16:00Z"),
-            producer: .current, latestSavedDay: store.latest?.day, verifiedSave: store.latestVerifiedAutomaticSave,
-            importCheckSaveFailed: false, publication: nil, widgetReads: [], widgetCheckSaveFailed: false)
-        let root = try XCTUnwrap(JSONSerialization.jsonObject(with: JSONEncoder().encode(report)) as? [String: Any])
-        XCTAssertEqual(root["latestSavedDay"] as? String, "2026-10-31")
-        XCTAssertNil(root["verifiedSave"])
-        XCTAssertNil(root["importedDay"])
     }
 
     // [11] A receipt for an earlier save does not turn an unfinished current result into a completed import.

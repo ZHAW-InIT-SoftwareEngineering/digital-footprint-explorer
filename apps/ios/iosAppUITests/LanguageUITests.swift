@@ -27,8 +27,9 @@ final class LanguageUITests: XCTestCase {
                                "-reset-ui-state", "-ui-keep-language", "-ui-reset-language"]
         app.launch()
         choose("language.de-CH", using: "Settings", in: app)
-        XCTAssertTrue(app.navigationBars["App-Sprache"].waitForExistence(timeout: 8), app.debugDescription)
+        returnToSettings(from: "App-Sprache", expecting: "Einstellungen", in: app)
         app.tabBars.buttons["Heute"].tap()
+        XCTAssertTrue(app.navigationBars["Heute"].waitForExistence(timeout: 8))
         XCTAssertEqual(app.staticTexts["today.welcome"].label, "Schön, dass du da bist")
         XCTAssertTrue(app.staticTexts["footprint.total"].exists)
         app.tabBars.buttons["Verlauf"].tap()
@@ -38,8 +39,14 @@ final class LanguageUITests: XCTestCase {
         app.launchArguments.removeAll { $0 == "-ui-reset-language" || $0 == "-reset-ui-state" }
         app.launch()
         XCTAssertTrue(app.tabBars.buttons["Heute"].waitForExistence(timeout: 12))
+        app.tabBars.buttons["Verlauf"].tap()
+        XCTAssertTrue(app.navigationBars["Verlauf"].waitForExistence(timeout: 8))
         choose("language.en", using: "Einstellungen", in: app)
+        returnToSettings(from: "App language", expecting: "Settings", in: app)
+        app.tabBars.buttons["History"].tap()
+        XCTAssertTrue(app.navigationBars["History"].waitForExistence(timeout: 8))
         app.tabBars.buttons["Today"].tap()
+        XCTAssertTrue(app.navigationBars["Today"].waitForExistence(timeout: 8))
         XCTAssertEqual(app.staticTexts["today.welcome"].label, "Good to have you here")
         XCTAssertTrue(app.staticTexts["footprint.total"].exists)
     }
@@ -65,5 +72,12 @@ final class LanguageUITests: XCTestCase {
         let option = app.buttons[identifier]
         XCTAssertTrue(option.waitForExistence(timeout: 8))
         option.tap()
+    }
+
+    private func returnToSettings(from pickerTitle: String, expecting settingsTitle: String, in app: XCUIApplication) {
+        let picker = app.navigationBars[pickerTitle]
+        XCTAssertTrue(picker.waitForExistence(timeout: 8), app.debugDescription)
+        picker.buttons.firstMatch.tap()
+        XCTAssertTrue(app.navigationBars[settingsTitle].waitForExistence(timeout: 8), app.debugDescription)
     }
 }

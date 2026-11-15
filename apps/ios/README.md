@@ -80,11 +80,9 @@ Apple's published conditions for expanded access require a device in the EU and 
 
 ## Verify an automatic update
 
-In Settings, open **Connection details** and then **Automatic update checks**. After saving a completed day, the app records the time, how the import started and whether the app was open. The first recorded time is kept when the app opens again. DFE keeps up to 32 completed-day checks with dates and status details.
+On a physical iPhone, check that **Screen Time** in DFE Settings shows **Connected**. With a saved estimate, compare the completed day in **Today** with the date and garden on the Home Screen widget. iOS controls when the widget refreshes.
 
-The iPhone app checks that it can read the shared garden after writing it. The small and medium widgets record their timeline reads separately. Check the actual Home Screen to confirm that the updated garden is visible. **Copy update checks** copies the dates and status details without usage amounts, estimates or app identities. **Delete all entries** also clears these checks.
-
-Use a physical iPhone to verify each beta build. Record the build, completed day, import state and timestamps. Keep system-scheduled updates separate from refreshes started by opening the app or running a debugger.
+For beta testing, note the build, the completed day and whether the result was already visible before you opened the app. Opening the app can start its own import.
 
 ## Run the checks
 
@@ -97,7 +95,7 @@ python3 apps/ios/scripts/generate_privacy_policy.py --check --include-web
 bash apps/ios/scripts/ios-check.sh
 ```
 
-The last command runs the shared calculation tests, the controlled iOS unit tests and the language selector interface tests. Set `DFE_SIMULATOR_ID` to choose an installed simulator. The script writes an `.xcresult` bundle outside the repository by default and prints its path. These tests use isolated stores and do not request personal Screen Time access.
+The last command runs the shared calculation tests, the controlled iOS unit tests, and interface tests for language selection and Connection details. Set `DFE_SIMULATOR_ID` to choose an installed simulator. The script writes an `.xcresult` bundle outside the repository by default and prints its path. These tests use isolated stores and do not request personal Screen Time access.
 
 GitHub Actions runs these checks for pull requests to `main` and saves the logs, shared reports and `.xcresult` for 14 days. The runner selects an installed Xcode, a compatible standard iPhone simulator and a matching watchOS runtime. It runs unsigned builds and controlled tests. Live Screen Time checks require a physical phone.
 

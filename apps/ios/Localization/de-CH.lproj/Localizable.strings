@@ -42,12 +42,8 @@
 "Allow Screen Time to start automatic daily estimates. New days stay pending until access and complete data are available." = "Erlaube den Zugriff auf die Bildschirmzeit, um automatische Schätzungen zu starten. Neue Tage bleiben offen, bis der Zugriff und vollständige Daten verfügbar sind.";
 "Another View of Your Day" = "Ein anderer Blick auf deinen Tag";
 "Anyone who can see your Home Screen may see the widget's summary. You can remove the widget at any time. Removing it does not delete your history in the app." = "Wer deinen Home-Bildschirm sehen kann, kann auch die Zusammenfassung im Widget sehen. Du kannst das Widget jederzeit entfernen. Der Verlauf in der App bleibt dabei erhalten.";
-"App at saved time" = "App-Zustand beim Speichern";
 "App categories and category-average traffic rates are assumptions. An app can support several types of activity, so a category rule cannot measure the share of video, messages or calls inside it. The imported durations do not establish all background music listening, call type, video quality or actual network traffic. Website records are excluded. The calculation method is explained in Settings." = "App-Kategorien und durchschnittliche Datenraten je Kategorie beruhen auf Annahmen. Eine App kann verschiedene Zwecke haben. Die Zuordnung zu einer Kategorie misst deshalb nicht, wie viel Zeit auf Videos, Nachrichten oder Anrufe entfällt. Die importierten Zeiten zeigen weder die gesamte Musikwiedergabe im Hintergrund noch die Anrufart, Videoqualität oder den tatsächlichen Datenverkehr. Website-Daten bleiben ausgeschlossen. Die Berechnung ist in den Einstellungen erklärt.";
-"App in background" = "App im Hintergrund";
-"App inactive" = "App inaktiv";
 "App language" = "App-Sprache";
-"App open" = "App geöffnet";
 "App use" = "App-Nutzung";
 "Appearance" = "Erscheinungsbild";
 "Apple restricts customer access to expanded activity data by device, system version and region, including EU device and Apple Account requirements. Development tests in Switzerland use a separate Apple-provided profile; this does not establish access for Swiss customers. The Watch companion does not change these rules." = "Apple begrenzt den erweiterten Datenzugriff für Kundinnen und Kunden je nach Gerät, Betriebssystem und Region. Dazu gehören Apples Anforderungen an den Gerätestandort und den Apple Account in der EU. Für die Entwicklungstests in der Schweiz wurde ein separates Profil von Apple verwendet. Diese Tests sagen nichts darüber aus, ob der Zugriff für Kundinnen und Kunden in der Schweiz verfügbar ist. Die Apple-Watch-App ändert diese Vorgaben nicht.";
@@ -66,7 +62,6 @@
 "Automatic input needs a supported build, iOS 26.4 or later and Apple's expanded Screen Time access. Access for App Store customers also depends on Apple's EU conditions." = "Für automatische Schätzungen braucht es eine unterstützte App-Version, iOS 26.4 oder neuer und Apples erweiterten Zugriff auf die Bildschirmzeit. Für den Zugriff über den App Store gelten zusätzlich Apples Vorgaben für die EU.";
 "Automatic setup" = "Automatische Einrichtung";
 "Automatic setup changed during the import. The earlier response was not saved; the app can try again." = "Die automatische Einrichtung wurde während des Imports geändert. DFE hat die früheren Daten nicht gespeichert und kann es erneut versuchen.";
-"Automatic update checks" = "Prüfdaten zu automatischen Updates";
 "Background" = "Hintergrund";
 "Before a saved reminder is due, a fresh import may replace its message with a short summary of a valid, non-zero estimate for yesterday. The app can also update older wording in a known future reminder. Both changes use the same pending reminder and delivery time, rather than adding another. Once that day's reminder may have appeared, a later import does not send a second summary, even if you dismissed the first message." = "Liegen vor der geplanten Erinnerung neu importierte, gültige und positive Schätzwerte für gestern vor, kann DFE den Text der Erinnerung durch eine kurze Zusammenfassung ersetzen. Die App kann auch den Text einer bereits geplanten zukünftigen Erinnerung aktualisieren. In beiden Fällen bleiben die vorgemerkte Erinnerung und ihre Zustellzeit gleich. Wenn die Erinnerung für den Tag bereits angezeigt worden sein könnte, sendet DFE nach einem späteren Import keine zweite Zusammenfassung. Das gilt auch, wenn du die erste Mitteilung weggewischt hast.";
 "Brightness %lld%% · GPS %@ h · Bluetooth %@ h" = "Helligkeit %lld %% · GPS %@ h · Bluetooth %@ h";
@@ -75,11 +70,9 @@
 "Cancel" = "Abbrechen";
 "Check messages at times that work for you. Quiet non-urgent chats so each alert does not start another session." = "Lies Nachrichten zu Zeiten, die für dich passen. Stell weniger dringende Chats stumm, damit du nicht bei jeder Mitteilung wieder zum Gerät greifst.";
 "Check your connection, choose a look you like, and manage the estimates saved on this device." = "Prüfe deine Verbindung, wähle das passende Erscheinungsbild und verwalte die Schätzungen auf diesem Gerät.";
-"Checked on this device" = "Auf diesem Gerät geprüft";
 "Checking iPhone" = "iPhone wird geprüft";
 "Checking your phone's latest saved result…" = "Suche nach dem zuletzt gespeicherten Ergebnis auf deinem iPhone …";
 "Checking…" = "Prüft …";
-"Checks copied. They contain dates and status, with no app usage amounts." = "Prüfdaten kopiert. Sie enthalten Datums- und Statusangaben, aber keine Nutzungszeiten.";
 "Checks for the latest saved estimate on your paired iPhone." = "Sucht auf deinem gekoppelten iPhone nach der letzten gespeicherten Schätzung.";
 "Choose a daily time limit" = "Tägliches App-Limit festlegen";
 "Choose a date between your first day and today." = "Wähle ein Datum zwischen deinem ersten Tag und heute.";
@@ -105,7 +98,6 @@
 "Connecting…" = "Verbindung wird hergestellt …";
 "Connection details" = "Verbindungsdetails";
 "Content layout only. Watch-face placement is checked separately." = "Dies ist eine Vorschau des Inhalts. Die Position auf dem Zifferblatt wird separat geprüft.";
-"Copy update checks" = "Prüfdaten kopieren";
 "Could not save this change" = "Diese Änderung konnte nicht gespeichert werden";
 "Could not start automatic input" = "Automatische Schätzungen konnten nicht gestartet werden";
 "Curious about your device habits? Open your garden for a different view." = "Neugierig auf deine Handygewohnheiten? In deinem Garten kannst du sie aus einer anderen Perspektive sehen.";
@@ -125,8 +117,6 @@
 "Delete all entries?" = "Alle Einträge löschen?";
 "Deleting entries does not remove files you previously shared, copies held by other people, or older device backups. Removing the app also removes its local app storage; manage existing backups separately." = "Das Löschen entfernt keine früher geteilten Dateien, Kopien bei anderen Personen oder ältere Geräte-Backups. Wenn du die App entfernst, wird auch ihr lokaler Speicher gelöscht. Bestehende Backups kannst du separat verwalten.";
 "Deleting entries in the app does not delete emails you have sent or the website host's logs. Contact the DFE Team if you have a question about a support message or a privacy request." = "Wenn du Einträge in der App löschst, werden früher gesendete E-Mails und die Protokolle von GitHub Pages nicht gelöscht. Wende dich an das DFE-Team, wenn du Fragen zu einer Supportnachricht oder ein Datenschutzanliegen hast.";
-"Development check" = "Entwicklertest";
-"Device" = "Gerät";
 "Device %@ · Network %@ · Servers %@" = "Gerät %@ · Netzwerk %@ · Server %@";
 "DFE and its own widget share a summary in an App Group file that uses iOS file protection: the date, total estimate, garden state, estimate source, calculation time and whether the day is complete. With automatic setup enabled, they also share the setup date, time zone, calculation assumptions and up to eight recent totals for the seven-day garden comparison. The widget does not receive your individual app choices, app names or full history." = "DFE und sein Widget nutzen eine gemeinsame, durch iOS geschützte Datei einer App-Gruppe. Sie enthält eine Zusammenfassung mit Datum, Gesamtschätzung, Gartenzustand, Quelle und Zeitpunkt der Berechnung sowie der Angabe, ob der Tag abgeschlossen ist. Bei aktiven automatischen Schätzungen teilen sie ausserdem das Startdatum, die Zeitzone, Berechnungsannahmen und bis zu acht aktuelle Gesamtwerte für den Gartenvergleich über sieben Tage. Das Widget erhält keine Auswahl einzelner Apps, keine App-Namen und keinen vollständigen Verlauf.";
 "DFE · %@" = "DFE · %@";
@@ -156,10 +146,8 @@
 "Explore your digital footprint and find one small idea for today." = "Entdecke deinen digitalen Fussabdruck und hol dir eine kleine Idee für heute.";
 "Find Digital Footprint, choose Your garden and a size, then tap Add Widget." = "Suche nach Digital Footprint, wähle «Dein Garten» und die gewünschte Grösse. Tippe dann auf «Widget hinzufügen».";
 "Finish one task, then take a short screen break before opening another app. A small change is enough to start." = "Schliesse zuerst eine Aufgabe ab und mach eine kurze Bildschirmpause, bevor du eine weitere App öffnest. Eine kleine Änderung reicht für den Anfang.";
-"First save for this day" = "Erstmals gespeichert";
 "Flourishing" = "In voller Blüte";
 "For privacy or support questions, contact the DFE Team at digital-footprint-explorer.init@zhaw.ch. Please do not send your Screen Time history or other private files." = "Bei Fragen zum Datenschutz oder zur Nutzung erreichst du das DFE-Team unter digital-footprint-explorer.init@zhaw.ch. Sende uns bitte keinen Bildschirmzeitverlauf und keine anderen privaten Dateien.";
-"For support, you can choose Copy update checks inside Connection details. It copies only the small technical checks described above, so you can decide whether to share them. It does not copy your history, activity amounts or garden values, and the app does not send the report automatically." = "Für eine Supportanfrage kannst du in den «Verbindungsdetails» die Option «Prüfdaten kopieren» wählen. Sie kopiert nur die oben beschriebenen technischen Prüfdaten. Du entscheidest, ob du sie teilen möchtest. Verlauf, Nutzungszeiten und Gartenwerte werden nicht kopiert. Die App sendet den Bericht nicht automatisch.";
 "From your saved estimate for %@: %@ contributed the most." = "Bei deiner gespeicherten Schätzung vom %1$@ hatte «%2$@» den grössten Anteil.";
 "Games" = "Spiele";
 "Garden" = "Garten";
@@ -197,7 +185,6 @@
 "Last saved day; check your iPhone for a newer result." = "Letzter gespeicherter Tag. Schau auf deinem iPhone nach einem neueren Ergebnis.";
 "Last saved estimate" = "Letzte Schätzung";
 "Last updated: 15 November 2026" = "Zuletzt aktualisiert am 15. November 2026";
-"Last verified import" = "Letzter geprüfter Import";
 "Latest completed day" = "Letzter abgeschlossener Tag";
 "Latest phone result queued for Apple Watch" = "Die letzte Schätzung wartet auf die Übertragung zur Apple Watch";
 "less than 1 min" = "weniger als 1 Min.";
@@ -215,7 +202,6 @@
 "Make yourself at home." = "Schön, dass du da bist.";
 "Manual entry" = "Manueller Eintrag";
 "Maps and navigation" = "Karten und Navigation";
-"Medium widget data read" = "Daten für das mittlere Widget gelesen";
 "Messaging" = "Nachrichten";
 "Missing activity stays pending. Earlier saved entries are kept for reference and cannot be edited here." = "Tage ohne verfügbare Aktivitätsdaten bleiben offen. Frühere Einträge bleiben zum Nachschauen gespeichert und lassen sich hier nicht bearbeiten.";
 "Moderate use" = "Mittlere Nutzung";
@@ -225,11 +211,7 @@
 "Music and podcasts" = "Musik und Podcasts";
 "No recorded use" = "Keine Nutzung erfasst";
 "No saved days yet" = "Noch keine Tage gespeichert";
-"No saved garden yet" = "Noch kein Garten gespeichert";
-"No verified import has been recorded for this day yet. Older saved days keep their results, with no guessed import time." = "Für diesen Tag ist noch kein geprüfter Import aufgezeichnet. Ergebnisse für frühere Tage bleiben ohne geschätzte Importzeit erhalten.";
 "Not connected" = "Nicht verbunden";
-"Not recorded" = "Nicht aufgezeichnet";
-"Not verified on this device yet" = "Auf diesem Gerät noch nicht geprüft";
 "OK" = "OK";
 "On iPad, this estimate uses the app's phone reference model. It is not a measurement of iPad energy use." = "Auf dem iPad verwendet diese Schätzung das Referenzmodell für Smartphones. Der Energieverbrauch des iPads wird dabei nicht gemessen.";
 "On your Apple Watch" = "Auf deiner Apple Watch";
@@ -280,11 +262,9 @@
 "Read the privacy policy" = "Datenschutzerklärung lesen";
 "Reconnect Screen Time" = "Bildschirmzeit erneut verbinden";
 "Reconnect Screen Time in DFE on your iPhone to resume automatic estimates." = "Verbinde die Bildschirmzeit in DFE auf deinem iPhone erneut, um automatische Schätzungen fortzusetzen.";
-"Recorded by" = "Aufgezeichnet mit";
 "rectangular" = "Rechteckig";
 "Refresh" = "Aktualisieren";
 "Refresh from iPhone" = "Vom iPhone aktualisieren";
-"Release check" = "Test der Release-Version";
 "Reminders use local calendar dates and times. The app checks the schedule again when it can run after a clock or time zone change. iOS, Focus, Scheduled Summary and notification settings can delay or hide a message, so an exact 08:00 delivery or a message every day is not guaranteed. A message does not prove that Screen Time, the garden or the widgets refreshed. Removing DFE from multitasking normally stops background launches of the main app. Its widget may update separately when iOS allows it; a reminder alone does not prove that this happened." = "Erinnerungen richten sich nach lokalem Datum und lokaler Uhrzeit. Wenn die Uhrzeit oder Zeitzone wechselt und DFE wieder laufen kann, prüft die App den Zeitplan erneut. iOS, ein Fokus, die geplante Übersicht und die Mitteilungseinstellungen können eine Mitteilung verspäten oder ausblenden. Die Zustellung genau um 08:00 Uhr oder an jedem Tag ist deshalb nicht garantiert. Eine Mitteilung allein zeigt nicht, dass die Bildschirmzeit, der Garten oder die Widgets aktualisiert wurden. Wenn du DFE im App-Umschalter beendest, startet die Haupt-App normalerweise nicht mehr im Hintergrund. Das Widget kann sich separat aktualisieren, wenn iOS es erlaubt. An der Mitteilung ist das nicht erkennbar.";
 "Report access only" = "Nur Zugriff auf Berichte";
 "Resume automatic estimates. Your saved results stay available." = "Setze die automatischen Schätzungen fort. Deine gespeicherten Ergebnisse bleiben verfügbar.";
@@ -330,11 +310,6 @@
 "Set up a garden widget" = "Garten-Widget einrichten";
 "Settings" = "Einstellungen";
 "Share your latest garden with your paired Watch when you choose. App names and activity times stay on your iPhone." = "Teile deinen letzten Garten mit deiner gekoppelten Apple Watch, wenn du möchtest. App-Namen und Nutzungszeiten bleiben auf deinem iPhone.";
-"Shared data could not be read" = "Die gemeinsamen Daten konnten nicht gelesen werden";
-"Shared data could not be saved" = "Die gemeinsamen Daten konnten nicht gespeichert werden";
-"Shared data needs another check" = "Die gemeinsamen Daten müssen nochmals geprüft werden";
-"Shared garden data" = "Gemeinsame Gartendaten";
-"Shared storage is unavailable" = "Der gemeinsame Speicher ist nicht verfügbar";
 "Sharing a history file" = "Verlaufsdateien teilen";
 "Shorter app sessions can lower the time used by the estimate. Actual carbon savings are not measured." = "Wenn du Apps kürzer nutzt, kann die in der Schätzung berücksichtigte Nutzungszeit sinken. Tatsächliche CO₂-Einsparungen werden dabei nicht gemessen.";
 "Show my garden on Apple Watch" = "Meinen Garten auf der Apple Watch anzeigen";
@@ -342,8 +317,6 @@
 "Showing the last saved phone result." = "Du siehst das zuletzt gespeicherte iPhone-Ergebnis.";
 "Showing the last saved phone result. Open DFE on your iPhone to sync." = "Du siehst das letzte gespeicherte Ergebnis. Öffne DFE auf deinem iPhone, um es zu synchronisieren.";
 "Showing the latest saved phone result." = "Du siehst das zuletzt gespeicherte iPhone-Ergebnis.";
-"Simulator" = "Simulator";
-"Small widget data read" = "Daten für das kleine Widget gelesen";
 "Social media" = "Soziale Medien";
 "Some activity has conflicting categories. This day stays pending and your saved entries have been kept." = "Einige Aktivitäten wurden verschiedenen Kategorien zugeordnet. Der Tag bleibt offen. Deine gespeicherten Einträge bleiben erhalten.";
 "Some background update opportunities are unavailable. Updates also run when the app opens." = "Einige Hintergrundaktualisierungen sind nicht verfügbar. Die App aktualisiert deine Daten auch beim Öffnen.";
@@ -353,8 +326,6 @@
 "Stable" = "Unverändert";
 "Start automatic estimates" = "Automatische Schätzungen starten";
 "Start automatic input again to confirm when all-app access begins." = "Starte automatische Schätzungen erneut, um das Startdatum für den Zugriff auf alle verfügbaren Apps zu bestätigen.";
-"Started by background work" = "Im Hintergrund gestartet";
-"Started while open" = "Bei geöffneter App gestartet";
 "Step Into Your Garden" = "Schau in deinem Garten vorbei";
 "System" = "System";
 "Take a breath and visit your garden. Explore your digital day at your own pace." = "Atme kurz durch und besuch deinen Garten. Entdecke deinen digitalen Tag in deinem Tempo.";
@@ -362,7 +333,6 @@
 "Tap +, find Digital Footprint and choose Your garden. Pick a size, then tap Add Widget." = "Tippe auf «+», suche nach Digital Footprint und wähle «Dein Garten». Wähle eine Grösse und tippe auf «Widget hinzufügen».";
 "Tap Refresh to reconnect to your iPhone." = "Tippe auf «Aktualisieren», um die Verbindung zum iPhone wiederherzustellen.";
 "Tap the small or medium widget size in the menu." = "Tippe im Menü auf die kleine oder mittlere Widget-Grösse.";
-"That first saved check came from a development run." = "Die erste Speicherung wurde in einem Entwicklertest aufgezeichnet.";
 "The app also keeps small local update checks: the completed-day date, the time a successful save was observed, whether the app was open or in the background, and the app build. It keeps up to 32 completed-day checks. These checks contain no app names, app identifiers, usage amounts or footprint values. A day imported before these checks were added keeps its original import time unknown." = "Die App speichert ausserdem kurze Prüfdaten zu Updates. Dazu gehören das Datum des abgeschlossenen Tages, der Zeitpunkt einer beobachteten erfolgreichen Speicherung, der Zustand der App (geöffnet oder im Hintergrund) und die Build-Nummer. DFE speichert Prüfdaten für bis zu 32 abgeschlossene Tage. Darin stehen keine App-Namen, App-Kennungen, Nutzungszeiten oder Werte zum CO₂-Fussabdruck. Für früher importierte Tage ist die ursprüngliche Importzeit unbekannt.";
 "The app asks for Screen Time access only when you choose Enable automatic estimates and approve Apple's permission screen. If Apple grants expanded data access, automatic input starts without a second setup form or individual app choices. If access is unavailable or declined, new days stay pending." = "Die App fragt erst nach dem Zugriff auf die Bildschirmzeit, wenn du «Automatische Schätzungen aktivieren» wählst und den Zugriff im Apple-Dialog erlaubst. Erteilt Apple den erweiterten Datenzugriff, starten die automatischen Schätzungen ohne zweites Formular oder Auswahl einzelner Apps. Ist kein Zugriff möglich oder lehnst du ihn ab, bleiben neue Tage offen.";
 "The app checks that its shared garden file can be read back. Each widget size can also keep a small local record of its latest data read. These records contain dates, app build and fixed status words, without the garden value or detailed inputs. A data read does not establish exactly when iOS displayed the widget." = "Die App prüft, ob die gemeinsame Gartendatei gelesen werden kann. Jede Widget-Grösse kann zudem einen kurzen lokalen Eintrag über ihren letzten Datenzugriff speichern. Diese Einträge enthalten Datum, App-Build und feste Statusangaben, ohne Gartenwert oder detaillierte Angaben zur Berechnung. Der Datenzugriff zeigt nicht, wann genau iOS das Widget angezeigt hat.";
@@ -375,15 +345,11 @@
 "The category times add up to more than 24 hours. Enter time spent in the foreground once, even if audio plays in the background." = "Die Nutzungszeiten ergeben zusammen mehr als 24 Stunden. Erfasse die aktive Nutzungszeit nur einmal, auch wenn im Hintergrund Ton läuft.";
 "The category times exceed this calendar day's duration. Your saved entries have been kept." = "Die Nutzungszeiten überschreiten die Länge dieses Kalendertags. Deine gespeicherten Einträge bleiben erhalten.";
 "The current interface does not offer a history export. Screen Time-derived history also remains blocked from export in the storage layer, including after any correction made by an older version." = "Die aktuelle App bietet keinen Verlaufsexport. Der Export aus Bildschirmzeitdaten ist auch im lokalen Speicher gesperrt. Das gilt ebenfalls für Daten, die mit einer älteren Version korrigiert wurden.";
-"The data was checked, but its check could not be saved" = "Die Daten wurden geprüft, aber das Prüfergebnis konnte nicht gespeichert werden";
 "The DFE Team maintains the Digital Footprint Explorer iOS app within School of Engineering ZHAW and handles privacy and support questions." = "Das DFE-Team der ZHAW School of Engineering betreut die iOS-App Digital Footprint Explorer und beantwortet Fragen zum Datenschutz und zur Nutzung.";
 "The DFE Team will update this policy if the app's data practices change. The date above identifies this copy." = "Das DFE-Team aktualisiert diese Erklärung, falls sich der Umgang der App mit Daten ändert. Am Datum oben erkennst du, welche Fassung du liest.";
-"The first import time for this older day was not recorded. The time above belongs to a later verified save." = "Für diesen älteren Tag wurde die Uhrzeit des ersten Imports nicht aufgezeichnet. Die angezeigte Uhrzeit gehört zu einer späteren, geprüften Speicherung.";
 "The garden compares each day's estimate with your average from up to seven earlier days. Lower estimates help it grow, while higher estimates make it wilt. It shows a change in model estimates, rather than a measured environmental impact." = "Der Garten vergleicht die Schätzung für einen Tag mit deinem Durchschnitt aus bis zu sieben früheren Tagen. Bei tieferen Werten wächst er, bei höheren welkt er. Er zeigt, wie sich die Schätzungen verändern. Die tatsächlichen Auswirkungen auf die Umwelt werden dabei nicht gemessen.";
 "The garden compares this estimate with up to seven earlier days." = "Der Garten vergleicht diese Schätzung mit bis zu sieben früheren Tagen.";
-"The import check could not be saved. Your daily results are kept separately." = "Die Prüfdaten zum Import konnten nicht gespeichert werden. Deine täglichen Ergebnisse bleiben separat gespeichert.";
 "The iOS app uses the same category-based calculation as the Android app. It combines app use, estimated data traffic, screen brightness and background activity." = "Die iOS-App verwendet dieselbe Berechnung nach Kategorien wie die Android-App. Sie verbindet die App-Nutzung mit dem geschätzten Datenverkehr, der Bildschirmhelligkeit und der Hintergrundaktivität.";
-"The local copy of the widget check could not be saved." = "Die lokale Kopie der Widget-Prüfdaten konnte nicht gespeichert werden.";
 "The new phone result could not be read. Your saved result has not changed." = "Das neue iPhone-Ergebnis konnte nicht gelesen werden. Dein gespeichertes Ergebnis bleibt erhalten.";
 "The optional notification setting and a small schedule and delivery log also stay in local storage. The log keeps delivery dates, scheduled times, local time zone information and, for a result-based message, the saved-day date. These details help prevent repeat notifications; the log does not contain app names, app identifiers or usage times." = "Auch die Einstellung für optionale Mitteilungen und ein kurzer Zeitplan mit Zustellprotokoll bleiben lokal gespeichert. Das Protokoll enthält Zustelldaten, geplante Uhrzeiten, die lokale Zeitzone und bei einer Mitteilung zu einem Ergebnis das Datum dieses gespeicherten Tages. So vermeidet DFE doppelte Mitteilungen. Das Protokoll enthält keine App-Namen, App-Kennungen oder Nutzungszeiten.";
 "The optional widget guide can ask iOS whether this app's own widget is configured. This only helps with setup. The status is not saved or sent to the project team, and it does not identify where the widget was placed." = "Die optionale Widget-Anleitung kann bei iOS prüfen, ob ein DFE-Widget eingerichtet ist. Das hilft nur bei der Einrichtung. DFE speichert den Status nicht, sendet ihn nicht an das Projektteam und erfährt dadurch nicht, wo du das Widget platziert hast.";
@@ -394,7 +360,6 @@
 "The returned activity does not match this day's saved setup. This day has been kept." = "Die Nutzungsdaten passen nicht zu den gespeicherten Einstellungen für diesen Tag. Der Tag bleibt erhalten.";
 "The saved history could not be read. Your file has been kept. You can try again or delete the saved file to start again." = "Der gespeicherte Verlauf konnte nicht gelesen werden. Deine Datei bleibt erhalten. Versuche es erneut oder lösche die Datei, um neu zu beginnen.";
 "The saved phone result could not be read. Try refreshing." = "Das gespeicherte iPhone-Ergebnis konnte nicht gelesen werden. Versuche es mit «Aktualisieren».";
-"The update checks could not be copied." = "Die Prüfdaten konnten nicht kopiert werden.";
 "The Watch app and its own complications keep that summary in a local file that uses system file protection. Anyone who can see your Watch may see the estimate. The Watch displays a phone result; it does not read Screen Time or measure Watch energy use." = "Die Watch-App und ihre Komplikationen speichern die Zusammenfassung in einer lokalen Datei mit Systemschutz. Wer deine Apple Watch sehen kann, kann die Schätzung sehen. Die Watch zeigt ein iPhone-Ergebnis. Sie liest keine Bildschirmzeit und misst keinen Energieverbrauch der Watch.";
 "The widget can refresh without opening DFE when iOS allows it. Check the saved date; an update at a fixed time is not guaranteed." = "Wenn iOS es zulässt, kann das Widget aktualisiert werden, ohne dass du DFE öffnest. Am angezeigten Datum erkennst du, zu welchem Tag die Schätzung gehört. Updates haben keine feste Uhrzeit.";
 "The widget check could not be saved. Your history is kept." = "Die Widget-Prüfung konnte nicht gespeichert werden. Dein Verlauf bleibt erhalten.";
@@ -406,8 +371,6 @@
 "The widget update could not be checked. Your saved history is kept." = "Die Aktualisierung des Widgets konnte nicht geprüft werden. Dein Verlauf bleibt erhalten.";
 "Theme" = "Design";
 "These are local notifications prepared on your device. They do not use an app server, remote push notifications or a data upload. Depending on your iOS settings, a garden message may appear on the Lock Screen or in Notification Center, where someone who can see your screen may read it." = "Diese lokalen Mitteilungen werden auf deinem Gerät vorbereitet. Ein App-Server, entfernte Push-Mitteilungen und ein Daten-Upload werden dafür nicht verwendet. Je nach iOS-Einstellungen kann die Mitteilung auf dem Sperrbildschirm oder in der Mitteilungszentrale erscheinen. Wer deinen Bildschirm sehen kann, kann sie möglicherweise lesen.";
-"These checks stay on this device. Times use your current time zone. A widget data read does not tell us exactly when iOS displayed it." = "Die Prüfdaten bleiben auf diesem Gerät. Die Uhrzeiten beziehen sich auf deine aktuelle Zeitzone. Wann das Widget seine Daten liest und wann iOS sie anzeigt, kann unterschiedlich sein.";
-"this day" = "diesen Tag";
 "This day's saved duration is not valid." = "Die gespeicherte Dauer für diesen Tag ist ungültig.";
 "This day's saved settings do not match the new automatic input. Your earlier estimate has been kept." = "Die gespeicherten Einstellungen für diesen Tag passen nicht zu den neuen automatischen Daten. Deine bisherige Schätzung bleibt erhalten.";
 "This earlier estimate uses the routine that was active on that date. It is kept as read-only history." = "Diese ältere Schätzung verwendet die Routine, die an diesem Tag aktiv war. Sie bleibt im Verlauf erhalten und kann nur gelesen werden.";
@@ -439,13 +402,10 @@
 "Usage time from Screen Time: %@." = "Nutzungszeit aus «Bildschirmzeit»: %@.";
 "Usage time not recorded" = "Nutzungszeit nicht erfasst";
 "Use this route too if widget sizes do not appear when you hold the app icon." = "Nutze diesen Weg auch, wenn beim Gedrückthalten des App-Symbols keine Widget-Grössen angezeigt werden.";
-"Verified for %@" = "Geprüft für %@";
 "Version" = "Version";
 "Video calls" = "Videoanrufe";
 "Video streaming" = "Video-Streaming";
 "View this day" = "Diesen Tag ansehen";
-"Waiting for iOS to read the widget data" = "Wartet, bis iOS die Widget-Daten liest";
-"Waiting for the latest saved day" = "Wartet auf den letzten gespeicherten Tag";
 "Watch clear queued; local saving needs attention" = "Die Apple Watch wird bei der nächsten Verbindung zurückgesetzt. Lokales Speichern fehlgeschlagen";
 "Watch sharing could not be saved" = "Die Einstellung zum Teilen mit der Apple Watch konnte nicht gespeichert werden";
 "Watch sharing is off" = "Teilen mit der Apple Watch ist ausgeschaltet";

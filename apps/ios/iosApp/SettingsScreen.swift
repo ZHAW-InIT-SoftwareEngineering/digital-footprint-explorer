@@ -185,7 +185,7 @@ struct SettingsScreen: View {
         .accessibilityIdentifier("settings.form")
         .background(FootprintAppearance.page)
         .accessibilityHidden(automaticSetup)
-        .navigationTitle("Settings")
+        .navigationTitle(appLanguage.text("Settings"))
         .sheet(isPresented: $automaticSetup, onDismiss: { Task { await AppServices.shared.refresh() } }) {
             AutomaticOnboardingView(store: store, service: screenTime).withUITestTextSize()
         }

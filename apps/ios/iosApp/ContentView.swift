@@ -141,6 +141,7 @@ private enum TodayGardenLayout {
 }
 
 private struct WelcomeScreen: View {
+    @Environment(\.appLanguage) private var appLanguage
     @ObservedObject var store: FootprintStore
     @ObservedObject var screenTime: ScreenTimeService
     @State private var automaticSetup = false
@@ -181,7 +182,7 @@ private struct WelcomeScreen: View {
             }.automaticRefresh()
                 .accessibilityIdentifier("today.content")
                 .background(FootprintAppearance.page)
-                .navigationTitle("Today").navigationBarTitleDisplayMode(.inline)
+                .navigationTitle(appLanguage.text("Today")).navigationBarTitleDisplayMode(.inline)
                 .accessibilityHidden(automaticSetup || widgetHelp)
         }.sheet(isPresented: $automaticSetup, onDismiss: { Task { await AppServices.shared.refresh() } }) {
             AutomaticOnboardingView(store: store, service: screenTime).withUITestTextSize()
@@ -250,7 +251,7 @@ private struct TodayScreen: View {
                 .withUITestAdaptiveGeometry(viewport: viewport.size,
                     regularWidth: horizontalSizeClass == .regular,
                     accessibilityText: textSize.isAccessibilitySize)
-                .navigationTitle("Today").navigationBarTitleDisplayMode(.inline)
+                .navigationTitle(appLanguage.text("Today")).navigationBarTitleDisplayMode(.inline)
         }.sheet(isPresented: $automaticSetup, onDismiss: { Task { await AppServices.shared.refresh() } }) {
             AutomaticOnboardingView(store: store, service: screenTime).withUITestTextSize()
         }.sheet(isPresented: $widgetHelp) {

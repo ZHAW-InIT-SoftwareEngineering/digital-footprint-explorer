@@ -21,6 +21,7 @@ import SwiftUI
 struct WatchGardenView: View {
     @ObservedObject var model: WatchGardenModel
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.appLanguage) private var language
 
     var body: some View {
         GeometryReader { geometry in
@@ -33,7 +34,7 @@ struct WatchGardenView: View {
                         emptyState
                     }
                     refreshButton
-                    Text(model.connectionNote)
+                    Text(language.text(model.connectionNote))
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
@@ -72,7 +73,7 @@ struct WatchGardenView: View {
         .font(.callout.weight(.medium))
         .buttonStyle(.bordered)
         .disabled(model.isRefreshing || model.isPreviewing)
-        .accessibilityLabel(model.isRefreshing ? "Checking iPhone" : "Refresh from iPhone")
+        .accessibilityLabel(language.text(model.isRefreshing ? "Checking iPhone" : "Refresh from iPhone"))
         .accessibilityHint("Checks for the latest saved estimate on your paired iPhone.")
         .accessibilityIdentifier("watch.refresh")
     }
@@ -80,16 +81,16 @@ struct WatchGardenView: View {
     private func garden(_ snapshot: CompanionGardenSnapshot, imageHeight: Double) -> some View {
         VStack(spacing: 6) {
             ViewThatFits(in: .horizontal) {
-                Text(gardenHeading)
+                Text(language.text(gardenHeading))
                     .fixedSize()
                     .accessibilityIdentifier("watch.heading")
-                Text(shortGardenHeading)
-                    .accessibilityLabel(gardenHeading)
+                Text(language.text(shortGardenHeading))
+                    .accessibilityLabel(language.text(gardenHeading))
                     .accessibilityIdentifier("watch.heading")
             }
             .font(.headline)
             .multilineTextAlignment(.center)
-            Text(snapshot.dateLabel)
+            Text(snapshot.dateLabel(locale: language.locale))
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .accessibilityIdentifier("watch.day")
@@ -98,9 +99,9 @@ struct WatchGardenView: View {
                 .resizable()
                 .scaledToFit()
                 .frame(height: CGFloat(imageHeight))
-                .accessibilityLabel("Garden state: \(snapshot.garden.title)")
+                .accessibilityLabel(language.format("Garden state: %@", language.text(snapshot.garden.title)))
                 .accessibilityIdentifier("watch.garden")
-            Text("\(snapshot.amountLabel()) g CO₂e")
+            Text(language.format("%@ g CO₂e", snapshot.amountLabel(locale: language.locale)))
                 .font(.title3.weight(.semibold))
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
@@ -110,7 +111,7 @@ struct WatchGardenView: View {
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
-            Text(snapshot.garden.title)
+            Text(language.text(snapshot.garden.title))
                 .font(.caption.weight(.medium))
                 .accessibilityIdentifier("watch.state")
             if snapshot.isOlderThanLatestCompletedDay(now: Date()) {
@@ -121,14 +122,15 @@ struct WatchGardenView: View {
             } else if !snapshot.isCompleted {
                 Text("Day in progress").font(.caption2).foregroundStyle(.secondary)
             }
-            Text(snapshot.source.title)
+            Text(language.text(snapshot.source.title))
                 .font(.caption2)
                 .foregroundStyle(.secondary)
                 .accessibilityIdentifier("watch.source")
             VStack(spacing: 3) {
                 Text("Last saved")
                     .fontWeight(.medium)
-                Text(snapshot.calculatedAt.formatted(date: .abbreviated, time: .shortened))
+                Text(snapshot.calculatedAt.formatted(.dateTime.month(.abbreviated).day().year().hour().minute()
+                    .locale(language.locale)))
             }
             .font(.caption2)
             .foregroundStyle(.secondary)
@@ -160,11 +162,11 @@ struct WatchGardenView: View {
                 .font(.largeTitle)
                 .foregroundStyle(.green)
                 .accessibilityHidden(true)
-            Text(availability.title)
+            Text(language.text(availability.title))
                 .font(.headline)
                 .multilineTextAlignment(.center)
                 .accessibilityIdentifier("watch.status.title")
-            Text(availability.explanation)
+            Text(language.text(availability.explanation))
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)

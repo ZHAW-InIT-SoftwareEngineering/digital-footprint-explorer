@@ -23,6 +23,7 @@ struct GardenWidgetEntry: TimelineEntry {
     let date: Date
     let data: WidgetSnapshotReadResult
     var isPreview = false
+    var language = AppLanguage.widgetPreference
 }
 
 struct GardenWidgetProvider: TimelineProvider {
@@ -81,11 +82,12 @@ struct GardenWidgetProvider: TimelineProvider {
 // [06] Offer the two supported sizes, both opening the same Today route.
 struct FootprintGardenWidget: Widget {
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: GardenWidgetSnapshot.widgetKind, provider: GardenWidgetProvider()) { entry in
+        let language = AppLanguage.widgetPreference
+        return StaticConfiguration(kind: GardenWidgetSnapshot.widgetKind, provider: GardenWidgetProvider()) { entry in
             GardenWidgetEntryView(entry: entry)
         }
-        .configurationDisplayName("Your garden")
-        .description("Keep your garden nearby. See your last saved estimate, then tap to review your day.")
+        .configurationDisplayName(Text(language.text("Your garden")))
+        .description(Text(language.text("Keep your garden nearby. See your last saved estimate, then tap to review your day.")))
         .supportedFamilies([.systemSmall, .systemMedium])
     }
 }
@@ -95,5 +97,7 @@ private struct GardenWidgetEntryView: View {
     let entry: GardenWidgetEntry
     var body: some View {
         GardenWidgetView(data: entry.data, family: family, date: entry.date, isPreview: entry.isPreview)
+            .environment(\.appLanguage, entry.language)
+            .environment(\.locale, entry.language.locale)
     }
 }

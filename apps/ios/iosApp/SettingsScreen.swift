@@ -23,6 +23,9 @@ struct SettingsScreen: View {
     @ObservedObject var screenTime: ScreenTimeService
     @EnvironmentObject private var notifications: GardenNotificationService
     @EnvironmentObject private var watch: WatchCompanionService
+    @Environment(\.appLanguage) private var appLanguage
+    @AppStorage(AppLanguage.storageKey, store: AppLanguage.preferenceStore)
+    private var language: AppLanguage = .english
     @AppStorage(AppServices.watchSharingKey, store: WatchSharingPreference.defaults) private var watchSharing = false
     @AppStorage(AppAppearance.storageKey, store: AppAppearance.preferenceStore)
     private var appearance: AppAppearance = .light
@@ -59,7 +62,7 @@ struct SettingsScreen: View {
                             Text("Traffic rates are fixed starting scenarios. They are not measured averages. A different rate can change the result a lot, especially for video.")
                             Text("The garden compares each day's estimate with your average from up to seven earlier days. Lower estimates help it grow, while higher estimates make it wilt. It shows a change in model estimates, rather than a measured environmental impact.")
                             if let note = AdaptiveDeviceLayout.modelScopeNote(isPad: UIDevice.current.userInterfaceIdiom == .pad) {
-                                Text(note)
+                                Text(appLanguage.text(note))
                             }
                         }
                         .font(.subheadline)
@@ -99,13 +102,13 @@ struct SettingsScreen: View {
                         .onChange(of: watchSharing) { _, enabled in
                             AppServices.shared.setWatchSharing(enabled)
                         }
-                        Text(watchSharing
-                             ? "Only the latest saved estimate, date and garden are sent to your paired Watch. Updates may wait for a connection."
-                             : "Share your latest garden with your paired Watch when you choose. App names and activity times stay on your iPhone.")
+                        Text(appLanguage.text(watchSharing
+                             ? "Your paired Watch receives the latest saved estimate, date and garden along with your language choice. Updates may wait for a connection."
+                             : "Share your latest garden with your paired Watch when you choose. App names and activity times stay on your iPhone."))
                             .font(.subheadline)
                             .fixedSize(horizontal: false, vertical: true)
                         if watchSharing {
-                            Text(watch.transferStatus).font(.footnote).foregroundStyle(.secondary)
+                            Text(appLanguage.text(watch.transferStatus)).font(.footnote).foregroundStyle(.secondary)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
                     }
@@ -126,17 +129,30 @@ struct SettingsScreen: View {
                         .accessibilityIdentifier("settings.version")
                 }
 
+                settingsSection("Language", id: "language") {
+                    NavigationLink {
+                        LanguageSelectionView(selection: $language)
+                    } label: {
+                        SettingsValueRow(title: "App language", value: language.displayName, showsChevron: true)
+                    }
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityAddTraits(.isButton)
+                    .accessibilityLabel("App language")
+                    .accessibilityValue(language.displayName)
+                    .accessibilityIdentifier("settings.language")
+                }
+
                 settingsSection("Appearance", id: "appearance") {
                     NavigationLink {
                         AppearanceSelectionView(selection: $appearance)
                     } label: {
-                        SettingsValueRow(title: "Theme", value: appearance.title, showsChevron: true)
+                        SettingsValueRow(title: "Theme", value: appLanguage.text(appearance.title), showsChevron: true)
                             .frame(minHeight: 44)
                     }
                     .accessibilityElement(children: .ignore)
                     .accessibilityAddTraits(.isButton)
                     .accessibilityLabel("Appearance")
-                    .accessibilityValue(appearance.title)
+                    .accessibilityValue(appLanguage.text(appearance.title))
                     .accessibilityIdentifier("settings.appearance")
                 }
 
@@ -203,7 +219,7 @@ struct SettingsScreen: View {
         _ title: String, id: String, @ViewBuilder content: () -> Content
     ) -> some View {
         VStack(alignment: .leading, spacing: rowSpacing) {
-            Text(title).font(.headline)
+            Text(appLanguage.text(title)).font(.headline)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityAddTraits(.isHeader)
             content()
@@ -216,6 +232,7 @@ struct SettingsScreen: View {
 
 // [07] Give related actions the same icon gap and touch area, including longer labels.
 struct SettingsActionLabel: View {
+    @Environment(\.appLanguage) private var appLanguage
     let title: String
     let symbol: String
     var showsChevron = false
@@ -229,7 +246,7 @@ struct SettingsActionLabel: View {
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 12) {
             Image(systemName: symbol).accessibilityHidden(true)
-            Text(title).fixedSize(horizontal: false, vertical: true)
+            Text(appLanguage.text(title)).fixedSize(horizontal: false, vertical: true)
             if showsChevron {
                 Spacer(minLength: 8)
                 Image(systemName: "chevron.right").font(.footnote)
@@ -246,6 +263,7 @@ struct SettingsActionLabel: View {
 
 // [08] Keep the current value at the trailing edge when it fits; larger text gets its own line.
 private struct SettingsValueRow: View {
+    @Environment(\.appLanguage) private var appLanguage
     let title: String
     let value: String
     var showsChevron = false
@@ -255,12 +273,12 @@ private struct SettingsValueRow: View {
         HStack(alignment: .firstTextBaseline, spacing: 12) {
             if textSize.isAccessibilitySize {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(title).fixedSize(horizontal: false, vertical: true)
+                    Text(appLanguage.text(title)).fixedSize(horizontal: false, vertical: true)
                     Text(value).foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             } else {
-                Text(title).fixedSize(horizontal: false, vertical: true)
+                Text(appLanguage.text(title)).fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 12)
                 Text(value).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -281,13 +299,14 @@ private struct SettingsValueRow: View {
 
 // [09] Offer one appearance choice for the whole app, with a checkmark that is also read by VoiceOver.
 private struct AppearanceSelectionView: View {
+    @Environment(\.appLanguage) private var appLanguage
     @Binding var selection: AppAppearance
 
     var body: some View {
         List(AppAppearance.allCases) { mode in
             Button { selection = mode } label: {
                 HStack(spacing: 12) {
-                    Text(mode.title).fixedSize(horizontal: false, vertical: true)
+                    Text(appLanguage.text(mode.title)).fixedSize(horizontal: false, vertical: true)
                     Spacer(minLength: 12)
                     if selection == mode {
                         Image(systemName: "checkmark").accessibilityHidden(true)
@@ -303,6 +322,36 @@ private struct AppearanceSelectionView: View {
         .scrollContentBackground(.hidden)
         .background(FootprintAppearance.page)
         .navigationTitle("Appearance")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+// [10] Show each language in its own words so people can always find their way back.
+private struct LanguageSelectionView: View {
+    @Environment(\.appLanguage) private var appLanguage
+    @Binding var selection: AppLanguage
+
+    var body: some View {
+        List([AppLanguage.english, .swissGerman], id: \.rawValue) { language in
+            Button { selection = language } label: {
+                HStack(spacing: 12) {
+                    Text(verbatim: language.displayName)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer(minLength: 12)
+                    if selection == language {
+                        Image(systemName: "checkmark").accessibilityHidden(true)
+                    }
+                }
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityAddTraits(selection == language ? .isSelected : [])
+            .accessibilityIdentifier("language." + language.rawValue)
+        }
+        .scrollContentBackground(.hidden)
+        .background(FootprintAppearance.page)
+        .navigationTitle(appLanguage.text("App language"))
         .navigationBarTitleDisplayMode(.inline)
     }
 }

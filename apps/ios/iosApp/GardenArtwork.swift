@@ -19,6 +19,7 @@ import SwiftUI
 
 /// [01] The same five transparent garden pictures used by the Android app.
 struct GardenArtwork: View {
+    @Environment(\.appLanguage) private var appLanguage
     let state: FootprintGarden
     var maximumWidth: CGFloat = 320
 
@@ -41,7 +42,7 @@ struct GardenArtwork: View {
             .scaledToFit()
             .frame(maxWidth: maximumWidth)
             .frame(maxWidth: .infinity)
-            .accessibilityLabel("Garden: \(state.title)")
+            .accessibilityLabel(appLanguage.format("Garden: %@", appLanguage.text(state.title)))
             .accessibilityIdentifier("garden.artwork")
     }
 }

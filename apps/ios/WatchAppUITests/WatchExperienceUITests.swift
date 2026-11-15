@@ -219,4 +219,26 @@ final class WatchExperienceUITests: XCTestCase {
         XCTAssertTrue(element("watch.complication.content", in: app).label.contains("Last saved day"))
         capture("Complication older day content", app: app)
     }
+
+    // [05] When no phone language has arrived, a Swiss German Watch can still read its garden.
+    func testSwissGermanWatchFallbackLocalizesTheGardenAndComplication() {
+        let german = ["-AppleLanguages", "(de-CH)", "-AppleLocale", "de_CH"]
+        let app = launch("growing", extra: german)
+        let heading = app.staticTexts["watch.heading"]
+        XCTAssertTrue(heading.waitForExistence(timeout: 10))
+        XCTAssertEqual(heading.label, "Beispielvorschau")
+        XCTAssertEqual(element("watch.garden", in: app).label, "Zustand des Gartens: Wächst")
+        XCTAssertTrue(app.staticTexts["watch.estimate"].label.contains("CO₂e"))
+        capture("Watch garden in Swiss German", app: app)
+        app.terminate()
+
+        let complication = launch("growing", extra: german + ["-ui-watch-complication", "rectangular"])
+        let preview = complication.staticTexts["watch.complication.preview"]
+        XCTAssertTrue(preview.waitForExistence(timeout: 10))
+        XCTAssertEqual(preview.label, "Vorschau der Komplikation")
+        let summary = element("watch.complication.content", in: complication).label
+        XCTAssertTrue(summary.contains("Gramm CO₂-Äquivalent"))
+        XCTAssertTrue(summary.contains("Bildschirmzeit"))
+        capture("Watch complication in Swiss German", app: complication)
+    }
 }

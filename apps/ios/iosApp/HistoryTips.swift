@@ -80,6 +80,7 @@ struct HistoryTips: View {
     let records: [FootprintRecord]
     let calendar: Calendar
     @Environment(\.dynamicTypeSize) private var textSize
+    @Environment(\.appLanguage) private var appLanguage
 
     private var tip: HistoryTip { HistoryTipSelector.tip(records: records, calendar: calendar) }
 
@@ -92,7 +93,7 @@ struct HistoryTips: View {
 
             VStack(alignment: .leading, spacing: 12) {
                 suggestionHeader
-                Text(tip.action)
+                Text(appLanguage.text(tip.action))
                     .font(.subheadline)
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityIdentifier("history.tips.action")
@@ -102,15 +103,15 @@ struct HistoryTips: View {
                         idea("Choose a daily time limit", symbol: "timer",
                              detail: "In Settings, open Screen Time and choose an optional daily time limit. Pick an amount that feels useful to you.",
                              guide: "Apple's Screen Time guide", id: "limit",
-                             url: DeviceHelpLinks.screenTime)
+                             url: DeviceHelpLinks.screenTime(language: appLanguage))
                         idea("Quiet alerts you do not need", symbol: "bell.slash",
                              detail: "Open Settings, then Notifications. Choose which apps can interrupt you, while keeping the alerts that matter.",
                              guide: "Apple's notification guide", id: "notifications",
-                             url: DeviceHelpLinks.notifications)
+                             url: DeviceHelpLinks.notifications(language: appLanguage))
                         idea("Make room for a screen break", symbol: "moon",
                              detail: "Open Settings, then Focus. Choose the people and apps that can reach you while you take some time away.",
                              guide: "Apple's Focus guide", id: "focus",
-                             url: DeviceHelpLinks.focus)
+                             url: DeviceHelpLinks.focus(language: appLanguage))
                         Text("Shorter app sessions can lower the time used by the estimate. Actual carbon savings are not measured.")
                             .font(.footnote)
                             .foregroundStyle(.primary)
@@ -181,14 +182,17 @@ struct HistoryTips: View {
     // [05] Say what the suggestion is based on, so advice is not mistaken for a guaranteed carbon saving.
     private var context: String {
         guard let day = tip.day, let category = tip.category else {
-            return "A few general ideas to try at your own pace."
+            return appLanguage.text("A few general ideas to try at your own pace.")
         }
-        return "From your saved estimate for \(dayLabel(day)): \(category.title) contributed the most."
+        return appLanguage.format(
+            "From your saved estimate for %@: %@ contributed the most.",
+            dayLabel(day, locale: appLanguage.locale), appLanguage.text(category.title)
+        )
     }
 
     @ViewBuilder
     private func idea(_ title: String, symbol: String, detail: String, guide: String,
-                      id: String, url: String) -> some View {
+                      id: String, url: URL) -> some View {
         if textSize.isAccessibilitySize {
             VStack(alignment: .leading, spacing: 8) {
                 ideaSymbol(symbol)
@@ -211,22 +215,20 @@ struct HistoryTips: View {
     }
 
     private func ideaContent(_ title: String, detail: String, guide: String,
-                             id: String, url: String) -> some View {
+                             id: String, url: URL) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(title).font(.subheadline.weight(.semibold))
-            Text(detail).font(.subheadline)
-            if let url = URL(string: url) {
-                Link(destination: url) {
-                    Label(guide, systemImage: "arrow.up.right")
-                        .font(.subheadline)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-                        .contentShape(Rectangle())
-                }
-                .foregroundStyle(FootprintAppearance.accent)
-                .accessibilityHint("Opens Apple's guide in your browser.")
-                .accessibilityIdentifier("history.tips.guide.\(id)")
+            Text(appLanguage.text(title)).font(.subheadline.weight(.semibold))
+            Text(appLanguage.text(detail)).font(.subheadline)
+            Link(destination: url) {
+                Label(appLanguage.text(guide), systemImage: "arrow.up.right")
+                    .font(.subheadline)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                    .contentShape(Rectangle())
             }
+            .foregroundStyle(FootprintAppearance.accent)
+            .accessibilityHint("Opens Apple's guide in your browser.")
+            .accessibilityIdentifier("history.tips.guide.\(id)")
         }
         .fixedSize(horizontal: false, vertical: true)
         .frame(maxWidth: .infinity, alignment: .leading)

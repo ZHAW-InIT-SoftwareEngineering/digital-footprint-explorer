@@ -425,4 +425,19 @@ final class WidgetSnapshotTests: XCTestCase {
                                                         timeZone: TimeZone(secondsFromGMT: 0)!)
         XCTAssertFalse(currentSummary.contains("not today's estimate"))
     }
+
+    // [17] The widget's spoken result must switch with the chosen language as well as the visible text.
+    func testVoiceOverSummaryUsesSwissGermanAndKeepsTheSavedDay() {
+        let value = GardenWidgetSnapshot(day: "2026-10-07", totalKg: 0.06, garden: .wilting,
+                                        source: .screenTimeWithEstimates,
+                                        calculatedAt: date("2026-10-07T10:00:00Z"), isCompleted: true)
+        let spoken = value.accessibilitySummary(on: date("2026-10-08T10:00:00Z"),
+                                               timeZone: TimeZone(identifier: "Europe/Zurich")!,
+                                               language: .swissGerman)
+        XCTAssertTrue(spoken.contains("Gramm CO₂-Äquivalent"))
+        XCTAssertTrue(spoken.contains("7. Oktober 2026"))
+        XCTAssertTrue(spoken.contains("Bildschirmzeit"))
+        XCTAssertTrue(spoken.contains("zuletzt gespeicherte Tag"))
+        XCTAssertFalse(spoken.contains("Estimated footprint"))
+    }
 }

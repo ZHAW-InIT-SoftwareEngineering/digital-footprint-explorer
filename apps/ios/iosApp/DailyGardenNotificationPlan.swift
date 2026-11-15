@@ -274,6 +274,12 @@ protocol GardenNotificationClient: Sendable {
     func requestState() async -> GardenNotificationRequestState
     func add(_ plan: DailyGardenNotificationPlan) async throws
     func remove(identifiers: [String]) async
+    func updatePendingLanguage(_ language: AppLanguage) async throws
+}
+
+extension GardenNotificationClient {
+    // [29] The test client keeps only request IDs, so there is no text to replace.
+    func updatePendingLanguage(_ language: AppLanguage) async throws { }
 }
 
 enum GardenNotificationSubmission: Equatable {
@@ -292,6 +298,18 @@ actor DailyGardenNotificationCoordinator {
     }
 
     func isEnabled() throws -> Bool { try ledgerStore.load().enabled }
+
+    // [30] Keep language updates in the same queue as scheduling and disabling reminders.
+    func updatePendingLanguage(_ language: AppLanguage) async throws {
+        let previous = tail
+        let work = Task {
+            await previous?.value
+            guard try ledgerStore.load().enabled else { return }
+            try await client.updatePendingLanguage(language)
+        }
+        tail = Task { _ = try? await work.value }
+        try await work.value
+    }
 
     // [16] A saved day may still need a fresh morning check. Read the same daily limits
     // used for sending, without reserving a date or publishing the older result.

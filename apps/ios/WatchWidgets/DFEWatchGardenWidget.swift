@@ -65,8 +65,11 @@ struct WatchGardenWidgetView: View {
     @Environment(\.redactionReasons) private var redactionReasons
 
     var body: some View {
+        let language = entry.envelope?.language ?? AppLanguage.system
         WatchGardenComplicationContent(entry: entry, family: family,
                                        privacyRedacted: redactionReasons.contains(.privacy))
+            .environment(\.appLanguage, language)
+            .environment(\.locale, language.locale)
             .containerBackground(.black, for: .widget)
             .widgetURL(URL(string: "dfe-watch://garden"))
             .privacySensitive()
@@ -76,11 +79,12 @@ struct WatchGardenWidgetView: View {
 @main
 struct DFEWatchGardenWidget: Widget {
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: CompanionGardenEnvelope.widgetKind, provider: WatchGardenProvider()) { entry in
+        let language = AppLanguage.system
+        return StaticConfiguration(kind: CompanionGardenEnvelope.widgetKind, provider: WatchGardenProvider()) { entry in
             WatchGardenWidgetView(entry: entry)
         }
-        .configurationDisplayName("Your phone garden")
-        .description("Keep your latest saved iPhone footprint close. The Watch does not measure app activity.")
+        .configurationDisplayName(Text(language.text("Your phone garden")))
+        .description(Text(language.text("Keep your latest saved iPhone footprint close. The Watch does not measure app activity.")))
         .supportedFamilies([.accessoryRectangular, .accessoryCircular, .accessoryInline])
     }
 }

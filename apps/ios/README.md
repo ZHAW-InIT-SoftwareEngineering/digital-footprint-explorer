@@ -8,6 +8,10 @@ The native iPhone app uses the [shared Kotlin emissions model](../../shared/). I
 
 The previews use sample history. For the Android app and the full source tree, see the [main README](../../README.md).
 
+In **Settings → Language**, choose **English** or **Deutsch (Schweiz)**. The choice takes effect right away and is kept on the device. Upcoming DFE reminders and the Home Screen widget use the same language. A paired Apple Watch follows it while garden sharing is on. Apple’s own dialogs follow the device language.
+
+Use the Swiss German strings in `Localization/de-CH.lproj` when adding or changing app text. If the offline privacy policy changes, translate the affected text there after generating the English Swift copy. `AppLanguageTests` checks that each policy section is available in both languages.
+
 ## Build and run
 
 Use an Apple silicon Mac with Xcode 27.1 or later, the iOS 27 SDK, JDK 17 and a compatible iPhone simulator. Install the matching watchOS simulator runtime to build the embedded companion. The command-line checks also use Python 3.
@@ -93,7 +97,7 @@ python3 apps/ios/scripts/generate_privacy_policy.py --check --include-web
 bash apps/ios/scripts/ios-check.sh
 ```
 
-The last command runs the shared calculation tests, including the iOS bridge and time-unit fixtures, followed by the controlled native unit tests. Set `DFE_SIMULATOR_ID` to choose a particular installed simulator. It writes an `.xcresult` bundle outside the repository by default and prints its path. These tests use isolated stores and do not request personal Screen Time access.
+The last command runs the shared calculation tests, the controlled iOS unit tests and the language selector interface tests. Set `DFE_SIMULATOR_ID` to choose an installed simulator. The script writes an `.xcresult` bundle outside the repository by default and prints its path. These tests use isolated stores and do not request personal Screen Time access.
 
 GitHub Actions runs these checks for pull requests to `main` and saves the logs, shared reports and `.xcresult` for 14 days. The runner selects an installed Xcode, a compatible standard iPhone simulator and a matching watchOS runtime. It runs unsigned builds and controlled tests. Live Screen Time checks require a physical phone.
 
@@ -125,6 +129,7 @@ Before archiving for distribution, choose an unused build number. Set `DFE_SOURC
 apps/ios/
 ├── Configuration/        # Capabilities, policy source and local signing example
 ├── iosApp.xcodeproj/     # Xcode project and shared schemes
+├── Localization/        # Language preference and Swiss German text
 ├── iosApp/               # SwiftUI app, local storage and automatic refresh
 ├── GardenWidget/         # Small and medium WidgetKit layouts
 ├── WidgetShared/         # Shared calculation inputs, pending imports and widget storage

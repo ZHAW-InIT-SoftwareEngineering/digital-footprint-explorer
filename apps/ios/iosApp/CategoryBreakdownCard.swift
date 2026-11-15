@@ -60,6 +60,7 @@ struct CategoryUsageLevel: Equatable {
 
 // [03] Keep a category's usage time and estimate together in the saved-day detail.
 struct CategoryBreakdownCard: View {
+    @Environment(\.appLanguage) private var appLanguage
     let record: FootprintRecord
     @State private var showsCategories: Bool
     @Environment(\.dynamicTypeSize) private var textSize
@@ -106,8 +107,8 @@ struct CategoryBreakdownCard: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("By app category")
-                .accessibilityValue(showsCategories ? "Expanded" : "Collapsed")
-                .accessibilityHint(showsCategories ? "Hide usage time and emission estimates" : "Show usage time and emission estimates")
+                .accessibilityValue(appLanguage.text(showsCategories ? "Expanded" : "Collapsed"))
+                .accessibilityHint(appLanguage.text(showsCategories ? "Hide usage time and emission estimates" : "Show usage time and emission estimates"))
                 .accessibilityIdentifier("breakdown.categories")
                 if showsCategories {
                     categoryDetails
@@ -141,7 +142,7 @@ struct CategoryBreakdownCard: View {
                         }
                     }
                     .frame(height: 5).accessibilityHidden(true)
-                    Text("Device \(grams(category.deviceKg)) · Network \(grams(category.networkKg)) · Servers \(grams(category.backendKg))")
+                    Text("Device \(grams(category.deviceKg, locale: appLanguage.locale)) · Network \(grams(category.networkKg, locale: appLanguage.locale)) · Servers \(grams(category.backendKg, locale: appLanguage.locale))")
                         .font(.caption).foregroundStyle(.primary)
                         .multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)
@@ -152,7 +153,7 @@ struct CategoryBreakdownCard: View {
                 .accessibilityElement(children: .contain)
                 if category.id != categories.last?.id { Divider() }
             }
-            Text("Brightness \(Int(record.inputs.brightness * 100))% · GPS \(record.inputs.gpsHours.formatted()) h · Bluetooth \(record.inputs.bluetoothHours.formatted()) h")
+            Text("Brightness \(Int(record.inputs.brightness * 100))% · GPS \(record.inputs.gpsHours.formatted(.number.locale(appLanguage.locale))) h · Bluetooth \(record.inputs.bluetoothHours.formatted(.number.locale(appLanguage.locale))) h")
                 .font(.caption).foregroundStyle(.primary)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
@@ -194,7 +195,7 @@ struct CategoryBreakdownCard: View {
                 .foregroundStyle(usageColor(for: category.category))
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 4) {
-                Text(category.category.title).font(.subheadline.weight(.semibold))
+                Text(appLanguage.text(category.category.title)).font(.subheadline.weight(.semibold))
                     .fixedSize(horizontal: false, vertical: true)
                 Text(usageTime(for: category.category))
                     .font(.footnote).foregroundStyle(.secondary).monospacedDigit()
@@ -204,7 +205,7 @@ struct CategoryBreakdownCard: View {
     }
 
     private func emissionAmount(_ category: CategoryFootprint) -> some View {
-        Text(grams(category.totalKg)).font(.subheadline.weight(.semibold)).monospacedDigit()
+        Text(grams(category.totalKg, locale: appLanguage.locale)).font(.subheadline.weight(.semibold)).monospacedDigit()
             .foregroundStyle(usageColor(for: category.category))
             .fixedSize(horizontal: false, vertical: true)
     }
@@ -212,13 +213,13 @@ struct CategoryBreakdownCard: View {
     private func sourceRow(_ title: String, kg: Double, symbol: String, identifier: String) -> some View {
         ViewThatFits(in: .horizontal) {
             HStack(spacing: 12) {
-                Label(title, systemImage: symbol).fixedSize()
+                Label(appLanguage.text(title), systemImage: symbol).fixedSize()
                 Spacer(minLength: 12)
-                Text(grams(kg)).monospacedDigit().fixedSize()
+                Text(grams(kg, locale: appLanguage.locale)).monospacedDigit().fixedSize()
             }
             VStack(alignment: .leading, spacing: 6) {
-                Label(title, systemImage: symbol)
-                Text(grams(kg)).monospacedDigit()
+                Label(appLanguage.text(title), systemImage: symbol)
+                Text(grams(kg, locale: appLanguage.locale)).monospacedDigit()
             }
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -231,9 +232,9 @@ struct CategoryBreakdownCard: View {
     private func usageTime(for category: FootprintCategory) -> String {
         guard let usage = record.inputs.usages.first(where: { $0.category == category }),
               usage.minutes.isFinite, usage.minutes >= 0 else {
-            return "Usage time not recorded"
+            return appLanguage.text("Usage time not recorded")
         }
-        return "\(usage.minutes.formatted(.number.precision(.fractionLength(0...1)))) min · \(usageLevel(for: category).label)"
+        return "\(usage.minutes.formatted(.number.precision(.fractionLength(0...1)).locale(appLanguage.locale))) min · \(appLanguage.text(usageLevel(for: category).label))"
     }
 
     // [08] Keep every bar within its track, including a day with no estimated app emissions.

@@ -84,6 +84,34 @@ final class WatchCompanionServiceTests: XCTestCase {
         XCTAssertNil(storage.saved?.snapshot)
     }
 
+    // [03] A language change updates the same result once. Turning off sharing clears both pieces of information.
+    func testChangingLanguageUpdatesTheWatchOnlyWhileSharing() throws {
+        let storage = WatchTestPersistence()
+        var sent: [CompanionGardenEnvelope] = []
+        let service = WatchCompanionService(storage: storage) { sent.append($0) }
+        let snapshot = phoneSnapshot()
+        service.start()
+        service.updateLanguage(to: .swissGerman)
+        service.publish(snapshot: snapshot)
+        XCTAssertTrue(sent.isEmpty)
+        service.setSharingEnabled(true)
+        service.publish(snapshot: snapshot)
+        let german = try XCTUnwrap(sent.last)
+        XCTAssertEqual(german.language, .swissGerman)
+        service.updateLanguage(to: .english)
+        service.publish(snapshot: snapshot)
+        let english = try XCTUnwrap(sent.last)
+        XCTAssertEqual(english.language, .english)
+        XCTAssertEqual(english.sequence, german.sequence + 1)
+        XCTAssertEqual(english.snapshot, german.snapshot)
+        service.publish(snapshot: snapshot)
+        XCTAssertEqual(sent.last?.sequence, english.sequence)
+        service.setSharingEnabled(false)
+        XCTAssertEqual(sent.last?.availability, .sharingOff)
+        XCTAssertNil(sent.last?.language)
+        XCTAssertNil(sent.last?.snapshot)
+    }
+
     func testColdStartWhileOffReplacesOldQueuedEstimateEvenWhenSaveFails() throws {
         let storage = WatchTestPersistence()
         var sent: [CompanionGardenEnvelope] = []

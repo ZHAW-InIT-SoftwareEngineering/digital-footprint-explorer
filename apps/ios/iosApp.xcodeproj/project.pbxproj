@@ -243,6 +243,11 @@
 			path = WatchAppUITests;
 			sourceTree = "<group>";
 		};
+		DFE000000000000000000317 /* Localization */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Localization;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -323,6 +328,7 @@
 				4089A98A4390BC63C941E6A6 /* iosApp */,
 				DFE000000000000000000101 /* GardenWidget */,
 				DFE000000000000000000102 /* WidgetShared */,
+				DFE000000000000000000317 /* Localization */,
 				DFE000000000000000000113 /* Shared garden assets */,
 				B913F09CE4AEDA480B1B57FF /* Products */,
 			);
@@ -387,6 +393,7 @@
 				DFE000000000000000000137 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
+				DFE000000000000000000317 /* Localization */,
 				DFE000000000000000000101 /* GardenWidget */,
 				DFE000000000000000000102 /* WidgetShared */,
 			);
@@ -413,6 +420,7 @@
 				DFE000000000000000000136 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
+				DFE000000000000000000317 /* Localization */,
 				DFE000000000000000000212,
 				4089A98A4390BC63C941E6A6 /* iosApp */,
 				DFE000000000000000000102 /* WidgetShared */,
@@ -430,7 +438,7 @@
 			buildPhases = (DFE000000000000000000230, DFE000000000000000000240, DFE000000000000000000250, DFE000000000000000000270, );
 			buildRules = ();
 			dependencies = (DFE000000000000000000281, );
-			fileSystemSynchronizedGroups = (DFE000000000000000000210, DFE000000000000000000212, );
+			fileSystemSynchronizedGroups = (DFE000000000000000000210, DFE000000000000000000212, DFE000000000000000000317, );
 			name = WatchApp;
 			productName = WatchApp;
 			productReference = DFE000000000000000000202;
@@ -442,7 +450,7 @@
 			buildPhases = (DFE000000000000000000231, DFE000000000000000000241, DFE000000000000000000251, );
 			buildRules = ();
 			dependencies = ();
-			fileSystemSynchronizedGroups = (DFE000000000000000000211, DFE000000000000000000212, );
+			fileSystemSynchronizedGroups = (DFE000000000000000000211, DFE000000000000000000212, DFE000000000000000000317, );
 			name = WatchGardenWidget;
 			productName = WatchGardenWidget;
 			productReference = DFE000000000000000000203;
@@ -497,6 +505,7 @@
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
+				"de-CH",
 				Base,
 			);
 			mainGroup = E13B7F4A89C6F16BD8145452;

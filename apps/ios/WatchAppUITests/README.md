@@ -1,6 +1,6 @@
 # Watch simulator checks
 
-The `WatchApp` scheme has eight interface tests and a separate test for the watch face and Smart Stack. `WatchExperienceUITests` uses isolated sample data in Debug builds. It starts with sample history and leaves saved activity and Watch Connectivity alone. The screenshots in the result bundle are labelled as examples.
+The `WatchApp` scheme includes interface tests and a separate test for the watch face and Smart Stack. `WatchExperienceUITests` uses isolated sample data in Debug builds. It starts with sample history and leaves saved activity and Watch Connectivity alone. The screenshots in the result bundle are labelled as examples.
 
 From the repository root, run the suite on a compact Watch simulator and a larger one. Use one destination at a time and replace `WATCH_SIMULATOR_ID` with its ID. The result bundle path must be new for each run.
 
@@ -17,7 +17,7 @@ xcodebuild test \
   CODE_SIGNING_ALLOWED=NO
 ```
 
-The suite covers all five gardens, the first visible amount, large-text scrolling, unavailable and older results, and three complication content layouts. The complication checks use the exact content view used by the extension. Use the separate hosting test to verify placement and opening from a watch face or Smart Stack.
+The suite covers all five gardens, the first visible amount, large-text scrolling, unavailable and older results, Swiss German text, and three complication content layouts. The complication checks use the exact content view used by the extension. Use the separate hosting test to verify placement and opening from a watch face or Smart Stack.
 
 For a manual visual check, launch the Debug Watch app with one of these argument sets.
 

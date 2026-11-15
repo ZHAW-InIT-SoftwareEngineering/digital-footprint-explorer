@@ -38,6 +38,7 @@ final class WatchCompanionService: NSObject, ObservableObject, WCSessionDelegate
     private let isolated: Bool
     private let injectedTransport: ((CompanionGardenEnvelope) throws -> Void)?
     private var latest: CompanionGardenEnvelope?
+    private var presentationLanguage: AppLanguage?
     private var producer: UUID?
     private var sequence: UInt64 = 0
     private var savedSenderHadSnapshot = false
@@ -130,6 +131,11 @@ final class WatchCompanionService: NSObject, ObservableObject, WCSessionDelegate
         saveAndQueue(availability: enabled ? .empty : .sharingOff, snapshot: nil)
     }
 
+    // [15] The next authorised refresh can pass the new display language with its usual summary.
+    func updateLanguage(to language: AppLanguage) {
+        presentationLanguage = language
+    }
+
     func start() {
         guard !isolated, !started, injectedTransport != nil || Self.isSupported else { return }
         started = true
@@ -180,9 +186,10 @@ final class WatchCompanionService: NSObject, ObservableObject, WCSessionDelegate
         guard !isolated else { return }
         let availability = policy.responseAvailability(for: availability)
         let snapshot = policy.allowedSnapshot(snapshot)
+        let language = sharingEnabled ? presentationLanguage : nil
         restoreSender()
         // [04] A launch or a tab change need not write or send the same result or status again.
-        if latest?.availability == availability, latest?.snapshot == snapshot {
+        if latest?.availability == availability, latest?.snapshot == snapshot, latest?.language == language {
             pendingUpdate = nil
             return
         }
@@ -200,7 +207,7 @@ final class WatchCompanionService: NSObject, ObservableObject, WCSessionDelegate
             return
         }
         let next = CompanionGardenEnvelope(producer: producer, sequence: sequence + 1, sentAt: Date(),
-                                           availability: availability, snapshot: snapshot)
+                                           availability: availability, snapshot: snapshot, language: language)
         do {
             guard let storage else { throw CompanionGardenError.storageUnavailable }
             try storage.save(next, now: Date())

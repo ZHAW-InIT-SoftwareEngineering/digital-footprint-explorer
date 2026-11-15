@@ -23,6 +23,7 @@ import UIKit
 struct GardenNotificationSettingsSection: View {
     @ObservedObject var notifications: GardenNotificationService
     var afterEnable: () async -> Void
+    @Environment(\.appLanguage) private var appLanguage
     @Environment(\.openURL) private var openURL
 
     var body: some View {
@@ -62,7 +63,7 @@ struct GardenNotificationSettingsSection: View {
                 .accessibilityIdentifier("settings.notificationPermissions")
             }
             if let message = notifications.errorMessage {
-                Text(message).font(.footnote).foregroundStyle(.secondary)
+                Text(appLanguage.text(message)).font(.footnote).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }

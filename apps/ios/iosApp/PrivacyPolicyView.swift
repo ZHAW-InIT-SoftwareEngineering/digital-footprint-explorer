@@ -19,6 +19,7 @@ import SwiftUI
 
 /// [01] The local copy stays readable even when the phone has no internet connection.
 struct PrivacyPolicyView: View {
+    @Environment(\.appLanguage) private var appLanguage
     var publicURL: URL? = nil
 
     // [02] Offer an online copy only for a complete secure web address; the local policy is still available.
@@ -32,10 +33,10 @@ struct PrivacyPolicyView: View {
         Form {
             Section {
                 Text(PrivacyPolicyContent.appName).font(.headline)
-                Text(PrivacyPolicyContent.updatedText)
+                Text(appLanguage.text(PrivacyPolicyContent.updatedText))
                     .font(.subheadline).foregroundStyle(.secondary)
                 ForEach(PrivacyPolicyContent.introduction, id: \.self) { paragraph in
-                    Text(paragraph).fixedSize(horizontal: false, vertical: true)
+                    Text(appLanguage.text(paragraph)).fixedSize(horizontal: false, vertical: true)
                 }
             }
             Section {
@@ -46,7 +47,7 @@ struct PrivacyPolicyView: View {
                 }.accessibilityIdentifier("privacy.contact")
                 if let securePublicURL {
                     Link(destination: securePublicURL) {
-                        Label("Open online policy", systemImage: "safari")
+                        Label(appLanguage.text("Open online policy"), systemImage: "safari")
                             .frame(minHeight: 44)
                             .fixedSize(horizontal: false, vertical: true)
                     }.accessibilityIdentifier("privacy.online")
@@ -55,16 +56,16 @@ struct PrivacyPolicyView: View {
             ForEach(PrivacyPolicyContent.sections) { section in
                 Section {
                     ForEach(section.paragraphs, id: \.self) { paragraph in
-                        Text(paragraph).fixedSize(horizontal: false, vertical: true)
+                        Text(appLanguage.text(paragraph)).fixedSize(horizontal: false, vertical: true)
                     }
                 } header: {
-                    Text(section.title)
+                    Text(appLanguage.text(section.title))
                 }
             }
         }
         .scrollContentBackground(.hidden)
         .background(FootprintAppearance.page)
-        .navigationTitle(PrivacyPolicyContent.title)
+        .navigationTitle(appLanguage.text(PrivacyPolicyContent.title))
         .navigationBarTitleDisplayMode(.inline)
         .accessibilityIdentifier("privacy.policy")
     }

@@ -22,16 +22,31 @@ import UIKit
 @MainActor
 enum DeviceHelpLinks {
     private static var isPad: Bool { UIDevice.current.userInterfaceIdiom == .pad }
-    static var widgets: URL { URL(string: isPad
-        ? "https://support.apple.com/guide/ipad/ipad1b2665da/ipados"
-        : "https://support.apple.com/guide/iphone/iphb8f1bf206/ios")! }
-    static var screenTime: String { isPad
-        ? "https://support.apple.com/guide/ipad/ipad37239c84/ipados"
-        : "https://support.apple.com/guide/iphone/set-schedules-with-screen-time-iphb0c7313c9/ios" }
-    static var notifications: String { isPad
-        ? "https://support.apple.com/guide/ipad/ipad870e28f5/ipados"
-        : "https://support.apple.com/guide/iphone/change-notification-settings-iph7c3d96bab/ios" }
-    static var focus: String { isPad
-        ? "https://support.apple.com/guide/ipad/ipad2789d162/ipados"
-        : "https://support.apple.com/guide/iphone/set-up-a-focus-iphd6288a67f/ios" }
+
+    static func widgets(language: AppLanguage) -> URL {
+        guide(language, phone: "iphb8f1bf206", pad: "ipad1b2665da")
+    }
+
+    static func screenTime(language: AppLanguage) -> URL {
+        guide(language, phone: "iphb0c7313c9", pad: "ipad37239c84", englishPhonePrefix: "set-schedules-with-screen-time-")
+    }
+
+    static func notifications(language: AppLanguage) -> URL {
+        guide(language, phone: "iph7c3d96bab", pad: "ipad870e28f5", englishPhonePrefix: "change-notification-settings-")
+    }
+
+    static func focus(language: AppLanguage) -> URL {
+        guide(language, phone: "iphd6288a67f", pad: "ipad2789d162", englishPhonePrefix: "set-up-a-focus-")
+    }
+
+    // [02] Use Apple's Swiss guides when the app is in German, along with the familiar English guides.
+    private static func guide(_ language: AppLanguage, phone: String, pad: String,
+                              englishPhonePrefix: String = "") -> URL {
+        if language.locale.language.languageCode?.identifier == "de" {
+            let path = isPad ? "ipad/\(pad)/27/ipados/27" : "iphone/\(phone)/27/ios/27"
+            return URL(string: "https://support.apple.com/de-ch/guide/\(path)")!
+        }
+        let path = isPad ? "ipad/\(pad)/ipados" : "iphone/\(englishPhonePrefix)\(phone)/ios"
+        return URL(string: "https://support.apple.com/guide/\(path)")!
+    }
 }

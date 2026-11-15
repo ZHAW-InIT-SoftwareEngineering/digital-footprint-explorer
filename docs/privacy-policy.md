@@ -2,7 +2,7 @@
 
 ## Privacy policy
 
-Last updated: 8 November 2026
+Last updated: 15 November 2026
 
 Digital Footprint Explorer helps you understand an estimated carbon footprint of your device use. Your settings, calculations and history are processed on your device. You do not need an app account.
 
@@ -40,7 +40,7 @@ If you turn on the optional Daily garden update, the app schedules a short local
 
 Your daily history and settings are kept in the app's local storage. The history and widget files use iOS file protection. The app does not upload them to a project server, and it has no separate cloud account or sync service.
 
-Your appearance choice stays in the app's local settings and changes only the display. Garden messages follow the saved estimate and its comparison with earlier days; there is no name, goal or personal profile to fill in.
+Your appearance and language choices stay in the app's local settings. The language choice also applies to DFE reminders and your Home Screen widget. If you turn on Watch sharing, the language choice also goes to your paired Watch with the garden summary. Garden messages follow the saved estimate and its comparison with earlier days; there is no name, goal or personal profile to fill in.
 
 The optional notification setting and a small schedule and delivery log also stay in local storage. The log keeps delivery dates, scheduled times, local time zone information and, for a result-based message, the saved-day date. These details help prevent repeat notifications; the log does not contain app names, app identifiers or usage times.
 

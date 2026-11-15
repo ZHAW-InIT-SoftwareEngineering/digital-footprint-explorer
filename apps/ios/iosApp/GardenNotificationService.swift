@@ -38,7 +38,7 @@ private actor SystemGardenNotificationClient: GardenNotificationClient {
             deliveredIdentifiers: delivered.filter { $0.hasPrefix(DailyGardenNotificationPlan.prefix) })
     }
     func add(_ plan: DailyGardenNotificationPlan) async throws {
-        let request = GardenNotificationRequestBuilder.make(plan)
+        let request = GardenNotificationRequestBuilder.make(plan, language: .current)
         // [17] If eight o'clock passed while we were preparing a replacement, leave the
         // existing morning card alone rather than turning an old request into another immediate alert.
         if let trigger = request.trigger as? UNCalendarNotificationTrigger,
@@ -49,6 +49,17 @@ private actor SystemGardenNotificationClient: GardenNotificationClient {
     func remove(identifiers: [String]) async {
         center.removePendingNotificationRequests(withIdentifiers: identifiers)
     }
+
+    // [22] iOS replaces a pending request with the same ID. Leave notices close to delivery alone.
+    func updatePendingLanguage(_ language: AppLanguage) async throws {
+        guard language == .current else { return }
+        for request in await center.pendingNotificationRequests() {
+            guard language == .current else { return }
+            if let updated = GardenNotificationRequestBuilder.relocalized(request, to: language) {
+                try await center.add(updated)
+            }
+        }
+    }
 }
 
 private enum GardenNotificationRequestError: Error { case deliveryWindowPassed }
@@ -56,15 +67,16 @@ private enum GardenNotificationRequestError: Error { case deliveryWindowPassed }
 // [18] Keep the native request in one place so tests can check the same calendar trigger
 // that iOS receives. No network service or activity details are needed for a reminder.
 enum GardenNotificationRequestBuilder {
-    static func make(_ plan: DailyGardenNotificationPlan) -> UNNotificationRequest {
+    static func make(_ plan: DailyGardenNotificationPlan, language: AppLanguage = .english) -> UNNotificationRequest {
         let content = UNMutableNotificationContent()
-        content.title = plan.title
-        content.body = plan.body
+        content.title = language.text(plan.title)
+        content.body = language.text(plan.body)
         content.sound = .default
         content.threadIdentifier = "dfe.garden.daily"
         content.userInfo = ["gardenURL": DailyGardenNotificationPlan.gardenURL,
             "deliveryDay": plan.deliveryDay, "recordDay": plan.recordDay,
-            "timeZone": plan.timeZoneIdentifier, "noticeKind": plan.kind.rawValue]
+            "timeZone": plan.timeZoneIdentifier, "noticeKind": plan.kind.rawValue,
+            "titleKey": plan.title, "bodyKey": plan.body, "language": language.rawValue]
         let trigger: UNNotificationTrigger?
         if plan.scheduledForMorning || plan.kind == .reminder {
             var calendar = Calendar(identifier: .gregorian)
@@ -75,6 +87,23 @@ enum GardenNotificationRequestBuilder {
             trigger = UNCalendarNotificationTrigger(dateMatching: fields, repeats: false)
         } else { trigger = nil }
         return UNNotificationRequest(identifier: plan.identifier, content: content, trigger: trigger)
+    }
+
+    static func relocalized(_ request: UNNotificationRequest, to language: AppLanguage) -> UNNotificationRequest? {
+        guard request.identifier.hasPrefix(DailyGardenNotificationPlan.prefix),
+              let trigger = request.trigger as? UNCalendarNotificationTrigger,
+              let nextDate = trigger.nextTriggerDate(), nextDate.timeIntervalSinceNow > 5,
+              let content = request.content.mutableCopy() as? UNMutableNotificationContent,
+              (content.userInfo["language"] as? String ?? AppLanguage.english.rawValue) != language.rawValue else { return nil }
+        // [23] Notices queued by earlier builds used English. Keep their wording as the lookup key.
+        let titleKey = content.userInfo["titleKey"] as? String ?? content.title
+        let bodyKey = content.userInfo["bodyKey"] as? String ?? content.body
+        content.title = language.text(titleKey)
+        content.body = language.text(bodyKey)
+        content.userInfo["titleKey"] = titleKey
+        content.userInfo["bodyKey"] = bodyKey
+        content.userInfo["language"] = language.rawValue
+        return UNNotificationRequest(identifier: request.identifier, content: content, trigger: trigger)
     }
 }
 
@@ -169,6 +198,11 @@ final class GardenNotificationService: ObservableObject {
         // the queued dates and wording variety without reading anyone's usage or notice text.
         await captureTechnicalState()
         #endif
+    }
+
+    func updateLanguage(_ language: AppLanguage) async {
+        do { try await coordinator.updatePendingLanguage(language) }
+        catch { showError("Some morning reminders could not be updated. Please try again.", from: .reminders) }
     }
 
     /// [08] Permission is requested only after the person chooses the Settings toggle.

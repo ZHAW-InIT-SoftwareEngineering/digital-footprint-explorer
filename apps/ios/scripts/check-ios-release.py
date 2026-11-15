@@ -44,6 +44,7 @@ PREVIEW_MARKERS = (
     b'_simulateLaunchForTaskWithIdentifier', b'_simulateExpirationForTaskWithIdentifier',
     b'-ui-large-text', b'-ui-extra-large-text', b'Completed refreshes:',
     b'-ui-testing', b'-reset-ui-state', b'dfe-ui-testing.json', b'dfe-unit-host-',
+    b'-ui-reset-language', b'-ui-keep-language', b'dfe.language.ui-testing',
     b'dfe.isolated-ui-screen-time', b'dfe.isolated-unit-screen-time.',
     b'ProbeRefreshIntent', b'Check widget access', b'WidgetActivityProbeDriver', b'widget-activity-probe-',
 )
@@ -215,17 +216,22 @@ def public_https_url(value):
     )
 
 
-# [12] Declare only the APIs this target uses. The Watch uses uptime to limit its own refresh wait;
-# that elapsed-time value is not part of the phone result or any transfer.
-def privacy_manifest_matches(manifest, needs_defaults, *, needs_elapsed_time=False):
+# [12] Check each target's own reasons. The phone keeps local preferences and shares the language
+# with its widget through the App Group. The Watch app uses uptime to limit its local refresh wait.
+def privacy_manifest_matches(manifest, *, needs_defaults=False, needs_group_defaults=False, needs_elapsed_time=False):
     if not manifest or manifest.get('NSPrivacyTracking') is not False:
         return False
     if manifest.get('NSPrivacyCollectedDataTypes') != [] or manifest.get('NSPrivacyTrackingDomains', []) != []:
         return False
     entries = manifest.get('NSPrivacyAccessedAPITypes')
     expected = {}
+    defaults_reasons = []
     if needs_defaults:
-        expected['NSPrivacyAccessedAPICategoryUserDefaults'] = ['CA92.1']
+        defaults_reasons.append('CA92.1')
+    if needs_group_defaults:
+        defaults_reasons.append('1C8F.1')
+    if defaults_reasons:
+        expected['NSPrivacyAccessedAPICategoryUserDefaults'] = defaults_reasons
     if needs_elapsed_time:
         expected['NSPrivacyAccessedAPICategorySystemBootTime'] = ['35F9.1']
     if not isinstance(entries, list) or len(entries) != len(expected):
@@ -385,8 +391,10 @@ def inspect_bundle(app, *, version='1.0', archive=None, project_root=None):
         'source_identity_matches': source_identity_matches(info, widget_info, widget_automatic_enabled),
         'version_matches': info.get('CFBundleShortVersionString') == widget_info.get('CFBundleShortVersionString') == version,
         'build_matches': bool(re.fullmatch(r'[1-9]\d*(\.\d+){0,2}', str(build))) and build == widget_info.get('CFBundleVersion'),
-        'host_privacy_manifest': privacy_manifest_matches(read_plist(app / 'PrivacyInfo.xcprivacy'), True),
-        'widget_privacy_manifest': privacy_manifest_matches(read_plist(widget / 'PrivacyInfo.xcprivacy'), False),
+        'host_privacy_manifest': privacy_manifest_matches(
+            read_plist(app / 'PrivacyInfo.xcprivacy'), needs_defaults=True, needs_group_defaults=True),
+        'widget_privacy_manifest': privacy_manifest_matches(
+            read_plist(widget / 'PrivacyInfo.xcprivacy'), needs_group_defaults=True),
         'shared_group_configuration': info.get('DFEAppGroupIdentifier') == widget_info.get('DFEAppGroupIdentifier') == GROUP_ID,
         'iphone_targets': info.get('UIDeviceFamily') == widget_info.get('UIDeviceFamily') == [1],
         'minimum_ios_matches': info.get('MinimumOSVersion') == widget_info.get('MinimumOSVersion') == '26.4',
@@ -407,8 +415,8 @@ def inspect_bundle(app, *, version='1.0', archive=None, project_root=None):
             and source_identity_matches(info, watch_widget_info, True),
         'watch_executables_present': executable_path(watch, watch_info) is not None
             and executable_path(watch_widget, watch_widget_info) is not None,
-        'watch_privacy_manifests': privacy_manifest_matches(read_plist(watch / 'PrivacyInfo.xcprivacy'), False, needs_elapsed_time=True)
-            and privacy_manifest_matches(read_plist(watch_widget / 'PrivacyInfo.xcprivacy'), False),
+        'watch_privacy_manifests': privacy_manifest_matches(read_plist(watch / 'PrivacyInfo.xcprivacy'), needs_elapsed_time=True)
+            and privacy_manifest_matches(read_plist(watch_widget / 'PrivacyInfo.xcprivacy')),
         'watch_assets_packaged': packaged_icon_matches(watch, watch_info)
             and (watch_widget / 'Assets.car').is_file(),
         'watch_preview_absent': release_preview_absent(watch, watch_info)

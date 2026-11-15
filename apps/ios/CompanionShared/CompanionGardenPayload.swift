@@ -85,9 +85,10 @@ struct CompanionGardenSnapshot: Codable, Equatable, Sendable {
         return day < Self.dayKey(yesterday, calendar: gregorian)
     }
 
-    var dateLabel: String {
+    func dateLabel(locale: Locale) -> String {
         guard let date = dayDate else { return day }
         let formatter = DateFormatter()
+        formatter.locale = locale
         formatter.calendar = Calendar(identifier: .gregorian)
         formatter.timeZone = TimeZone(secondsFromGMT: 0)
         formatter.setLocalizedDateFormatFromTemplate("dMMM")
@@ -145,22 +146,26 @@ struct CompanionGardenEnvelope: Codable, Equatable, Sendable {
     let sentAt: Date
     let availability: CompanionGardenAvailability
     let snapshot: CompanionGardenSnapshot?
+    // [07] Older phone versions leave this out, so the Watch can still follow its own language.
+    let language: AppLanguage?
 
     init(producer: UUID, sequence: UInt64, sentAt: Date, availability: CompanionGardenAvailability,
-         snapshot: CompanionGardenSnapshot?) {
+         snapshot: CompanionGardenSnapshot?, language: AppLanguage? = nil) {
         self.version = Self.version
         self.producer = producer
         self.sequence = sequence
         self.sentAt = sentAt
         self.availability = availability
         self.snapshot = snapshot
+        self.language = language
     }
 
     func validate(now: Date) throws {
         guard version == Self.version else { throw CompanionGardenError.unsupportedVersion }
         guard sequence > 0, sentAt.timeIntervalSince1970.isFinite,
               sentAt >= Date(timeIntervalSince1970: 0), sentAt <= now.addingTimeInterval(300),
-              (availability == .available) == (snapshot != nil) else {
+              (availability == .available) == (snapshot != nil),
+              availability != .sharingOff || language == nil else {
             throw CompanionGardenError.invalidEnvelope
         }
         try snapshot?.validate(now: now)

@@ -111,7 +111,8 @@ struct GardenWidgetSnapshot: Codable, Equatable {
 
     // [07] Read the date, source and saved status with the amount, giving VoiceOver the same context as the visual card.
     func accessibilitySummary(on date: Date, timeZone: TimeZone = .autoupdatingCurrent,
-                              locale: Locale = .autoupdatingCurrent) -> String {
+                              locale: Locale? = nil, language: AppLanguage = .english) -> String {
+        let locale = locale ?? language.locale
         let formatter = DateFormatter()
         formatter.locale = locale
         formatter.calendar = Calendar(identifier: .gregorian)
@@ -122,9 +123,12 @@ struct GardenWidgetSnapshot: Codable, Equatable {
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
         let savedAt = formatter.string(from: calculatedAt)
-        let completion = isCompleted ? "Completed day." : "Day in progress."
-        let freshness = isCurrentDay(on: date, timeZone: timeZone) ? "" : " This is the last saved day, not today's estimate."
-        return "Your garden: \(garden.title). Estimated footprint: \(amountLabel(locale: locale)) grams of carbon dioxide equivalent. Saved for \(savedDay). \(completion) \(source.title). Last saved \(savedAt).\(freshness)"
+        let completion = language.text(isCompleted ? "Completed day." : "Day in progress.")
+        let freshness = isCurrentDay(on: date, timeZone: timeZone) ? "" :
+            " " + language.text("This is the last saved day, not today's estimate.")
+        return language.format("Your garden: %@. Estimated footprint: %@ grams of carbon dioxide equivalent. Saved for %@. %@ %@. Last saved %@.",
+                               language.text(garden.title), amountLabel(locale: locale), savedDay,
+                               completion, language.text(source.title), savedAt) + freshness
     }
 
     // [08] This fixed example is for the gallery only. It must never be saved as someone's activity.
@@ -137,9 +141,10 @@ struct GardenWidgetSnapshot: Codable, Equatable {
                                     calculatedAt: date, isCompleted: false)
     }
 
-    var dateLabel: String {
+    func dateLabel(locale: Locale) -> String {
         guard let date = dayDate else { return day }
         let formatter = DateFormatter()
+        formatter.locale = locale
         formatter.calendar = Calendar(identifier: .gregorian)
         formatter.timeZone = TimeZone(secondsFromGMT: 0)
         formatter.setLocalizedDateFormatFromTemplate("dMMM")

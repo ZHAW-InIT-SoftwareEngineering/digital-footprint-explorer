@@ -20,6 +20,7 @@ import SwiftUI
 // [01] Group real saved days into months, keeping the latest ones easy to find.
 struct HistoryOverview: View {
     @ObservedObject var store: FootprintStore
+    @Environment(\.appLanguage) private var appLanguage
 
     private var months: [HistoryMonth] {
         // [02] Saved dates use one calendar format, so grouping by their month also keeps date order.
@@ -79,7 +80,7 @@ struct HistoryOverview: View {
                                     // [03] VoiceOver reads each saved day once, with the same context as its card.
                                     .accessibilityElement(children: .ignore)
                                     .accessibilityAddTraits(.isButton)
-                                    .accessibilityLabel("\(dayLabel(record.day)), Estimated carbon footprint: \(summaryGrams(record.result.totalKg)), \(record.source.title), \(record.isCompleted ? "Completed" : "In progress"), Garden: \(record.garden.title)")
+                                    .accessibilityLabel(Text(verbatim: dayAccessibilityLabel(record)))
                                     .accessibilityHint("Opens the saved day's details")
                                     .accessibilityIdentifier("history.day.\(record.day)")
                                 }
@@ -108,19 +109,17 @@ struct HistoryOverview: View {
 
     // [04] Explain why history is empty without filling the list with made-up days.
     private var emptyHistory: some View {
-        let title = "No saved days yet"
-        let guidance = "Connect Screen Time from Today. Completed days appear here when data is available."
-        return VStack(spacing: 12) {
+        VStack(spacing: 12) {
             Image(systemName: "calendar")
                 .font(.largeTitle)
                 .foregroundStyle(.secondary)
                 .accessibilityHidden(true)
             VStack(spacing: 8) {
-                Text(title)
+                Text("No saved days yet")
                     .font(.title3.weight(.semibold))
                     .accessibilityAddTraits(.isHeader)
                     .accessibilityIdentifier("history.empty")
-                Text(guidance)
+                Text("Connect Screen Time from Today. Completed days appear here when data is available.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .accessibilityIdentifier("history.empty.guidance")
@@ -139,10 +138,21 @@ struct HistoryOverview: View {
         guard let date = store.date(for: month + "-01") else { return month }
         let formatter = DateFormatter()
         formatter.calendar = store.aggregationCalendar
-        formatter.locale = .autoupdatingCurrent
+        formatter.locale = appLanguage.locale
         formatter.timeZone = store.aggregationCalendar.timeZone
         formatter.setLocalizedDateFormatFromTemplate("MMMM yyyy")
         return formatter.string(from: date)
+    }
+
+    private func dayAccessibilityLabel(_ record: FootprintRecord) -> String {
+        appLanguage.format(
+            "%@, Estimated carbon footprint: %@, %@, %@, Garden: %@",
+            dayLabel(record.day, locale: appLanguage.locale),
+            summaryGrams(record.result.totalKg, locale: appLanguage.locale),
+            appLanguage.text(record.source.title),
+            appLanguage.text(record.isCompleted ? "Completed" : "In progress"),
+            appLanguage.text(record.garden.title)
+        )
     }
 }
 
@@ -154,6 +164,7 @@ private struct HistoryMonth: Identifiable {
 private struct HistoryDayRow: View {
     let record: FootprintRecord
     @Environment(\.dynamicTypeSize) private var textSize
+    @Environment(\.appLanguage) private var appLanguage
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -166,11 +177,11 @@ private struct HistoryDayRow: View {
                     estimateLabel.fixedSize(horizontal: false, vertical: true)
                 }
             }
-            Text(record.source.title + (record.isCompleted ? " · Completed" : " · In progress"))
+            Text(appLanguage.text(record.source.title) + " · " + appLanguage.text(record.isCompleted ? "Completed" : "In progress"))
                 .font(.caption)
                 .foregroundStyle(.primary)
                 .fixedSize(horizontal: false, vertical: true)
-            Label("Garden: \(record.garden.title)", systemImage: "leaf")
+            Label(appLanguage.format("Garden: %@", appLanguage.text(record.garden.title)), systemImage: "leaf")
                 .font(.caption)
                 .foregroundStyle(.primary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -179,11 +190,11 @@ private struct HistoryDayRow: View {
     }
 
     private var dateLabel: some View {
-        Text(dayLabel(record.day)).font(.headline)
+        Text(dayLabel(record.day, locale: appLanguage.locale)).font(.headline)
     }
 
     private var estimateLabel: some View {
-        Text(summaryGrams(record.result.totalKg))
+        Text(summaryGrams(record.result.totalKg, locale: appLanguage.locale))
             .font(.headline)
             .monospacedDigit()
 

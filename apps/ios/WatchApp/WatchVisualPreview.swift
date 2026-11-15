@@ -52,6 +52,7 @@ enum WatchVisualPreviewFamily: String {
 // [01] Use the real complication content for a bounded layout check, without pretending this app screen is a watch-face host.
 struct WatchComplicationVisualPreview: View {
     @ObservedObject var model: WatchGardenModel
+    @Environment(\.appLanguage) private var language
     let family: WatchVisualPreviewFamily
 
     var body: some View {
@@ -59,7 +60,8 @@ struct WatchComplicationVisualPreview: View {
             VStack(spacing: 12) {
                 Text("Complication preview").font(.headline)
                     .accessibilityIdentifier("watch.complication.preview")
-                Text("Example · \(family.rawValue)").font(.caption2).foregroundStyle(.secondary)
+                Text(language.format("Example · %@", language.text(family.rawValue)))
+                    .font(.caption2).foregroundStyle(.secondary)
                 WatchGardenComplicationContent(
                     entry: WatchGardenEntry(date: Date(), envelope: model.envelope, isPreview: true),
                     family: family.widgetFamily,

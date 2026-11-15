@@ -34,6 +34,8 @@ struct DFEWatchApp: App {
     var body: some Scene {
         WindowGroup {
             rootContent
+                .environment(\.appLanguage, model.envelope?.language ?? .system)
+                .environment(\.locale, (model.envelope?.language ?? .system).locale)
                 .tint(Color(red: 0.16, green: 0.78, blue: 0.46))
                 .onChange(of: scenePhase, initial: true) { _, phase in
                     model.setSceneActive(phase == .active)

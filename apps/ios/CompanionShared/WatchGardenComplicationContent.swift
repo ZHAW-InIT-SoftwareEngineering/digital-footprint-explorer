@@ -30,6 +30,7 @@ struct WatchGardenComplicationContent: View {
     let entry: WatchGardenEntry
     let family: WidgetFamily
     let privacyRedacted: Bool
+    @Environment(\.appLanguage) private var language
 
     var body: some View {
         Group {
@@ -41,47 +42,59 @@ struct WatchGardenComplicationContent: View {
                         .font(.caption)
                 }
             } else if let snapshot = entry.envelope?.snapshot {
+                let date = snapshot.dateLabel(locale: language.locale)
+                let amount = snapshot.amountLabel(locale: language.locale)
                 switch family {
                 case .accessoryInline:
-                    Text("Phone garden · \(snapshot.dateLabel) · \(snapshot.amountLabel()) g CO₂e")
+                    Text(language.format("Phone garden · %@ · %@ g CO₂e", date, amount))
                 case .accessoryCircular:
                     VStack(spacing: 0) {
                         Image(snapshot.garden.imageName)
                             .resizable().scaledToFit()
                             .frame(maxHeight: 32)
-                        Text("\(snapshot.amountLabel()) g")
+                        Text(language.format("%@ g", amount))
                             .font(.caption2.weight(.semibold))
                             .minimumScaleFactor(0.55)
                             .lineLimit(1)
-                        Text(snapshot.dateLabel)
+                        Text(date)
                             .font(.system(size: 9))
                             .minimumScaleFactor(0.65)
                             .lineLimit(1)
                     }
                 default:
+                    let isOlder = snapshot.isOlderThanLatestCompletedDay(now: entry.date)
                     HStack(spacing: 7) {
                         Image(snapshot.garden.imageName)
                             .resizable().scaledToFit()
                             .frame(maxWidth: 58)
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(entry.isPreview ? "Phone garden preview" : "Phone garden · \(snapshot.dateLabel)")
-                                .font(.caption2)
-                                .lineLimit(1)
-                            Text("\(snapshot.amountLabel()) g CO₂e")
+                            // [02] Keep the date readable on narrow faces, even if the longer German title does not fit.
+                            ViewThatFits(in: .horizontal) {
+                                Text(entry.isPreview ? language.text("Phone garden preview") :
+                                    language.format("Phone garden · %@", date)).fixedSize(horizontal: true, vertical: false)
+                                Text(entry.isPreview ? language.text("Preview") : date)
+                            }
+                            .font(.caption2)
+                            .lineLimit(1)
+                            Text(language.format("%@ g CO₂e", amount))
                                 .font(.headline)
                                 .minimumScaleFactor(0.65)
                                 .lineLimit(1)
-                            Text(snapshot.isOlderThanLatestCompletedDay(now: entry.date) ? "Last saved estimate" : "Estimated phone footprint")
-                                .font(.caption2)
-                                .lineLimit(1)
-                                .foregroundStyle(.secondary)
+                            ViewThatFits(in: .horizontal) {
+                                Text(language.text(isOlder ? "Last saved estimate" : "Estimated phone footprint"))
+                                    .fixedSize(horizontal: true, vertical: false)
+                                Text(language.text(isOlder ? "Saved" : "Estimate"))
+                            }
+                            .font(.caption2)
+                            .lineLimit(1)
+                            .foregroundStyle(.secondary)
                         }
                     }
                 }
             } else {
                 let status = entry.envelope?.availability ?? .sharingOff
                 if family == .accessoryInline {
-                    Text("DFE · \(status.title)")
+                    Text(language.format("DFE · %@", language.text(status.title)))
                 } else if family == .accessoryCircular {
                     VStack(spacing: 2) {
                         Image(systemName: "iphone")
@@ -91,7 +104,7 @@ struct WatchGardenComplicationContent: View {
                     HStack(spacing: 8) {
                         Image(systemName: "iphone")
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(status.title).font(.headline)
+                            Text(language.text(status.title)).font(.headline)
                             Text("Open DFE on your iPhone").font(.caption2)
                         }
                     }
@@ -104,12 +117,17 @@ struct WatchGardenComplicationContent: View {
     }
 
     private var accessibilitySummary: String {
-        if privacyRedacted { return "Phone garden. Unlock your Watch to view your saved estimate." }
+        if privacyRedacted { return language.text("Phone garden. Unlock your Watch to view your saved estimate.") }
         guard let snapshot = entry.envelope?.snapshot else {
-            return (entry.envelope?.availability ?? .sharingOff).explanation
+            return language.text((entry.envelope?.availability ?? .sharingOff).explanation)
         }
-        let stale = snapshot.isOlderThanLatestCompletedDay(now: entry.date) ? " Last saved day; check your iPhone for a newer result." : ""
-        return "Phone garden for \(snapshot.dateLabel): \(snapshot.garden.title). Estimated phone footprint: \(snapshot.amountLabel()) grams of carbon dioxide equivalent. \(snapshot.source.title).\(stale)"
+        let summary = language.format("Phone garden for %@: %@. Estimated phone footprint: %@ grams of carbon dioxide equivalent. %@.",
+                                      snapshot.dateLabel(locale: language.locale), language.text(snapshot.garden.title),
+                                      snapshot.amountLabel(locale: language.locale), language.text(snapshot.source.title))
+        if snapshot.isOlderThanLatestCompletedDay(now: entry.date) {
+            return summary + " " + language.text("Last saved day; check your iPhone for a newer result.")
+        }
+        return summary
     }
 }
 

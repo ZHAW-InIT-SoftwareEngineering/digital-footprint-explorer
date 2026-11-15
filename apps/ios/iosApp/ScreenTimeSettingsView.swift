@@ -22,6 +22,7 @@ import UIKit
 struct ScreenTimeSettingsView: View {
     @ObservedObject var store: FootprintStore
     @ObservedObject var service: ScreenTimeService
+    @Environment(\.appLanguage) private var appLanguage
     let showSetup: () -> Void
     @State private var showDetails = false
     @State private var confirmDisconnect = false
@@ -76,7 +77,7 @@ struct ScreenTimeSettingsView: View {
                 // [04] Read the connection as one short message. The shield is decoration,
                 // so older iOS versions should not read its name instead of the status.
                 Label {
-                    Text(connected ? "Connected" : "Not connected")
+                    Text(appLanguage.text(connected ? "Connected" : "Not connected"))
                 } icon: {
                     Image(systemName: statusSymbol).accessibilityHidden(true)
                 }
@@ -84,9 +85,9 @@ struct ScreenTimeSettingsView: View {
                 .foregroundStyle(statusColor)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityElement(children: .ignore)
-                .accessibilityLabel(connected ? "Connected" : "Not connected")
+                .accessibilityLabel(appLanguage.text(connected ? "Connected" : "Not connected"))
                 .accessibilityIdentifier("screen-time.status")
-                Text(statusExplanation)
+                Text(appLanguage.text(statusExplanation))
                     .font(.subheadline)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -107,8 +108,8 @@ struct ScreenTimeSettingsView: View {
                                         symbol: "arrow.triangle.2.circlepath")
                 }
                 .foregroundStyle(FootprintAppearance.accent)
-                .accessibilityHint(service.state == .revoked
-                    ? "Resume automatic estimates. Your saved results stay available." : "")
+                .accessibilityHint(appLanguage.text(service.state == .revoked
+                    ? "Resume automatic estimates. Your saved results stay available." : ""))
                 .accessibilityIdentifier("settings.automaticSetup")
             }
 
@@ -144,9 +145,9 @@ struct ScreenTimeSettingsView: View {
     // [05] Explain the scope and last import in one place, then keep Disconnect behind an explicit confirmation.
     private var connectionDetails: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text(service.activityScope == .allAuthorizedApps
+            Text(appLanguage.text(service.activityScope == .allAuthorizedApps
                  ? "All available app activity is included. Unknown apps are grouped under Other apps."
-                 : "Your saved activity choices are kept. Review the connection to include all available app activity.")
+                 : "Your saved activity choices are kept. Review the connection to include all available app activity."))
                 .accessibilityIdentifier("screen-time.allActivity")
             Text("Completed days update when the app opens and when iOS allows background work. Missing or incomplete days stay pending.")
             AutomaticUpdateChecksView(store: store, verification: store.importVerification)
@@ -228,14 +229,14 @@ struct ScreenTimeSettingsView: View {
 
     private func notice(_ error: String) -> some View {
         Label {
-            Text(error).fixedSize(horizontal: false, vertical: true)
+            Text(appLanguage.screenTimeMessage(error)).fixedSize(horizontal: false, vertical: true)
         } icon: {
             Image(systemName: "exclamationmark.circle").accessibilityHidden(true)
         }
         .font(.subheadline)
         .foregroundStyle(.primary)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Screen Time notice. \(error)")
+        .accessibilityLabel(appLanguage.format("Screen Time notice. %@", appLanguage.screenTimeMessage(error)))
     }
 }
 
@@ -244,6 +245,7 @@ struct ScreenTimeSettingsView: View {
 private struct AutomaticUpdateChecksView: View {
     @ObservedObject var store: FootprintStore
     @ObservedObject var verification: AutomaticUpdateVerification
+    @Environment(\.appLanguage) private var appLanguage
     @State private var expanded = false
     @State private var copyMessage: String?
 
@@ -262,7 +264,7 @@ private struct AutomaticUpdateChecksView: View {
                 .foregroundStyle(FootprintAppearance.accent)
                 .accessibilityIdentifier("screen-time.copyUpdateChecks")
                 if let copyMessage {
-                    Text(copyMessage).font(.footnote).foregroundStyle(.secondary)
+                    Text(appLanguage.text(copyMessage)).font(.footnote).foregroundStyle(.secondary)
                 }
                 Text("These checks stay on this device. Times use your current time zone. A widget data read does not tell us exactly when iOS displayed it.")
                     .font(.footnote)
@@ -282,14 +284,14 @@ private struct AutomaticUpdateChecksView: View {
                 .foregroundStyle(.secondary)
         }
         if let check = store.latestVerifiedAutomaticSave {
-            checkRow("Completed day", detail: check.day)
-            checkRow("Last verified import", detail: timestamp(check.lastObservedAt) + " · " + origin(check.lastOrigin))
-            checkRow("App at saved time", detail: completion(check.lastCompletionState))
+            checkRow("Completed day", detail: displayedDay(check.day))
+            checkRow("Last verified import", detail: timestamp(check.lastObservedAt) + " · " + appLanguage.text(origin(check.lastOrigin)))
+            checkRow("App at saved time", detail: appLanguage.text(completion(check.lastCompletionState)))
             checkRow("Recorded by", detail: "DFE " + check.lastProducer.appVersion + " (" + check.lastProducer.appBuild + ")"
-                     + (check.lastProducer.isDebug ? " · Development check" : " · Release check")
-                     + (check.lastProducer.isSimulator ? " · Simulator" : " · Device"))
+                     + " · " + appLanguage.text(check.lastProducer.isDebug ? "Development check" : "Release check")
+                     + " · " + appLanguage.text(check.lastProducer.isSimulator ? "Simulator" : "Device"))
             if check.initialSaveObserved {
-                checkRow("First save for this day", detail: timestamp(check.firstObservedAt) + " · " + completion(check.firstCompletionState))
+                checkRow("First save for this day", detail: timestamp(check.firstObservedAt) + " · " + appLanguage.text(completion(check.firstCompletionState)))
                 if check.firstProducer.isDebug || check.firstProducer.isSimulator {
                     Text("That first saved check came from a development run.").foregroundStyle(.secondary)
                 }
@@ -309,11 +311,12 @@ private struct AutomaticUpdateChecksView: View {
         }
         if let check = store.widgetVerification {
             let current = check.status == .verified && check.day == store.latest?.day && check.receiptStored
-            checkRow("Shared garden data", detail: current ? "Verified for " + (check.day ?? "this day") : sharedStatus(check))
+            checkRow("Shared garden data", detail: current ? appLanguage.format("Verified for %@", check.day.map(displayedDay) ?? appLanguage.text("this day"))
+                     : appLanguage.text(sharedStatus(check)))
             checkRow("Checked on this device", detail: timestamp(check.checkedAt))
         } else {
-            checkRow("Shared garden data", detail: store.widgetStorageAvailable
-                     ? "Not verified on this device yet" : "Shared storage is unavailable")
+            checkRow("Shared garden data", detail: appLanguage.text(store.widgetStorageAvailable
+                     ? "Not verified on this device yet" : "Shared storage is unavailable"))
         }
         ForEach(["small", "medium"], id: \.self) { family in
             let check = store.widgetReadChecks.first { $0.family == family }
@@ -321,24 +324,31 @@ private struct AutomaticUpdateChecksView: View {
             if let check {
                 let current = check.status == .verified && check.day == store.latest?.day
                 checkRow(title, detail: current
-                    ? (check.day ?? "") + " · " + timestamp(check.readAt)
-                    : "Waiting for the latest saved day")
+                    ? (check.day.map(displayedDay) ?? "") + " · " + timestamp(check.readAt)
+                    : appLanguage.text("Waiting for the latest saved day"))
             } else {
-                checkRow(title, detail: "Waiting for iOS to read the widget data")
+                checkRow(title, detail: appLanguage.text("Waiting for iOS to read the widget data"))
             }
         }
     }
 
     private func checkRow(_ title: String, detail: String) -> some View {
         VStack(alignment: .leading, spacing: 5) {
-            Text(title).fontWeight(.medium)
+            Text(appLanguage.text(title)).fontWeight(.medium)
             Text(detail).foregroundStyle(.secondary)
         }
         .accessibilityElement(children: .combine)
         .fixedSize(horizontal: false, vertical: true)
     }
 
-    private func timestamp(_ date: Date) -> String { date.formatted(date: .abbreviated, time: .standard) }
+    private func timestamp(_ date: Date) -> String {
+        date.formatted(.dateTime.year().month(.abbreviated).day().hour().minute().second().locale(appLanguage.locale))
+    }
+
+    private func displayedDay(_ key: String) -> String {
+        guard let date = store.date(for: key) else { return key }
+        return date.formatted(.dateTime.year().month(.abbreviated).day().locale(appLanguage.locale))
+    }
     private func origin(_ value: AutomaticUpdateOrigin) -> String {
         value == .foreground ? "Started while open" : "Started by background work"
     }
@@ -384,5 +394,19 @@ private struct AutomaticUpdateChecksView: View {
         case .mismatch: return "Shared data needs another check"
         case .writeFailed: return "Shared data could not be saved"
         }
+    }
+}
+
+extension AppLanguage {
+    // [13] Translate the app's message while keeping the system's supplied error details.
+    func screenTimeMessage(_ message: String) -> String {
+        let wrappers = [
+            ("Screen Time could not be connected. ", "Screen Time could not be connected. %@"),
+            ("Screen Time could not be disconnected. ", "Screen Time could not be disconnected. %@"),
+        ]
+        for (prefix, key) in wrappers where message.hasPrefix(prefix) {
+            return format(key, text(String(message.dropFirst(prefix.count))))
+        }
+        return text(message)
     }
 }

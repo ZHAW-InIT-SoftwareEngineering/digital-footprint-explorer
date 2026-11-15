@@ -19,6 +19,7 @@ import SwiftUI
 import UIKit
 import UserNotifications
 import Combine
+import WidgetKit
 
 @MainActor
 // [01] Share one history, connection and notification service across all tabs and system callbacks.
@@ -51,6 +52,7 @@ final class AppServices {
         #endif
         if !isTest, WatchCompanionService.isSupported {
             watchEnabledForProcess = true
+            watch.updateLanguage(to: AppLanguage.current)
             watch.restoreSharingPreference(WatchSharingPreference.defaults.bool(forKey: Self.watchSharingKey))
             watch.onRefreshRequested = { [weak self] in await self?.refresh() }
             watchStateObservation = Publishers.CombineLatest(store.$archive, screenTime.$state).dropFirst().sink { [weak self] _ in
@@ -88,6 +90,16 @@ final class AppServices {
         WatchSharingPreference.defaults.set(enabled, forKey: Self.watchSharingKey)
         watch.setSharingEnabled(enabled)
         if enabled { publishWatchGarden() }
+    }
+
+    func updateLanguage(_ language: AppLanguage) {
+        if language.updateWidgetPreference() {
+            WidgetCenter.shared.reloadTimelines(ofKind: GardenWidgetSnapshot.widgetKind)
+        }
+        if watchEnabledForProcess {
+            watch.updateLanguage(to: language)
+            publishWatchGarden()
+        }
     }
 
     private func publishWatchGarden() {
@@ -243,6 +255,8 @@ struct iOSApp: App {
     @StateObject private var watch = AppServices.shared.watch
     @AppStorage(AppAppearance.storageKey, store: AppAppearance.preferenceStore)
     private var appearance: AppAppearance = AppAppearance.defaultPreference
+    @AppStorage(AppLanguage.storageKey, store: AppLanguage.preferenceStore)
+    private var language: AppLanguage = .english
 
     var body: some Scene {
         WindowGroup {
@@ -254,6 +268,8 @@ struct iOSApp: App {
                 .environmentObject(navigation)
                 .environmentObject(notifications)
                 .environmentObject(watch)
+                .environment(\.appLanguage, language)
+                .environment(\.locale, language.locale)
                 .task {
                     // [12] If iOS opens the app in the background, leave the daily work to that system request.
                     // If the screen becomes active later, the change handler below starts the open-app update.
@@ -275,6 +291,10 @@ struct iOSApp: App {
                 .onChange(of: scenePhase) { _, phase in
                     if phase == .active { Task { await AppServices.shared.refresh() } }
                     if phase == .background { AppServices.shared.background.schedule() }
+                }
+                .onChange(of: language, initial: true) { _, choice in
+                    AppServices.shared.updateLanguage(choice)
+                    Task { await notifications.updateLanguage(choice) }
                 }
         }
     }

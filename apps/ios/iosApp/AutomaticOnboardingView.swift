@@ -21,6 +21,7 @@ import SwiftUI
 struct AutomaticOnboardingView: View {
     @ObservedObject var store: FootprintStore
     @ObservedObject var service: ScreenTimeService
+    @Environment(\.appLanguage) private var appLanguage
     @Environment(\.dismiss) private var dismiss
     @Environment(\.dynamicTypeSize) private var textSize
     @State private var previewConnected = false
@@ -87,26 +88,26 @@ struct AutomaticOnboardingView: View {
                         VStack(alignment: .leading, spacing: 12) {
                             // [04] The button explains reconnection. If access is limited, also explain why automatic input cannot start.
                             if presentedAccessState != .notRequested && presentedAccessState != .revoked {
-                                Text(presentedAccessState.title).font(.headline)
-                                Text(presentedAccessState.explanation).fixedSize(horizontal: false, vertical: true)
+                                Text(appLanguage.text(presentedAccessState.title)).font(.headline)
+                                Text(appLanguage.text(presentedAccessState.explanation)).fixedSize(horizontal: false, vertical: true)
                             }
                             if service.supportsAutomaticSetup || Self.isControlledPreview {
                                 Button { start(with: assumptions) } label: {
                                     HStack(spacing: 10) {
-                                        Text(connectionActionTitle).font(.headline)
+                                        Text(appLanguage.text(connectionActionTitle)).font(.headline)
                                         if service.isRequesting { ProgressView().accessibilityHidden(true) }
                                     }.frame(maxWidth: .infinity, minHeight: 24)
                                         .fixedSize(horizontal: false, vertical: true)
                                 }.modifier(TodayActionStyle()).controlSize(.large)
                                     .disabled(service.isRequesting)
-                                    .accessibilityHint(connectionActionHint)
+                                    .accessibilityHint(appLanguage.text(connectionActionHint))
                                     .accessibilityIdentifier("automatic.connect")
                             } else {
                                 Text("Automatic input needs a supported build, iOS 26.4 or later and Apple's expanded Screen Time access. Access for App Store customers also depends on Apple's EU conditions.")
                                     .font(.subheadline).fixedSize(horizontal: false, vertical: true)
                                     .accessibilityIdentifier("automatic.unavailable")
                             }
-                            if let error = service.lastError { Text(error).font(.footnote) }
+                            if let error = service.lastError { Text(appLanguage.screenTimeMessage(error)).font(.footnote) }
                         }
                     } else {
                         Button { start(with: assumptions) } label: {
@@ -130,7 +131,7 @@ struct AutomaticOnboardingView: View {
                 } }
                 .alert("Could not start automatic input", isPresented: Binding(
                     get: { error != nil }, set: { if !$0 { error = nil } }
-                )) { Button("OK") { error = nil } } message: { Text(error ?? "") }
+                )) { Button("OK") { error = nil } } message: { Text(appLanguage.text(error ?? "")) }
         }
     }
 

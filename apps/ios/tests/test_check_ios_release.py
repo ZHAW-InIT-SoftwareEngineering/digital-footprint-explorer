@@ -65,11 +65,15 @@ class ReleaseChecksTests(unittest.TestCase):
             'NSPrivacyCollectedDataTypes': [],
             'NSPrivacyAccessedAPITypes': [{
                 'NSPrivacyAccessedAPIType': 'NSPrivacyAccessedAPICategoryUserDefaults',
-                'NSPrivacyAccessedAPITypeReasons': ['CA92.1'],
+                'NSPrivacyAccessedAPITypeReasons': ['CA92.1', '1C8F.1'],
             }],
         }
-        self.widget_manifest = dict(self.host_manifest, NSPrivacyAccessedAPITypes=[])
-        self.watch_manifest = dict(self.widget_manifest, NSPrivacyAccessedAPITypes=[{
+        self.widget_manifest = dict(self.host_manifest, NSPrivacyAccessedAPITypes=[{
+            'NSPrivacyAccessedAPIType': 'NSPrivacyAccessedAPICategoryUserDefaults',
+            'NSPrivacyAccessedAPITypeReasons': ['1C8F.1'],
+        }])
+        self.watch_widget_manifest = dict(self.host_manifest, NSPrivacyAccessedAPITypes=[])
+        self.watch_manifest = dict(self.watch_widget_manifest, NSPrivacyAccessedAPITypes=[{
             'NSPrivacyAccessedAPIType': 'NSPrivacyAccessedAPICategorySystemBootTime',
             'NSPrivacyAccessedAPITypeReasons': ['35F9.1'],
         }])
@@ -118,7 +122,7 @@ class ReleaseChecksTests(unittest.TestCase):
         put_plist(self.app / 'PrivacyInfo.xcprivacy', self.host_manifest)
         put_plist(self.widget / 'PrivacyInfo.xcprivacy', self.widget_manifest)
         put_plist(self.watch / 'PrivacyInfo.xcprivacy', self.watch_manifest)
-        put_plist(self.watch_widget / 'PrivacyInfo.xcprivacy', self.widget_manifest)
+        put_plist(self.watch_widget / 'PrivacyInfo.xcprivacy', self.watch_widget_manifest)
         put_plist(self.archive / 'Info.plist', {'ApplicationProperties': {
             key: self.info[key] for key in ('CFBundleIdentifier', 'CFBundleShortVersionString', 'CFBundleVersion')
         }})
@@ -255,11 +259,23 @@ class ReleaseChecksTests(unittest.TestCase):
                 self.assertFalse(self.inspect()['preparation_ok'])
 
     # [17] A privacy reason must describe this use; copying another target's declaration is not enough.
-    def test_wrong_required_reason_and_unreviewed_widget_api_fail(self):
-        bad = deepcopy(self.host_manifest)
-        bad['NSPrivacyAccessedAPITypes'][0]['NSPrivacyAccessedAPITypeReasons'] = ['1C8F.1']
-        self.assertFalse(release.privacy_manifest_matches(bad, True))
-        self.assertFalse(release.privacy_manifest_matches(self.host_manifest, False))
+    def test_required_preference_reasons_match_the_iphone_bundles(self):
+        ios_root = SCRIPT.parents[1]
+        for bundle, source_dir, check, expected in (
+            (self.app, 'iosApp', 'host_privacy_manifest', ['CA92.1', '1C8F.1']),
+            (self.widget, 'GardenWidget', 'widget_privacy_manifest', ['1C8F.1']),
+        ):
+            path = bundle / 'PrivacyInfo.xcprivacy'
+            declared = release.read_plist(ios_root / source_dir / 'PrivacyInfo.xcprivacy')
+            put_plist(path, declared)
+            self.assertTrue(self.inspect()['bundle_checks'][check])
+            for wrong in (['CA92.1'], expected + ['C56D.1'], expected + [expected[0]]):
+                with self.subTest(bundle=source_dir, reasons=wrong):
+                    bad = deepcopy(declared)
+                    bad['NSPrivacyAccessedAPITypes'][0]['NSPrivacyAccessedAPITypeReasons'] = wrong
+                    put_plist(path, bad)
+                    self.assertFalse(self.inspect()['bundle_checks'][check])
+            put_plist(path, declared)
 
     # [18] Example data and test programs must not ship inside the customer app.
     def test_debug_preview_and_embedded_tests_fail_preparation(self):
@@ -678,7 +694,7 @@ class ReleaseChecksTests(unittest.TestCase):
 
     # [48] Only the Watch app measures its local refresh wait. Copying that reason to its widget would hide new API use.
     def test_watch_elapsed_time_reason_is_required_only_where_used(self):
-        for manifest in (self.widget_manifest, self.host_manifest,
+        for manifest in (self.watch_widget_manifest, self.widget_manifest, self.host_manifest,
                          dict(self.watch_manifest, NSPrivacyAccessedAPITypes=[{
                              'NSPrivacyAccessedAPIType': 'NSPrivacyAccessedAPICategorySystemBootTime',
                              'NSPrivacyAccessedAPITypeReasons': ['CA92.1'],
@@ -689,13 +705,13 @@ class ReleaseChecksTests(unittest.TestCase):
         put_plist(self.watch / 'PrivacyInfo.xcprivacy', self.watch_manifest)
         put_plist(self.watch_widget / 'PrivacyInfo.xcprivacy', self.watch_manifest)
         self.assertFalse(self.inspect()['bundle_checks']['watch_privacy_manifests'])
-        put_plist(self.watch_widget / 'PrivacyInfo.xcprivacy', self.widget_manifest)
+        put_plist(self.watch_widget / 'PrivacyInfo.xcprivacy', self.watch_widget_manifest)
         self.assertTrue(self.inspect()['bundle_checks']['watch_privacy_manifests'])
         ios_root = SCRIPT.parents[1]
         self.assertTrue(release.privacy_manifest_matches(
-            release.read_plist(ios_root / 'WatchApp/PrivacyInfo.xcprivacy'), False, needs_elapsed_time=True))
+            release.read_plist(ios_root / 'WatchApp/PrivacyInfo.xcprivacy'), needs_elapsed_time=True))
         self.assertTrue(release.privacy_manifest_matches(
-            release.read_plist(ios_root / 'WatchWidgets/PrivacyInfo.xcprivacy'), False))
+            release.read_plist(ios_root / 'WatchWidgets/PrivacyInfo.xcprivacy')))
 
 
 if __name__ == '__main__':

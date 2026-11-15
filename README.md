@@ -4,7 +4,7 @@ Digital Footprint Explorer (DFE) is a research app from the Zurich University of
 
 | Android | iPhone |
 | --- | --- |
-| Available on [Google Play](https://play.google.com/store/apps/details?id=ch.zhaw.digitalfootprintexplorer). Includes a garden, daily statistics and a Home Screen widget. | In testing. Includes Today, History, small and medium Home Screen widgets, optional morning reminders and an optional Apple Watch companion. |
+| Available on [Google Play](https://play.google.com/store/apps/details?id=ch.zhaw.digitalfootprintexplorer). Includes a garden, daily statistics and a Home Screen widget. | In testing. Includes Today, History, small and medium Home Screen widgets, optional morning reminders and an optional Apple Watch companion. Choose English or Swiss Standard German in Settings. |
 | [Android setup and tests](apps/android/README.md) | [iOS and watchOS setup and tests](apps/ios/README.md) |
 
 ## Build and test
@@ -30,7 +30,7 @@ open apps/ios/iosApp.xcodeproj
 bash apps/ios/scripts/ios-check.sh
 ```
 
-The script runs the shared Kotlin and iOS unit tests. See the [iOS guide](apps/ios/README.md) for signing, simulator setup and physical-device checks. GitHub Actions runs the Android, shared Kotlin, iOS and tooling checks on pull requests to `main`. [CI workflow](.github/workflows/ios-checks.yml)
+The script tests the shared Kotlin model, the iOS app and the language selector in the simulator. See the [iOS guide](apps/ios/README.md) for signing, simulator setup and physical-device checks. GitHub Actions runs the Android, shared Kotlin, iOS and tooling checks on pull requests to `main`. [CI workflow](.github/workflows/ios-checks.yml)
 
 ## Repository layout
 
@@ -45,6 +45,7 @@ The script runs the shared Kotlin and iOS unit tests. See the [iOS guide](apps/i
 │   └── ios/
 │       ├── iosApp.xcodeproj/         # Xcode targets and shared schemes
 │       ├── Configuration/            # Signing, entitlements and privacy source
+│       ├── Localization/             # Shared language preference and Swiss German strings
 │       ├── iosApp/                   # SwiftUI app, history and reminders
 │       ├── GardenWidget/             # iPhone Home Screen widgets
 │       ├── WidgetShared/             # Code used by the iPhone app and widgets
@@ -67,12 +68,15 @@ The script runs the shared Kotlin and iOS unit tests. See the [iOS guide](apps/i
 │       └── iosMain/                  # iOS platform code and database driver
 ├── docs/                             # Project website and architecture notes
 │   ├── architecture/diagrams/        # PlantUML diagrams
-│   ├── dfe-sensitivity-analyser/     # Web tool for exploring model assumptions
-│   ├── images/                       # Site images and Android screenshots
+│   ├── dfe-sensitivity-analyser/      # Web tool for exploring model assumptions
+│   ├── images/                       # Site images and Android and iPhone previews
 │   ├── index.html                    # Project homepage
 │   ├── support-ios.html              # iPhone support page
 │   ├── privacy-policy.html           # iOS privacy page
 │   ├── privacy-policy.md             # Markdown copy of the iOS policy
+│   ├── ios-pages.css                 # Shared website styles
+│   ├── ios-pages.js                  # Website scroll effects
+│   ├── style.css                     # Base website styles
 │   └── privacy-policy-content.json   # Structured copy of the iOS policy
 ├── report/backups/                   # Earlier project report backups
 ├── .github/workflows/                # Android, iOS and shared checks

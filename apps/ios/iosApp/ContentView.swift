@@ -49,6 +49,7 @@ enum TabPageLayout {
 
 // [06] Keep each tab's navigation separate, while sharing the same saved history and appearance.
 struct ContentView: View {
+    @Environment(\.appLanguage) private var appLanguage
     @EnvironmentObject private var navigation: AppNavigationState
     @EnvironmentObject private var store: FootprintStore
     @EnvironmentObject private var screenTime: ScreenTimeService
@@ -57,11 +58,11 @@ struct ContentView: View {
         if #available(iOS 18.0, *) {
             // [07] Name each tab clearly so tapping a control inside it cannot accidentally select another tab.
             TabView(selection: $navigation.selectedTab) {
-                Tab("Today", systemImage: "leaf", value: FootprintTab.today) { todayNavigation }
-                Tab("History", systemImage: "calendar", value: FootprintTab.history) {
+                Tab(appLanguage.text("Today"), systemImage: "leaf", value: FootprintTab.today) { todayNavigation }
+                Tab(appLanguage.text("History"), systemImage: "calendar", value: FootprintTab.history) {
                     NavigationStack { HistoryOverview(store: store) }
                 }
-                Tab("Settings", systemImage: "slider.horizontal.3", value: FootprintTab.settings) {
+                Tab(appLanguage.text("Settings"), systemImage: "slider.horizontal.3", value: FootprintTab.settings) {
                     NavigationStack { SettingsScreen(store: store, screenTime: screenTime) }
                 }
             }
@@ -99,7 +100,7 @@ struct ContentView: View {
             set: { if !$0 { store.errorMessage = nil } }
         )) {
             Button("OK", role: .cancel) { store.errorMessage = nil }
-        } message: { Text(store.errorMessage ?? "Please try again.") }
+        } message: { Text(appLanguage.text(store.errorMessage ?? "Please try again.")) }
     }
 }
 
@@ -208,6 +209,7 @@ struct TodayPresentation: Equatable {
 }
 
 private struct TodayScreen: View {
+    @Environment(\.appLanguage) private var appLanguage
     @ObservedObject var store: FootprintStore
     @ObservedObject var screenTime: ScreenTimeService
     @State private var automaticSetup = false
@@ -334,16 +336,16 @@ private struct TodayScreen: View {
     private func savedPeriod(_ record: FootprintRecord, font: Font = .subheadline) -> some View {
         ViewThatFits(in: .horizontal) {
             HStack(spacing: 12) {
-                Text(presentation.periodTitle ?? "Saved day").foregroundStyle(.secondary)
+                Text(appLanguage.text(presentation.periodTitle ?? "Saved day")).foregroundStyle(.secondary)
                     .accessibilityIdentifier("today.periodLabel")
                 Spacer(minLength: 8)
-                Text(dayLabel(record.day)).fontWeight(.semibold)
+                Text(dayLabel(record.day, locale: appLanguage.locale)).fontWeight(.semibold)
                     .accessibilityIdentifier("today.recordDate")
             }
             VStack(alignment: .leading, spacing: 4) {
-                Text(presentation.periodTitle ?? "Saved day").foregroundStyle(.secondary)
+                Text(appLanguage.text(presentation.periodTitle ?? "Saved day")).foregroundStyle(.secondary)
                     .accessibilityIdentifier("today.periodLabel")
-                Text(dayLabel(record.day)).fontWeight(.semibold)
+                Text(dayLabel(record.day, locale: appLanguage.locale)).fontWeight(.semibold)
                     .accessibilityIdentifier("today.recordDate")
             }.frame(maxWidth: .infinity, alignment: .leading)
         }.font(font)
@@ -391,14 +393,14 @@ private struct TodayScreen: View {
     private func pendingExplanation(inOverview: Bool = false) -> some View {
         if presentation.showsPendingMessage {
             VStack(alignment: .leading, spacing: 8) {
-                Label(store.usesAutomaticInput ? "Let your next day take shape" : "Let your garden follow your day",
+                Label(appLanguage.text(store.usesAutomaticInput ? "Let your next day take shape" : "Let your garden follow your day"),
                       systemImage: store.usesAutomaticInput ? "clock" : "leaf")
                     .font((inOverview ? Font.headline : .subheadline).weight(.semibold))
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityIdentifier("today.automaticPending")
-                Text(store.usesAutomaticInput
+                Text(appLanguage.text(store.usesAutomaticInput
                      ? "Today's estimate waits until this day ends and Apple provides usable activity. Missing activity stays pending."
-                     : "Allow Screen Time once to start automatic estimates. No app-by-app selection or daily forms.")
+                     : "Allow Screen Time once to start automatic estimates. No app-by-app selection or daily forms."))
                     .accessibilityIdentifier("today.pendingExplanation")
                     .font(inOverview ? .body : .footnote).foregroundStyle(inOverview ? .primary : .secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -440,11 +442,12 @@ private struct TodayScreen: View {
 
 // [16] Keep the greeting and date together; the garden is the main visual below them.
 private struct TodayWelcome: View {
+    @Environment(\.appLanguage) private var appLanguage
     var title = "Good to have you here"
     var prominent = false
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(title)
+            Text(appLanguage.text(title))
                 .font(.system(prominent ? .title : .title2, design: .rounded, weight: .semibold))
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityIdentifier("today.welcome")
@@ -470,6 +473,7 @@ struct TodayActionStyle: ViewModifier {
 
 // [18] Open a saved day by date, so a later refresh shows its current saved explanation.
 struct RecordScreen: View {
+    @Environment(\.appLanguage) private var appLanguage
     @ObservedObject var store: FootprintStore
     let day: String
     private var record: FootprintRecord? { store.records.first { $0.day == day } }
@@ -484,11 +488,12 @@ struct RecordScreen: View {
             }
         }
         .background(FootprintAppearance.page)
-        .navigationTitle(dayLabel(day)).navigationBarTitleDisplayMode(.inline)
+        .navigationTitle(dayLabel(day, locale: appLanguage.locale)).navigationBarTitleDisplayMode(.inline)
     }
 }
 
 private struct FootprintSummary: View {
+    @Environment(\.appLanguage) private var appLanguage
     let record: FootprintRecord
     var gardenHeight: CGFloat = 160
     var showsComparison = true
@@ -496,8 +501,8 @@ private struct FootprintSummary: View {
     var showsGarden = true
     var inOverview = false
     private var gardenMessage: String {
-        GardenFeedback.message(state: record.garden, totalKg: record.result.totalKg,
-                               baselineKg: record.baselineKg)
+        appLanguage.text(GardenFeedback.message(state: record.garden, totalKg: record.result.totalKg,
+                                              baselineKg: record.baselineKg))
     }
     private var estimateLabel: some View {
         Text("Estimated carbon footprint").font(inOverview ? .headline : .subheadline)
@@ -510,16 +515,16 @@ private struct FootprintSummary: View {
                 GardenArtwork(state: record.garden, maximumWidth: gardenWidth).frame(height: gardenHeight)
                     .accessibilityHidden(true)
             }
-            Text(summaryGrams(record.result.totalKg))
+            Text(summaryGrams(record.result.totalKg, locale: appLanguage.locale))
                 .font(.system(inOverview ? .largeTitle : .title, design: .rounded, weight: .bold))
                 .monospacedDigit()
                 .fixedSize(horizontal: false, vertical: true)
-                .accessibilityLabel(summaryGrams(record.result.totalKg))
+                .accessibilityLabel(summaryGrams(record.result.totalKg, locale: appLanguage.locale))
                 .accessibilityHint("Estimated carbon footprint for this day.")
                 .accessibilityIdentifier("footprint.total")
             if !inOverview { estimateLabel }
             if inOverview {
-                Text(record.source.title).font(.subheadline).foregroundStyle(.secondary)
+                Text(appLanguage.text(record.source.title)).font(.subheadline).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityIdentifier("today.overviewSource")
             }
@@ -528,9 +533,9 @@ private struct FootprintSummary: View {
                 // average is not mistaken for the input to a different completed day.
                 Group {
                     if let imported = importedActivityMinutes(record) {
-                        Text("Imported app activity: \(summaryActivityTime(imported))")
+                        Text("Imported app activity: \(summaryActivityTime(imported, language: appLanguage))")
                     } else {
-                        Text("Activity used for this estimate: \(summaryActivityTime(record.inputs.totalMinutes))")
+                        Text("Activity used for this estimate: \(summaryActivityTime(record.inputs.totalMinutes, language: appLanguage))")
                     }
                 }.font(inOverview ? .body : .footnote).foregroundStyle(inOverview ? .primary : .secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -539,7 +544,7 @@ private struct FootprintSummary: View {
             Text(gardenMessage).font(inOverview ? .body : .subheadline)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
-                .accessibilityLabel("Garden: \(record.garden.title). \(gardenMessage)")
+                .accessibilityLabel(appLanguage.format("Garden: %@. %@", appLanguage.text(record.garden.title), gardenMessage))
                 .accessibilityIdentifier("garden.state")
             if (showsGarden || inOverview), !showsComparison, record.baselineKg != nil {
                 Text("Your garden follows changes in your own estimates.")
@@ -548,7 +553,7 @@ private struct FootprintSummary: View {
                     .accessibilityIdentifier("garden.comparisonBasis")
             }
             if showsComparison, let baseline = record.baselineKg {
-                Text("Your earlier daily average: \(summaryGrams(baseline)).")
+                Text("Your earlier daily average: \(summaryGrams(baseline, locale: appLanguage.locale)).")
                     .font(.footnote).foregroundStyle(.primary)
                 Text("The garden compares this estimate with up to seven earlier days.")
                     .font(.footnote).foregroundStyle(.primary)
@@ -560,8 +565,8 @@ private struct FootprintSummary: View {
 }
 
 // [19] The model has uncertain inputs, so the main figure avoids false precision.
-func summaryGrams(_ kg: Double) -> String {
-    "\((kg * 1000).formatted(.number.precision(.significantDigits(1...3)))) g CO₂e"
+func summaryGrams(_ kg: Double, locale: Locale = .autoupdatingCurrent) -> String {
+    "\((kg * 1000).formatted(.number.precision(.significantDigits(1...3)).locale(locale))) g CO₂e"
 }
 
 // [22] Earlier selected-app records can also contain routine estimates. Count only the
@@ -578,11 +583,11 @@ func importedActivityMinutes(_ record: FootprintRecord) -> Double? {
 }
 
 // [21] Keep the displayed activity readable without changing the saved minutes used by the model.
-func summaryActivityTime(_ minutes: Double) -> String {
-    guard minutes.isFinite, minutes >= 0, minutes < Double(Int.max) / 2 else { return "Unavailable" }
+func summaryActivityTime(_ minutes: Double, language: AppLanguage = .english) -> String {
+    guard minutes.isFinite, minutes >= 0, minutes < Double(Int.max) / 2 else { return language.text("Unavailable") }
     if minutes == 0 { return "0 min" }
     let wholeMinutes = Int(minutes.rounded())
-    if wholeMinutes == 0 { return "less than 1 min" }
+    if wholeMinutes == 0 { return language.text("less than 1 min") }
     let hours = wholeMinutes / 60
     let remaining = wholeMinutes % 60
     if hours == 0 { return "\(remaining) min" }
@@ -590,15 +595,16 @@ func summaryActivityTime(_ minutes: Double) -> String {
 }
 
 private struct SourceCard: View {
+    @Environment(\.appLanguage) private var appLanguage
     let source: FootprintSource
     var measuredCategories: [FootprintCategory] = []
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Label(source.title, systemImage: source == .routineEstimate ? "clock.arrow.circlepath" : "info.circle")
+            Label(appLanguage.text(source.title), systemImage: source == .routineEstimate ? "clock.arrow.circlepath" : "info.circle")
                 .font(.subheadline.weight(.semibold))
-            Text(source.explanation).font(.footnote).foregroundStyle(.primary)
+            Text(appLanguage.text(source.explanation)).font(.footnote).foregroundStyle(.primary)
             if let modelNote = AdaptiveDeviceLayout.modelScopeNote(isPad: UIDevice.current.userInterfaceIdiom == .pad) {
-                Text(modelNote)
+                Text(appLanguage.text(modelNote))
                     .font(.footnote).foregroundStyle(.primary)
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityIdentifier("source.referenceModel")
@@ -617,7 +623,7 @@ private struct SourceCard: View {
                 Text("All model categories use imported app time. Apps without a local category rule stay under Other apps.")
                     .font(.caption).foregroundStyle(.primary)
             } else if !measuredCategories.isEmpty {
-                Text("Usage time from Screen Time: " + measuredCategories.map(\.title).joined(separator: ", ") + ".")
+                Text(appLanguage.format("Usage time from Screen Time: %@.", measuredCategories.map { appLanguage.text($0.title) }.joined(separator: ", ")))
                     .font(.caption).foregroundStyle(.primary)
             }
         }.frame(maxWidth: .infinity, alignment: .leading).padding(16)
@@ -642,13 +648,13 @@ enum FootprintAppearance {
 }
 
 // [21] Saved/shared results use kg; the interface uses g so small daily values are readable.
-func grams(_ kg: Double) -> String {
-    let amount = (kg * 1000).formatted(.number.precision(.fractionLength(0...3)))
+func grams(_ kg: Double, locale: Locale = .autoupdatingCurrent) -> String {
+    let amount = (kg * 1000).formatted(.number.precision(.fractionLength(0...3)).locale(locale))
     return "\(amount) g CO₂e"
 }
 
 // [22] Format the saved calendar date for the person reading it without moving that day across time zones.
-func dayLabel(_ day: String) -> String {
+func dayLabel(_ day: String, locale: Locale = .autoupdatingCurrent) -> String {
     guard let date = FootprintCalendar().date(day) else { return day }
-    return date.formatted(date: .abbreviated, time: .omitted)
+    return date.formatted(Date.FormatStyle(date: .abbreviated, time: .omitted, locale: locale))
 }

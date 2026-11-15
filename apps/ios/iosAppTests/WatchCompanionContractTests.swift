@@ -43,6 +43,18 @@ final class WatchCompanionContractTests: XCTestCase {
         let result = try XCTUnwrap(json["snapshot"] as? [String: Any])
         XCTAssertEqual(Set(result.keys), ["day", "totalKg", "garden", "source", "calculatedAt", "isCompleted"])
         XCTAssertEqual(try CompanionGardenEnvelope.decode(data, now: now), envelope())
+        XCTAssertNil(try CompanionGardenEnvelope.decode(data, now: now).language)
+    }
+
+    // [03] The Watch can receive a preference with a shared result. A sharing-off message cannot carry it.
+    func testPhoneLanguageUsesTheExistingVersionedMessage() throws {
+        let german = CompanionGardenEnvelope(producer: producer, sequence: 2, sentAt: now,
+                                             availability: .available, snapshot: snapshot(), language: .swissGerman)
+        XCTAssertEqual(try CompanionGardenEnvelope.decode(german.encoded(now: now), now: now), german)
+        XCTAssertTrue(german.canReplace(envelope()))
+        let withdrawal = CompanionGardenEnvelope(producer: producer, sequence: 3, sentAt: now,
+                                                  availability: .sharingOff, snapshot: nil, language: .swissGerman)
+        XCTAssertThrowsError(try withdrawal.encoded(now: now))
     }
 
     func testSharingIsOffUntilExplicitlyEnabled() {

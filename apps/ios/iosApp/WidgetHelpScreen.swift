@@ -22,6 +22,7 @@ import WidgetKit
 struct WidgetHelpScreen: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.appLanguage) private var appLanguage
     @State private var hasConfiguredWidget: Bool?
 
     var body: some View {
@@ -30,9 +31,9 @@ struct WidgetHelpScreen: View {
                 Section {
                     Text("A little piece of your garden, right on your Home Screen.")
                         .font(.headline).fixedSize(horizontal: false, vertical: true)
-                    Text(hasConfiguredWidget == true
+                    Text(appLanguage.text(hasConfiguredWidget == true
                          ? "A garden widget is configured. You can add another size whenever you like."
-                         : "Keep a small reminder of your day close, without opening the app.")
+                         : "Keep a small reminder of your day close, without opening the app."))
                         .font(.subheadline).fixedSize(horizontal: false, vertical: true)
                         .accessibilityIdentifier("widget-help.status")
                 }
@@ -66,7 +67,7 @@ struct WidgetHelpScreen: View {
                     }
                 }
                 Section {
-                    Link("Open Apple's widget guide", destination: DeviceHelpLinks.widgets)
+                    Link("Open Apple's widget guide", destination: DeviceHelpLinks.widgets(language: appLanguage))
                         .frame(minHeight: 44).accessibilityIdentifier("widget-help.appleGuide")
                 } footer: {
                     Text("You choose where the widget belongs. iOS asks you to add it from the Home Screen; the app cannot place it for you.")

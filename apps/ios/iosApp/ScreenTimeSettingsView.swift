@@ -95,7 +95,7 @@ struct ScreenTimeSettingsView: View {
             .accessibilityElement(children: .contain)
 
             if store.widgetDaysWaitingForAutomaticSetup {
-                Text("The widget has saved estimates that aren’t in your history. It won’t collect new activity until automatic estimates are set up.")
+                Text("Automatic widget updates are paused. A new setup discards pending widget estimates from before its start date. Days already in your history are kept.")
                     .font(.subheadline)
                     .fixedSize(horizontal: false, vertical: true)
                     .accessibilityIdentifier("screen-time.widgetDaysWaiting")

@@ -25,7 +25,7 @@ struct SettingsScreen: View {
     @EnvironmentObject private var watch: WatchCompanionService
     @Environment(\.appLanguage) private var appLanguage
     @AppStorage(AppLanguage.storageKey, store: AppLanguage.preferenceStore)
-    private var language: AppLanguage = .english
+    private var language: AppLanguage = .system
     @AppStorage(AppServices.watchSharingKey, store: WatchSharingPreference.defaults) private var watchSharing = false
     @AppStorage(AppAppearance.storageKey, store: AppAppearance.preferenceStore)
     private var appearance: AppAppearance = .light

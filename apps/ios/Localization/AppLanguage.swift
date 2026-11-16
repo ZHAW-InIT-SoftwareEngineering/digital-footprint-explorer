@@ -58,7 +58,7 @@ enum AppLanguage: String, CaseIterable, Identifiable, Codable, Sendable {
     }()
 
     static var current: AppLanguage {
-        preferenceStore.string(forKey: storageKey).flatMap(Self.init(rawValue:)) ?? .english
+        preferenceStore.string(forKey: storageKey).flatMap(Self.init(rawValue:)) ?? .system
     }
 
     private static var widgetDefaults: UserDefaults? {
@@ -98,7 +98,7 @@ enum AppLanguage: String, CaseIterable, Identifiable, Codable, Sendable {
 }
 
 private struct AppLanguageEnvironmentKey: EnvironmentKey {
-    static let defaultValue = AppLanguage.english
+    static let defaultValue = AppLanguage.system
 }
 
 extension EnvironmentValues {

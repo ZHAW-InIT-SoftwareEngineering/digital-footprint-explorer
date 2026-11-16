@@ -39,11 +39,11 @@ enum DeviceHelpLinks {
         guide(language, phone: "iphd6288a67f", pad: "ipad2789d162", englishPhonePrefix: "set-up-a-focus-")
     }
 
-    // [02] Use Apple's Swiss guides when the app is in German, along with the familiar English guides.
+    // [02] Use Apple's Swiss guides in German and let readers choose their OS version in the guide.
     private static func guide(_ language: AppLanguage, phone: String, pad: String,
                               englishPhonePrefix: String = "") -> URL {
         if language.locale.language.languageCode?.identifier == "de" {
-            let path = isPad ? "ipad/\(pad)/27/ipados/27" : "iphone/\(phone)/27/ios/27"
+            let path = isPad ? "ipad/\(pad)/ipados" : "iphone/\(phone)/ios"
             return URL(string: "https://support.apple.com/de-ch/guide/\(path)")!
         }
         let path = isPad ? "ipad/\(pad)/ipados" : "iphone/\(englishPhonePrefix)\(phone)/ios"

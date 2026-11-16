@@ -55,16 +55,19 @@ final class WatchCompanionServiceTests: XCTestCase {
         let storage = WatchTestPersistence()
         var sent: [CompanionGardenEnvelope] = []
         let service = WatchCompanionService(storage: storage) { sent.append($0) }
+        service.updateLanguage(to: .swissGerman)
         service.setSharingEnabled(true)
         service.publish(snapshot: phoneSnapshot())
         service.start()
         XCTAssertNotNil(sent.last?.snapshot)
+        XCTAssertEqual(sent.last?.language, .swissGerman)
         storage.failSaves = true
         let previousSequence = try XCTUnwrap(sent.last?.sequence)
         service.setSharingEnabled(false)
         let withdrawal = try XCTUnwrap(sent.last)
         XCTAssertEqual(withdrawal.availability, .sharingOff)
         XCTAssertNil(withdrawal.snapshot)
+        XCTAssertNil(withdrawal.language)
         XCTAssertGreaterThan(withdrawal.sequence, previousSequence)
         let count = sent.count
         service.publish(snapshot: phoneSnapshot())
@@ -82,6 +85,97 @@ final class WatchCompanionServiceTests: XCTestCase {
         service.publish(snapshot: phoneSnapshot())
         XCTAssertEqual(sent.count, count)
         XCTAssertNil(storage.saved?.snapshot)
+    }
+
+    func testUnsavedLanguageOnlyUpdateKeepsTheSavedSenderSequence() throws {
+        let storage = WatchTestPersistence()
+        var sent: [CompanionGardenEnvelope] = []
+        let service = WatchCompanionService(storage: storage) { sent.append($0) }
+        service.updateLanguage(to: .english)
+        service.setSharingEnabled(true)
+        service.start()
+        let saved = try XCTUnwrap(storage.saved)
+        XCTAssertEqual(saved.availability, .empty)
+        XCTAssertEqual(saved.language, .english)
+
+        storage.failSaves = true
+        service.updateLanguage(to: .swissGerman)
+        service.publish(snapshot: nil)
+        service.disconnect()
+        XCTAssertEqual(sent, [saved])
+        XCTAssertEqual(service.resultForWatchRefresh(), saved)
+        XCTAssertEqual(storage.saved, saved)
+
+        storage.failSaves = false
+        let restored = WatchCompanionService(storage: storage) { sent.append($0) }
+        restored.restoreSharingPreference(true)
+        restored.updateLanguage(to: .swissGerman)
+        restored.start()
+        restored.publish(snapshot: nil)
+        let retry = try XCTUnwrap(storage.saved)
+        XCTAssertEqual(retry.producer, saved.producer)
+        XCTAssertEqual(retry.sequence, saved.sequence + 1)
+        XCTAssertEqual(retry.language, .swissGerman)
+        XCTAssertEqual(sent, [saved, saved, retry])
+    }
+
+    func testUnsavedStatusCannotReplaceAnUnreadableSender() throws {
+        let storage = WatchTestPersistence()
+        let producer = UUID()
+        try storage.save(CompanionGardenEnvelope(producer: producer, sequence: 5, sentAt: Date(),
+                                                 availability: .empty, snapshot: nil), now: Date())
+        storage.failReads = true
+        storage.failSaves = true
+        var sent: [CompanionGardenEnvelope] = []
+        let service = WatchCompanionService(storage: storage) { sent.append($0) }
+        service.restoreSharingPreference(true)
+        service.updateLanguage(to: .swissGerman)
+        service.start()
+        XCTAssertNil(service.resultForWatchRefresh())
+        XCTAssertTrue(sent.isEmpty)
+
+        storage.failReads = false
+        storage.failSaves = false
+        let recovered = try XCTUnwrap(service.resultForWatchRefresh())
+        XCTAssertEqual(recovered.producer, producer)
+        XCTAssertEqual(recovered.sequence, 6)
+        XCTAssertEqual(recovered.language, .swissGerman)
+        XCTAssertEqual(sent, [recovered])
+    }
+
+    func testDisconnectionClearsTheOldResultWithoutSendingAnUnsavedLanguage() throws {
+        let storage = WatchTestPersistence()
+        var sent: [CompanionGardenEnvelope] = []
+        let service = WatchCompanionService(storage: storage) { sent.append($0) }
+        service.updateLanguage(to: .english)
+        service.setSharingEnabled(true)
+        service.publish(snapshot: phoneSnapshot())
+        service.start()
+        let saved = try XCTUnwrap(storage.saved)
+        XCTAssertNotNil(saved.snapshot)
+
+        storage.failSaves = true
+        service.updateLanguage(to: .swissGerman)
+        service.disconnect()
+        let clear = try XCTUnwrap(sent.last)
+        XCTAssertEqual(clear.producer, saved.producer)
+        XCTAssertEqual(clear.sequence, saved.sequence + 1)
+        XCTAssertEqual(clear.availability, .disconnected)
+        XCTAssertNil(clear.snapshot)
+        XCTAssertNil(clear.language)
+        XCTAssertEqual(service.resultForWatchRefresh(), clear)
+        XCTAssertEqual(storage.saved, saved)
+
+        service.disconnect()
+        XCTAssertEqual(sent, [saved, clear])
+
+        storage.failSaves = false
+        service.disconnect()
+        let retry = try XCTUnwrap(storage.saved)
+        XCTAssertEqual(retry.sequence, clear.sequence + 1)
+        XCTAssertEqual(retry.availability, .disconnected)
+        XCTAssertEqual(retry.language, .swissGerman)
+        XCTAssertEqual(sent, [saved, clear, retry])
     }
 
     // [03] A language change updates the same result once. Turning off sharing clears both pieces of information.

@@ -24,7 +24,8 @@ final class LanguageUITests: XCTestCase {
         continueAfterFailure = false
         let app = XCUIApplication()
         app.launchArguments = ["-ui-testing", "-ui-example-history", "-ui-automatic-preview",
-                               "-reset-ui-state", "-ui-keep-language", "-ui-reset-language"]
+                               "-reset-ui-state", "-ui-keep-language", "-ui-reset-language",
+                               "-AppleLanguages", "(en-GB)", "-AppleLocale", "en_GB"]
         app.launch()
         choose("language.de-CH", using: "Settings", in: app)
         returnToSettings(from: "App-Sprache", expecting: "Einstellungen", in: app)
@@ -51,11 +52,22 @@ final class LanguageUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["footprint.total"].exists)
     }
 
-    // [02] The in-app choice takes priority for DFE text, even on a German iPhone.
-    func testEnglishChoiceWithGermanSystemLanguage() {
+    // [02] Start with the device language and keep an explicit override across launches.
+    func testSwissGermanDefaultAndExplicitEnglishChoice() {
+        continueAfterFailure = false
         let app = XCUIApplication()
-        app.launchArguments = ["-ui-testing", "-reset-ui-state", "-AppleLanguages", "(de-CH)",
-                               "-AppleLocale", "de_CH"]
+        app.launchArguments = ["-ui-testing", "-reset-ui-state", "-ui-keep-language", "-ui-reset-language",
+                               "-AppleLanguages", "(de-CH)", "-AppleLocale", "de_CH"]
+        app.launch()
+        XCTAssertTrue(app.tabBars.buttons["Heute"].waitForExistence(timeout: 12))
+        XCTAssertTrue(app.navigationBars["Heute"].waitForExistence(timeout: 8))
+        XCTAssertEqual(app.buttons["onboarding.automatic"].label, "Automatische Einrichtung")
+
+        choose("language.en", using: "Einstellungen", in: app)
+        returnToSettings(from: "App language", expecting: "Settings", in: app)
+
+        app.terminate()
+        app.launchArguments.removeAll { $0 == "-ui-reset-language" || $0 == "-reset-ui-state" }
         app.launch()
         XCTAssertTrue(app.tabBars.buttons["Today"].waitForExistence(timeout: 12))
         XCTAssertTrue(app.navigationBars["Today"].waitForExistence(timeout: 8))

@@ -46,6 +46,7 @@ final class WatchCompanionService: NSObject, ObservableObject, WCSessionDelegate
     private var producer: UUID?
     private var sequence: UInt64 = 0
     private var savedSenderHadSharedData = false
+    private var senderHadSnapshot = false
     private var pendingUpdate: (availability: CompanionGardenAvailability, snapshot: CompanionGardenSnapshot?)?
     private var started = false
     private var refreshInFlight = false
@@ -94,7 +95,7 @@ final class WatchCompanionService: NSObject, ObservableObject, WCSessionDelegate
             if let saved, let queued,
                (queued.producer == saved.producer && queued.sequence > saved.sequence
                 || queued.producer != saved.producer && queued.snapshot == nil && queued.sentAt >= saved.sentAt) {
-                // A privacy clear may have reached Apple's queue even if its local save failed.
+                // A clear may have reached Apple's queue even if its local save failed.
                 previous = queued
             } else {
                 previous = saved ?? queued
@@ -102,7 +103,9 @@ final class WatchCompanionService: NSObject, ObservableObject, WCSessionDelegate
             producer = previous?.producer ?? UUID()
             sequence = previous?.sequence ?? 0
             savedSenderHadSharedData = previous?.hasSharedData == true
-            if let previous, (previous == saved || previous.snapshot == nil),
+            senderHadSnapshot = previous?.snapshot != nil
+            // Prior app versions could queue a language before saving it. Recover the order without resending it.
+            if let previous, (previous == saved || !previous.hasSharedData),
                (try? previous.validate(now: now)) != nil { latest = previous }
         } catch {
             // [12] If the file cannot be read, recover ordering from the message Apple has
@@ -110,6 +113,8 @@ final class WatchCompanionService: NSObject, ObservableObject, WCSessionDelegate
             if let queued = queuedEnvelope() {
                 producer = queued.producer
                 sequence = queued.sequence
+                savedSenderHadSharedData = queued.hasSharedData
+                senderHadSnapshot = queued.snapshot != nil
             }
         }
     }
@@ -178,7 +183,8 @@ final class WatchCompanionService: NSObject, ObservableObject, WCSessionDelegate
     }
 
     func clear() {
-        saveAndQueue(availability: sharingEnabled ? .empty : .sharingOff, snapshot: nil, permitSenderRecovery: true)
+        saveAndQueue(availability: sharingEnabled ? .empty : .sharingOff, snapshot: nil,
+                     permitSenderRecovery: true, clearUnknownEstimate: true)
     }
 
     func disconnect() {
@@ -186,7 +192,7 @@ final class WatchCompanionService: NSObject, ObservableObject, WCSessionDelegate
     }
 
     private func saveAndQueue(availability: CompanionGardenAvailability, snapshot: CompanionGardenSnapshot?,
-                              permitSenderRecovery: Bool = false) {
+                              permitSenderRecovery: Bool = false, clearUnknownEstimate: Bool = false) {
         guard !isolated else { return }
         let availability = policy.responseAvailability(for: availability)
         let snapshot = policy.allowedSnapshot(snapshot)
@@ -197,10 +203,9 @@ final class WatchCompanionService: NSObject, ObservableObject, WCSessionDelegate
             pendingUpdate = nil
             return
         }
-        if producer == nil, permitSenderRecovery || availability == .sharingOff || availability == .disconnected {
-            producer = UUID()
-        }
-        guard let producer else {
+        let recoveringSender = producer == nil
+        let canRecoverSender = permitSenderRecovery || availability == .sharingOff || availability == .disconnected
+        guard let nextProducer = producer ?? (canRecoverSender ? UUID() : nil) else {
             pendingUpdate = (availability, snapshot)
             transferStatus = "Open DFE on your Watch to check sharing"
             return
@@ -210,27 +215,35 @@ final class WatchCompanionService: NSObject, ObservableObject, WCSessionDelegate
             transferStatus = "Open DFE again to check Watch sharing"
             return
         }
-        let next = CompanionGardenEnvelope(producer: producer, sequence: sequence + 1, sentAt: Date(),
+        let next = CompanionGardenEnvelope(producer: nextProducer, sequence: sequence + 1, sentAt: Date(),
                                            availability: availability, snapshot: snapshot, language: language)
         do {
             guard let storage else { throw CompanionGardenError.storageUnavailable }
             try storage.save(next, now: Date())
-            latest = next
-            sequence = next.sequence
-            savedSenderHadSharedData = next.hasSharedData
-            sendCurrentContext()
+            queue(next)
         } catch {
-            // [05] A failed result save must not send an untracked estimate. A privacy clear still replaces the system's old queued result.
-            if next.snapshot == nil {
-                latest = next
-                sequence = next.sequence
-                savedSenderHadSharedData = next.hasSharedData
-                sendCurrentContext()
-                transferStatus = "Watch clear queued; local saving needs attention"
-            } else {
+            // [05] Status and language updates must be saved before sending. Only an opt-out
+            // or removal of a potentially shared estimate can bypass the failed save.
+            let clearingWithUnknownSender = recoveringSender && (clearUnknownEstimate || availability == .disconnected)
+            guard availability == .sharingOff || (snapshot == nil
+                && (senderHadSnapshot || clearingWithUnknownSender || queuedEnvelope()?.snapshot != nil)) else {
                 transferStatus = "Watch sharing could not be saved"
+                return
             }
+            let clear = CompanionGardenEnvelope(producer: nextProducer, sequence: next.sequence, sentAt: next.sentAt,
+                                                availability: availability, snapshot: nil)
+            queue(clear)
+            transferStatus = "Watch clear queued; local saving needs attention"
         }
+    }
+
+    private func queue(_ envelope: CompanionGardenEnvelope) {
+        latest = envelope
+        producer = envelope.producer
+        sequence = envelope.sequence
+        savedSenderHadSharedData = envelope.hasSharedData
+        senderHadSnapshot = envelope.snapshot != nil
+        sendCurrentContext()
     }
 
     private func sendCurrentContext() {

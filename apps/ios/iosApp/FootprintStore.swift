@@ -27,8 +27,6 @@ import Combine
 final class FootprintStore: ObservableObject {
     @Published private(set) var archive: FootprintArchive?
     @Published var errorMessage: String?
-    @Published private(set) var widgetVerification: WidgetPublicationVerification?
-    @Published private(set) var widgetCheckSaveFailed = false
     @Published private(set) var widgetDaysWaitingForAutomaticSetup = false
     let importVerification: AutomaticUpdateVerification
     private let calculator: any FootprintCalculating
@@ -41,8 +39,6 @@ final class FootprintStore: ObservableObject {
     private var unreadableArchive = false
     private let verificationCompletionState: @MainActor () -> AutomaticUpdateCompletionState
 
-    var widgetReadChecks: [WidgetTimelineReadCheck] { widgetPublisher?.timelineReadChecks ?? [] }
-    var widgetStorageAvailable: Bool { widgetPublisher != nil }
     var widgetAutomaticUpdatesPaused: Bool {
         (try? automaticWidgetExchange?.newQueriesAreBlocked()) ?? false
     }
@@ -775,7 +771,7 @@ final class FootprintStore: ObservableObject {
         // history save and give a later refresh another chance to publish it.
         do { try widgetPublisher?.publish(latest.map { GardenWidgetSnapshot(record: $0) }) }
         catch { /* [33] The publisher keeps the failed check; the saved history stays available. */ }
-        widgetVerification = widgetPublisher?.verification ?? WidgetPublicationVerification(
+        let verification = widgetPublisher?.verification ?? WidgetPublicationVerification(
             status: .unavailable, day: latest?.day, checkedAt: Date(), publishedAt: nil,
             producer: .current, receiptStored: false)
         do {
@@ -784,9 +780,8 @@ final class FootprintStore: ObservableObject {
             if latest == nil { try WidgetVerificationMirror.clear(at: widgetCheckFileURL) }
             else {
                 try WidgetVerificationMirror.write(to: widgetCheckFileURL,
-                    publication: widgetVerification, timelineReads: widgetReadChecks)
+                    publication: verification, timelineReads: widgetPublisher?.timelineReadChecks ?? [])
             }
-            widgetCheckSaveFailed = false
-        } catch { widgetCheckSaveFailed = true }
+        } catch { /* The diagnostic copy is optional and cannot block history or widget updates. */ }
     }
 }

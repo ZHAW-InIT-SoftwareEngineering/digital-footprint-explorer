@@ -53,12 +53,17 @@ private actor SystemGardenNotificationClient: GardenNotificationClient {
     // [22] iOS replaces a pending request with the same ID. Leave notices close to delivery alone.
     func updatePendingLanguage(_ language: AppLanguage) async throws {
         guard language == .current else { return }
+        var firstError: Error?
         for request in await center.pendingNotificationRequests() {
             guard language == .current else { return }
-            if let updated = GardenNotificationRequestBuilder.relocalized(request, to: language) {
+            guard let updated = GardenNotificationRequestBuilder.relocalized(request, to: language) else { continue }
+            do {
                 try await center.add(updated)
+            } catch {
+                if firstError == nil { firstError = error }
             }
         }
+        if let firstError { throw firstError }
     }
 }
 

@@ -21,6 +21,10 @@ import Foundation
 import UIKit
 import WatchConnectivity
 
+private extension CompanionGardenEnvelope {
+    var hasSharedData: Bool { snapshot != nil || language != nil }
+}
+
 // [01] Watch sharing is a separate choice. Connecting the phone to a Watch must not send an estimate by itself.
 @MainActor
 final class WatchCompanionService: NSObject, ObservableObject, WCSessionDelegate {
@@ -41,7 +45,7 @@ final class WatchCompanionService: NSObject, ObservableObject, WCSessionDelegate
     private var presentationLanguage: AppLanguage?
     private var producer: UUID?
     private var sequence: UInt64 = 0
-    private var savedSenderHadSnapshot = false
+    private var savedSenderHadSharedData = false
     private var pendingUpdate: (availability: CompanionGardenAvailability, snapshot: CompanionGardenSnapshot?)?
     private var started = false
     private var refreshInFlight = false
@@ -97,7 +101,7 @@ final class WatchCompanionService: NSObject, ObservableObject, WCSessionDelegate
             }
             producer = previous?.producer ?? UUID()
             sequence = previous?.sequence ?? 0
-            savedSenderHadSnapshot = previous?.snapshot != nil
+            savedSenderHadSharedData = previous?.hasSharedData == true
             if let previous, (previous == saved || previous.snapshot == nil),
                (try? previous.validate(now: now)) != nil { latest = previous }
         } catch {
@@ -139,8 +143,8 @@ final class WatchCompanionService: NSObject, ObservableObject, WCSessionDelegate
     func start() {
         guard !isolated, !started, injectedTransport != nil || Self.isSupported else { return }
         started = true
-        // [03] Replace a queued old estimate when the saved privacy choice is off, including after an interrupted shutdown.
-        if !sharingEnabled, savedSenderHadSnapshot || queuedEnvelope()?.snapshot != nil {
+        // [03] Recover an interrupted opt-out by clearing the queued estimate and language.
+        if !sharingEnabled, savedSenderHadSharedData || queuedEnvelope()?.hasSharedData == true {
             saveAndQueue(availability: .sharingOff, snapshot: nil)
             if injectedTransport != nil { return }
         }
@@ -213,14 +217,14 @@ final class WatchCompanionService: NSObject, ObservableObject, WCSessionDelegate
             try storage.save(next, now: Date())
             latest = next
             sequence = next.sequence
-            savedSenderHadSnapshot = next.snapshot != nil
+            savedSenderHadSharedData = next.hasSharedData
             sendCurrentContext()
         } catch {
             // [05] A failed result save must not send an untracked estimate. A privacy clear still replaces the system's old queued result.
             if next.snapshot == nil {
                 latest = next
                 sequence = next.sequence
-                savedSenderHadSnapshot = false
+                savedSenderHadSharedData = next.hasSharedData
                 sendCurrentContext()
                 transferStatus = "Watch clear queued; local saving needs attention"
             } else {
@@ -232,7 +236,7 @@ final class WatchCompanionService: NSObject, ObservableObject, WCSessionDelegate
     private func sendCurrentContext() {
         guard !isolated, started else { return }
         if let injectedTransport {
-            guard let latest, sharingEnabled || latest.snapshot == nil else { return }
+            guard let latest, sharingEnabled || !latest.hasSharedData else { return }
             do { try injectedTransport(latest) }
             catch { transferStatus = "Open DFE on your Watch to try again" }
             return
@@ -242,11 +246,12 @@ final class WatchCompanionService: NSObject, ObservableObject, WCSessionDelegate
         guard session.activationState == .activated else { return }
         // [10] Detect a paired Watch even before sharing is enabled, so an iPhone without one does not show an unused setting.
         watchIsPaired = session.isPaired
-        if !sharingEnabled, latest?.availability != .sharingOff, queuedEnvelope()?.snapshot != nil {
+        if !sharingEnabled, latest?.availability != .sharingOff,
+           latest?.hasSharedData == true || queuedEnvelope()?.hasSharedData == true {
             saveAndQueue(availability: .sharingOff, snapshot: nil)
             return
         }
-        guard let latest, sharingEnabled || latest.snapshot == nil else { return }
+        guard let latest, sharingEnabled || !latest.hasSharedData else { return }
         guard session.isPaired, session.isWatchAppInstalled else {
             transferStatus = "Install DFE on your paired Apple Watch, then open it"
             return
@@ -271,7 +276,7 @@ final class WatchCompanionService: NSObject, ObservableObject, WCSessionDelegate
         } else if latest == nil {
             saveAndQueue(availability: .empty, snapshot: nil, permitSenderRecovery: true)
         }
-        guard let latest, sharingEnabled || latest.snapshot == nil else { return nil }
+        guard let latest, sharingEnabled || !latest.hasSharedData else { return nil }
         return latest
     }
 

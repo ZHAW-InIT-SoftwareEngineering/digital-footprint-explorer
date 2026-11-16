@@ -127,6 +127,31 @@ final class WatchCompanionServiceTests: XCTestCase {
         XCTAssertTrue(sent.allSatisfy { $0.snapshot == nil && $0.availability == .sharingOff })
     }
 
+    func testColdStartWhileOffClearsLanguageEvenWithoutASavedEstimate() throws {
+        let storage = WatchTestPersistence()
+        let previous = WatchCompanionService(storage: storage) { _ in }
+        previous.updateLanguage(to: .swissGerman)
+        previous.setSharingEnabled(true)
+        let previousEnvelope = try XCTUnwrap(storage.saved)
+        XCTAssertEqual(previousEnvelope.availability, .empty)
+        XCTAssertNil(previousEnvelope.snapshot)
+        XCTAssertEqual(previousEnvelope.language, .swissGerman)
+
+        var sent: [CompanionGardenEnvelope] = []
+        let restored = WatchCompanionService(storage: storage) { sent.append($0) }
+        restored.start()
+
+        XCTAssertFalse(restored.sharingEnabled)
+        XCTAssertEqual(sent.count, 1)
+        let clear = try XCTUnwrap(sent.first)
+        XCTAssertEqual(clear.availability, .sharingOff)
+        XCTAssertNil(clear.snapshot)
+        XCTAssertNil(clear.language)
+        XCTAssertEqual(clear.producer, previousEnvelope.producer)
+        XCTAssertEqual(clear.sequence, previousEnvelope.sequence + 1)
+        XCTAssertEqual(storage.saved, clear)
+    }
+
     func testIsolatedLaunchCannotStartSharing() {
         let service = WatchCompanionService(isolated: true)
         service.setSharingEnabled(true)

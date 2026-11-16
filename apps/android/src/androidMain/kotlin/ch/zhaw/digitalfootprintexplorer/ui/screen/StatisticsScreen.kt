@@ -23,7 +23,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
@@ -44,6 +43,10 @@ import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import ch.zhaw.digitalfootprintexplorer.DFEApplication
 import ch.zhaw.digitalfootprintexplorer.R
 import ch.zhaw.digitalfootprintexplorer.model.AppCategory
@@ -60,7 +63,14 @@ import ch.zhaw.digitalfootprintexplorer.ui.component.appendCo2eUnit
 import ch.zhaw.digitalfootprintexplorer.ui.component.formatEmission
 import androidx.compose.ui.text.buildAnnotatedString
 import ch.zhaw.digitalfootprintexplorer.ui.theme.ChartColors
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
@@ -70,6 +80,7 @@ import kotlinx.datetime.daysUntil
 import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.datetime.todayIn
 import java.util.Locale
 
@@ -85,13 +96,36 @@ fun StatisticsScreen(
     val context = LocalContext.current
     val app = context.applicationContext as DFEApplication
 
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
     var storedDays by remember { mutableStateOf<Map<LocalDate, DayHistory>?>(null) }
-    LaunchedEffect(Unit) { storedDays = app.gardenStateCalculator.getAllDays() }
+    var today by remember { mutableStateOf(Clock.System.todayIn(TimeZone.currentSystemDefault())) }
+    LaunchedEffect(app, lifecycle) {
+        lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            launch {
+                while (isActive) {
+                    val zone = TimeZone.currentSystemDefault()
+                    val now = Clock.System.now()
+                    today = now.toLocalDateTime(zone).date
+                    val nextMidnight = today.plus(DatePeriod(days = 1)).atStartOfDayIn(zone)
+                    delay((nextMidnight - now).inWholeMilliseconds.coerceIn(1L, 60_000L))
+                }
+            }
+            callbackFlow {
+                val unsubscribe = app.gardenStateCalculator.observeHistoryChanges { trySend(Unit) }
+                trySend(Unit)
+                awaitClose { unsubscribe() }
+            }.conflate().collect {
+                storedDays = withContext(Dispatchers.IO) { app.gardenStateCalculator.getAllDays() }
+            }
+        }
+    }
 
-    // The current day is not stored yet, it is calculated from midnight until the app was opened.
-    val todaySnapshot by app.todayFootprint.snapshot.collectAsState()
+    val todaySnapshot by app.todayFootprint.snapshot.collectAsStateWithLifecycle()
+    val currentSnapshot = storedDays?.let { saved ->
+        todaySnapshot?.takeIf { it.isCurrentUnsavedDay(today, saved.keys) }
+    }
     val history = storedDays?.let { stored ->
-        todaySnapshot?.let { stored + (it.day.date to it.day) } ?: stored
+        currentSnapshot?.let { stored + (it.day.date to it.day) } ?: stored
     }
 
     Column(
@@ -129,9 +163,8 @@ fun StatisticsScreen(
             return@Column
         }
 
-        val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
         val firstMonday = remember(days) { days.keys.min().startOfWeek() }
-        val lastMonday = remember(days) { maxOf(today, days.keys.max()).startOfWeek() }
+        val lastMonday = remember(days, today) { maxOf(today, days.keys.max()).startOfWeek() }
         val weekCount = firstMonday.daysUntil(lastMonday) / 7 + 1
 
         val pagerState = rememberPagerState(initialPage = weekCount - 1) { weekCount }
@@ -261,7 +294,7 @@ fun StatisticsScreen(
             }
         }
 
-        todaySnapshot?.let { snapshot ->
+        currentSnapshot?.let { snapshot ->
             Spacer(Modifier.height(8.dp))
             Text(
                 text = stringResource(R.string.history_updated, formatUpdated(snapshot.calculatedAtMs)),

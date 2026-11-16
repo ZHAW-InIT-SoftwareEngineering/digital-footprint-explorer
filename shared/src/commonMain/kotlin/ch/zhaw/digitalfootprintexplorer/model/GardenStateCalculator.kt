@@ -17,6 +17,7 @@
 
 package ch.zhaw.digitalfootprintexplorer.model
 
+import app.cash.sqldelight.Query
 import ch.zhaw.digitalfootprintexplorer.database.DFEDatabase
 import ch.zhaw.digitalfootprintexplorer.model.output.AppEmission
 import ch.zhaw.digitalfootprintexplorer.model.output.CategoryEmission
@@ -65,15 +66,18 @@ class GardenStateCalculator(private val database: DFEDatabase) {
         appBreakdown: List<AppEmission> = emptyList()
     ) {
         val dateStr = date.toString()
-        database.dailyFootprintQueries.insert(
-            dateStr, kgCO2e, ghgAppUsage, ghgDisplay, ghgBackground, measuredAt,
-            gardenState.name, baselineKgCO2e
-        )
-        categoryBreakdown.forEach { c ->
-            database.dailyFootprintQueries.insertCategory(dateStr, c.category.name, c.ghgTotal)
-        }
-        appBreakdown.forEach { a ->
-            database.dailyFootprintQueries.insertApp(dateStr, a.category.name, a.appName, a.ghgTotal)
+        val queries = database.dailyFootprintQueries
+        database.transaction {
+            queries.insert(
+                dateStr, kgCO2e, ghgAppUsage, ghgDisplay, ghgBackground, measuredAt,
+                gardenState.name, baselineKgCO2e
+            )
+            categoryBreakdown.forEach { category ->
+                queries.insertCategory(dateStr, category.category.name, category.ghgTotal)
+            }
+            appBreakdown.forEach { app ->
+                queries.insertApp(dateStr, app.category.name, app.appName, app.ghgTotal)
+            }
         }
     }
 
@@ -124,14 +128,14 @@ class GardenStateCalculator(private val database: DFEDatabase) {
      * Returns every recorded day incl. category and app breakdown, keyed by date.
      * The history is small (one row per day), so it is loaded in one go.
      */
-    fun getAllDays(): Map<LocalDate, DayHistory> {
+    fun getAllDays(): Map<LocalDate, DayHistory> = database.transactionWithResult {
         val queries = database.dailyFootprintQueries
         val apps = queries.selectAllApps().executeAsList()
             .groupBy { it.date to it.category }
         val categories = queries.selectAllCategories().executeAsList()
             .groupBy { it.date }
 
-        return queries.selectAll().executeAsList().associate { day ->
+        queries.selectAll().executeAsList().associate { day ->
             val dayCategories = categories[day.date].orEmpty().mapNotNull { c ->
                 val category = runCatching { AppCategory.valueOf(c.category) }.getOrNull()
                     ?: return@mapNotNull null
@@ -153,6 +157,14 @@ class GardenStateCalculator(private val database: DFEDatabase) {
                 categories = dayCategories
             )
         }
+    }
+
+    /** Invokes [onChange] when daily history is committed. The caller removes the listener when done. */
+    fun observeHistoryChanges(onChange: () -> Unit): () -> Unit {
+        val query = database.dailyFootprintQueries.selectAll()
+        val listener = Query.Listener { onChange() }
+        query.addListener(listener)
+        return { query.removeListener(listener) }
     }
 
     fun isDailyFootprintCalculated(date: LocalDate): Boolean {

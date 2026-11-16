@@ -24,6 +24,7 @@ import android.util.Log
 import ch.zhaw.digitalfootprintexplorer.model.DayHistory
 import ch.zhaw.digitalfootprintexplorer.model.EmissionsCalculator
 import ch.zhaw.digitalfootprintexplorer.model.toDayHistory
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -32,12 +33,16 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
+import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.toLocalDateTime
 
 /** Footprint of the current day from midnight until [calculatedAtMs]. */
-data class TodaySnapshot(val day: DayHistory, val calculatedAtMs: Long)
+data class TodaySnapshot(val day: DayHistory, val calculatedAtMs: Long) {
+    internal fun isCurrentUnsavedDay(today: LocalDate, savedDates: Set<LocalDate>): Boolean =
+        day.date == today && day.date !in savedDates
+}
 
 /**
  * Calculates the footprint of the current, not yet finished day (midnight → now) for the
@@ -66,7 +71,7 @@ class TodayFootprintCalculator(
         if (endMs <= startMs) return@withLock
 
         try {
-            val result = withContext(Dispatchers.Default) {
+            val result = withContext(Dispatchers.IO) {
                 val usageStatsManager =
                     context.getSystemService(Context.USAGE_STATS_SERVICE) as UsageStatsManager
                 val networkMetrics = MetricCollector(
@@ -82,9 +87,10 @@ class TodayFootprintCalculator(
                 )
             }
             _snapshot.value = TodaySnapshot(result.toDayHistory(today), endMs)
-            Log.d(TAG, "Today so far: ${"%.2f".format(result.ghgTotal * 1000)} gCO₂e")
-        } catch (e: Exception) {
-            Log.e(TAG, "Could not calculate today's footprint", e)
+        } catch (e: CancellationException) {
+            throw e
+        } catch (_: Exception) {
+            Log.e(TAG, "Could not calculate today's footprint")
         }
     }
 

@@ -16,6 +16,14 @@ CREATE TABLE DailyEmissionCategory (
     PRIMARY KEY (date, category)
 );
 
+CREATE TABLE DailyEmissionApp (
+    date      TEXT NOT NULL REFERENCES DailyEmission(date) ON DELETE CASCADE,
+    category  TEXT NOT NULL,
+    app_name  TEXT NOT NULL,
+    total_kg  REAL NOT NULL,
+    PRIMARY KEY (date, category, app_name)
+);
+
 insert:
 INSERT OR IGNORE INTO DailyEmission(date, total_kg, app_usage_kg, display_kg, background_kg, calculated_at, garden_state, baseline_kg)
 VALUES (?, ?, ?, ?, ?, ?, ?, ?);
@@ -23,6 +31,10 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?);
 insertCategory:
 INSERT OR IGNORE INTO DailyEmissionCategory(date, category, total_kg)
 VALUES (?, ?, ?);
+
+insertApp:
+INSERT OR IGNORE INTO DailyEmissionApp(date, category, app_name, total_kg)
+VALUES (?, ?, ?, ?);
 
 selectAll:
 SELECT * FROM DailyEmission ORDER BY date ASC;
@@ -35,6 +47,12 @@ SELECT * FROM DailyEmission ORDER BY date DESC LIMIT 7;
 
 selectCategoriesByDate:
 SELECT * FROM DailyEmissionCategory WHERE date = ?;
+
+selectAllCategories:
+SELECT * FROM DailyEmissionCategory;
+
+selectAllApps:
+SELECT * FROM DailyEmissionApp;
 
 count:
 SELECT COUNT(*) FROM DailyEmission;

@@ -20,6 +20,7 @@ package ch.zhaw.digitalfootprintexplorer.model
 import ch.zhaw.digitalfootprintexplorer.model.input.AppUsageInput
 import ch.zhaw.digitalfootprintexplorer.model.input.BackgroundInput
 import ch.zhaw.digitalfootprintexplorer.model.input.DisplayInput
+import ch.zhaw.digitalfootprintexplorer.model.output.AppEmission
 import ch.zhaw.digitalfootprintexplorer.model.output.CategoryEmission
 import ch.zhaw.digitalfootprintexplorer.model.output.EmissionResult
 
@@ -46,8 +47,28 @@ class EmissionsCalculator(
             ghgAppUsage = categoryBreakdown.fold(0.0) { acc, c -> acc + c.ghgTotal },
             ghgDisplay = calculateDisplay(display),
             ghgBackground = calculateBackground(background),
-            categoryBreakdown = categoryBreakdown
+            categoryBreakdown = categoryBreakdown,
+            appBreakdown = calculateAppBreakdown(appUsage)
         )
+    }
+
+    /**
+     * Attributes the app usage emission to the individual apps.
+     * Device, network and backend emissions are all linear in time / data volume,
+     * so the per-app values add up exactly to the category totals.
+     */
+    private fun calculateAppBreakdown(metrics: List<AppUsageInput>): List<AppEmission> {
+        return metrics
+            .groupBy { it.appCategory to it.appName }
+            .map { (key, entries) ->
+                AppEmission(
+                    appName = key.second,
+                    category = key.first,
+                    ghgTotal = calculateAppUsage(entries).sumOf { it.ghgTotal }
+                )
+            }
+            // Installed apps without any usage would only add empty rows.
+            .filter { it.ghgTotal > 0.0 }
     }
 
     /**

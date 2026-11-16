@@ -89,6 +89,11 @@ class InstalledAppProvider(
             "Mail" -> AppCategory.E_MAIL
             "Messaging" -> AppCategory.MESSAGING
             "Video_Call" -> AppCategory.VIDEO_CALL
+            "Video" -> AppCategory.VIDEO_STREAMING
+            "Audio" -> AppCategory.AUDIO_STREAMING
+            "Social" -> AppCategory.SOCIAL_MEDIA
+            "Navigation" -> AppCategory.NAVIGATION
+            "Gaming" -> AppCategory.GAMING
             else -> AppCategory.MISCELLANEOUS
         }
     }

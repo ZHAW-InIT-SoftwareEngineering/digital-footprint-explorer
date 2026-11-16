@@ -25,6 +25,7 @@ import ch.zhaw.digitalfootprintexplorer.database.createDatabase
 import ch.zhaw.digitalfootprintexplorer.model.GardenStateCalculator
 import ch.zhaw.digitalfootprintexplorer.servicelayerplatform.service.BackgroundProcessTracker
 import ch.zhaw.digitalfootprintexplorer.servicelayerplatform.service.DisplayBrightnessObserver
+import ch.zhaw.digitalfootprintexplorer.servicelayerplatform.service.TodayFootprintCalculator
 import ch.zhaw.digitalfootprintexplorer.servicelayerplatform.service.TrackingService
 import ch.zhaw.digitalfootprintexplorer.util.WORKER_NAME
 import ch.zhaw.digitalfootprintexplorer.widget.GardenWidget
@@ -54,6 +55,9 @@ class DFEApplication : Application() {
     lateinit var backgroundProcessTracker: BackgroundProcessTracker
         private set
 
+    lateinit var todayFootprint: TodayFootprintCalculator
+        private set
+
     override fun onCreate() {
         super.onCreate()
 
@@ -62,6 +66,7 @@ class DFEApplication : Application() {
 
         displayBrightnessObserver = DisplayBrightnessObserver(this)
         backgroundProcessTracker = BackgroundProcessTracker(this)
+        todayFootprint = TodayFootprintCalculator(this, displayBrightnessObserver, backgroundProcessTracker)
         
         restoreWidgetIfUpdated()
 

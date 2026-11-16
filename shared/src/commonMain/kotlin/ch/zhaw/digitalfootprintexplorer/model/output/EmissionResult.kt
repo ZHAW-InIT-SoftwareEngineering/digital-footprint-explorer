@@ -25,7 +25,8 @@ data class EmissionResult(
     val ghgAppUsage: Double,
     val ghgDisplay: Double,
     val ghgBackground: Double,
-    val categoryBreakdown: List<CategoryEmission>
+    val categoryBreakdown: List<CategoryEmission>,
+    val appBreakdown: List<AppEmission> = emptyList()
 ) {
     val ghgTotal: Double
         get() = ghgAppUsage + ghgDisplay + ghgBackground

@@ -217,7 +217,7 @@ def public_https_url(value):
 
 
 # [12] Check each target's own reasons. The phone keeps local preferences and shares the language
-# with its widget through the App Group. The Watch app uses uptime to limit its local refresh wait.
+# with its widget through the App Group. The iPhone widget and Watch app use uptime for local deadlines.
 def privacy_manifest_matches(manifest, *, needs_defaults=False, needs_group_defaults=False, needs_elapsed_time=False):
     if not manifest or manifest.get('NSPrivacyTracking') is not False:
         return False
@@ -394,7 +394,7 @@ def inspect_bundle(app, *, version='1.0', archive=None, project_root=None):
         'host_privacy_manifest': privacy_manifest_matches(
             read_plist(app / 'PrivacyInfo.xcprivacy'), needs_defaults=True, needs_group_defaults=True),
         'widget_privacy_manifest': privacy_manifest_matches(
-            read_plist(widget / 'PrivacyInfo.xcprivacy'), needs_group_defaults=True),
+            read_plist(widget / 'PrivacyInfo.xcprivacy'), needs_group_defaults=True, needs_elapsed_time=True),
         'shared_group_configuration': info.get('DFEAppGroupIdentifier') == widget_info.get('DFEAppGroupIdentifier') == GROUP_ID,
         'iphone_targets': info.get('UIDeviceFamily') == widget_info.get('UIDeviceFamily') == [1],
         'minimum_ios_matches': info.get('MinimumOSVersion') == widget_info.get('MinimumOSVersion') == '26.4',

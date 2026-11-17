@@ -68,15 +68,16 @@ class ReleaseChecksTests(unittest.TestCase):
                 'NSPrivacyAccessedAPITypeReasons': ['CA92.1', '1C8F.1'],
             }],
         }
+        elapsed_time_reason = {
+            'NSPrivacyAccessedAPIType': 'NSPrivacyAccessedAPICategorySystemBootTime',
+            'NSPrivacyAccessedAPITypeReasons': ['35F9.1'],
+        }
         self.widget_manifest = dict(self.host_manifest, NSPrivacyAccessedAPITypes=[{
             'NSPrivacyAccessedAPIType': 'NSPrivacyAccessedAPICategoryUserDefaults',
             'NSPrivacyAccessedAPITypeReasons': ['1C8F.1'],
-        }])
+        }, elapsed_time_reason])
         self.watch_widget_manifest = dict(self.host_manifest, NSPrivacyAccessedAPITypes=[])
-        self.watch_manifest = dict(self.watch_widget_manifest, NSPrivacyAccessedAPITypes=[{
-            'NSPrivacyAccessedAPIType': 'NSPrivacyAccessedAPICategorySystemBootTime',
-            'NSPrivacyAccessedAPITypeReasons': ['35F9.1'],
-        }])
+        self.watch_manifest = dict(self.watch_widget_manifest, NSPrivacyAccessedAPITypes=[elapsed_time_reason])
         self.write_bundle()
         for bundle, executable in ((self.app, 'DFE'), (self.widget, 'GardenWidget'),
                                    (self.watch, 'DFEWatch'), (self.watch_widget, 'WatchGardenWidget')):
@@ -276,6 +277,18 @@ class ReleaseChecksTests(unittest.TestCase):
                     put_plist(path, bad)
                     self.assertFalse(self.inspect()['bundle_checks'][check])
             put_plist(path, declared)
+
+    def test_iphone_widget_rejects_missing_wrong_or_duplicate_elapsed_time_reason(self):
+        defaults, elapsed_time = self.widget_manifest['NSPrivacyAccessedAPITypes']
+        wrong_reason = dict(elapsed_time, NSPrivacyAccessedAPITypeReasons=['8FFB.1'])
+        for entries in ([defaults], [defaults, wrong_reason], [defaults, elapsed_time, elapsed_time]):
+            with self.subTest(entries=entries):
+                manifest = dict(self.widget_manifest, NSPrivacyAccessedAPITypes=entries)
+                put_plist(self.widget / 'PrivacyInfo.xcprivacy', manifest)
+                report = self.inspect()
+                self.assertFalse(report['bundle_checks']['widget_privacy_manifest'])
+                self.assertFalse(report['preparation_ok'])
+                self.assertFalse(report['store_static_checks_passed'])
 
     # [18] Example data and test programs must not ship inside the customer app.
     def test_debug_preview_and_embedded_tests_fail_preparation(self):
@@ -692,7 +705,7 @@ class ReleaseChecksTests(unittest.TestCase):
         (self.watch_widget / 'Assets.car').unlink()
         self.assertFalse(self.inspect()['bundle_checks']['watch_assets_packaged'])
 
-    # [48] Only the Watch app measures its local refresh wait. Copying that reason to its widget would hide new API use.
+    # [48] On watchOS, only the Watch app uses uptime for its refresh deadline.
     def test_watch_elapsed_time_reason_is_required_only_where_used(self):
         for manifest in (self.watch_widget_manifest, self.widget_manifest, self.host_manifest,
                          dict(self.watch_manifest, NSPrivacyAccessedAPITypes=[{

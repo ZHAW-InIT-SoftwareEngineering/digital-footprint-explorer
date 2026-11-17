@@ -52,7 +52,7 @@ The acceptance record includes simulator results, signed builds and checks that 
 
 With automatic setup and the required Apple permissions, the widget can calculate the previous completed day's estimate when WidgetKit runs it. It uses the same Kotlin model as the app. The widget saves a protected pending record before it shows the new garden. When the app opens, it checks each pending day before adding it to private history. Estimates saved under older category rules are kept if the model can reproduce them.
 
-If automatic history is unavailable, the widget pauses new imports and Settings shows that there are pending days to save. Disconnecting stops widget imports. Deleting entries clears old widget work and keeps a valid automatic setup for new days.
+If automatic history is unavailable, the widget pauses new imports and Settings explains what happens to pending days. A new automatic setup discards widget estimates older than its start date and keeps saved history. Disconnecting stops widget imports. Deleting entries clears old widget work and keeps a valid automatic setup for new days.
 
 iOS chooses when the widget runs. For each release, use a signed build on a physical iPhone to check that the estimate updates on the next day without opening DFE.
 
@@ -76,7 +76,7 @@ Turning reminders off cancels pending messages. Deleting entries resets the remi
 
 A reminder and an estimate update run separately. After force-quit, the widget can request activity if iOS runs it. The main app normally needs to be opened again before it can run in the background. iOS also controls delivery, so Focus and notification settings may delay or hide reminders.
 
-Apple's published conditions for expanded access require a device in the EU and an Apple Account set to an EU country or region. Customer access in Switzerland still needs confirmation. [Apple's entitlement guide](https://developer.apple.com/documentation/familycontrols/requesting-the-family-controls-entitlement) · [Expanded access conditions](https://developer.apple.com/documentation/familycontrols/authorizationstatus/approvedwithdataaccess)
+Apple's published conditions for expanded access require a device in the EU and an Apple Account set to an EU country or region. Confirm access for Swiss App Store customers before a public Swiss release with automatic estimates. DFE has no manual entry option in this version. [Apple's entitlement guide](https://developer.apple.com/documentation/familycontrols/requesting-the-family-controls-entitlement) · [Expanded access conditions](https://developer.apple.com/documentation/familycontrols/authorizationstatus/approvedwithdataaccess)
 
 ## Verify an automatic update
 
@@ -119,7 +119,9 @@ Edit `apps/ios/Configuration/PrivacyPolicyContent.json` and run `python3 apps/io
 
 The export options and Store checker target the ZHAW release identity. For development, select your approved team in the ignored `apps/ios/Configuration/Local.xcconfig` file.
 
-Before archiving for distribution, choose an unused build number. Set `DFE_SOURCE_REVISION` to the reviewed Git revision or a recorded source fingerprint. Check that the iPhone app, Home Screen widget, Watch app and Watch widget all contain the same value.
+Before archiving for distribution, choose an unused build number. Set `DFE_SOURCE_REVISION` to the reviewed Git revision or a recorded source fingerprint. Check that the iPhone app, Home Screen widget, Watch app and Watch widget all contain the same value. Run the release check with `--require-store` on the signed archive or exported app bundle to verify both the app's and the automatic widget's distribution entitlements.
+
+After the release changes are merged, wait for GitHub Pages to deploy from `main`. Before submitting the build, open the public iPhone support and privacy pages, check that they match the merged versions and confirm that App Store Connect uses those URLs.
 
 ## Source map
 

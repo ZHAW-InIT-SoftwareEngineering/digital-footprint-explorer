@@ -1,0 +1,185 @@
+/*
+ * Copyright (C) 2026 Zurich University of Applied Sciences, Switzerland
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+package ch.zhaw.digitalfootprintexplorer.model
+
+import app.cash.sqldelight.Query
+import ch.zhaw.digitalfootprintexplorer.database.DFEDatabase
+import ch.zhaw.digitalfootprintexplorer.model.output.AppEmission
+import ch.zhaw.digitalfootprintexplorer.model.output.CategoryEmission
+import kotlinx.datetime.LocalDate
+
+/**
+ * Stores daily footprint history and calculates [GardenState]
+ * by comparing today's value against a rolling baseline.
+ *
+ * Intended usage per day:
+ *  1. Call [calculateGardenState] with today's kgCO₂e to get the state.
+ *  2. Call [recordDailyFootprint] to persist today's value.
+ *
+ * Phase logic:
+ *  - 0 entries stored   → Day 1, no comparison possible → STABLE
+ *  - 1–6 entries stored → compare against average of all stored entries
+ *  - ≥7 entries stored  → compare against average of the last 7 entries only
+ */
+class GardenStateCalculator(private val database: DFEDatabase) {
+
+    /**
+     * Persists a daily footprint entry and its per-category breakdown.
+     * All entries are kept permanently — no rolling window deletion.
+     *
+     * @param date              The calendar day of the measurement.
+     * @param kgCO2e            Total footprint used for baseline comparisons.
+     * @param ghgAppUsage       CO₂e from app network/device usage [kgCO₂e].
+     * @param ghgDisplay        CO₂e from screen energy [kgCO₂e].
+     * @param ghgBackground     CO₂e from background processes [kgCO₂e].
+     * @param measuredAt        ISO-8601 timestamp of when the measurement was taken.
+     * @param gardenState       The garden state derived from this day's footprint.
+     * @param baselineKgCO2e    The rolling baseline used to derive the garden state.
+     * @param categoryBreakdown Per-category emission breakdown to store in DailyEmissionCategory.
+     * @param appBreakdown      Per-app emission breakdown to store in DailyEmissionApp.
+     */
+    fun recordDailyFootprint(
+        date: LocalDate,
+        kgCO2e: Double,
+        ghgAppUsage: Double,
+        ghgDisplay: Double,
+        ghgBackground: Double,
+        measuredAt: String,
+        gardenState: GardenState,
+        baselineKgCO2e: Double,
+        categoryBreakdown: List<CategoryEmission>,
+        appBreakdown: List<AppEmission> = emptyList()
+    ) {
+        val dateStr = date.toString()
+        val queries = database.dailyFootprintQueries
+        database.transaction {
+            queries.insert(
+                dateStr, kgCO2e, ghgAppUsage, ghgDisplay, ghgBackground, measuredAt,
+                gardenState.name, baselineKgCO2e
+            )
+            categoryBreakdown.forEach { category ->
+                queries.insertCategory(dateStr, category.category.name, category.ghgTotal)
+            }
+            appBreakdown.forEach { app ->
+                queries.insertApp(dateStr, app.category.name, app.appName, app.ghgTotal)
+            }
+        }
+    }
+
+    /**
+     * Returns the [GardenState] and the baseline used for [todayFootprint].
+     * Must be called *before* [recordDailyFootprint] for the same day so that
+     * today's value is never included in its own baseline.
+     *
+     * @return Pair of (state, baselineKgCO2e). Baseline is 0.0 on day 1 (no history).
+     */
+    fun calculateGardenState(todayFootprint: Double): Pair<GardenState, Double> {
+        val count = database.dailyFootprintQueries.count().executeAsOne()
+        if (count == 0L) return GardenState.STABLE to 0.0
+        val entries = if (count >= 7L) {
+            database.dailyFootprintQueries.selectLatest7().executeAsList()
+        } else {
+            database.dailyFootprintQueries.selectAll().executeAsList()
+        }
+        val baseline = entries.map { it.total_kg }.average()
+        return fromDeviation(todayFootprint, baseline) to baseline
+    }
+
+    /**
+     * Returns the [GardenState] stored for the most recent day, or null if no entries exist.
+     * Used to restore the widget state after demo mode is deactivated.
+     */
+    fun getLatestGardenState(): GardenState? {
+        val latest = database.dailyFootprintQueries.selectLatest().executeAsOneOrNull()
+        return latest?.garden_state?.let { runCatching { GardenState.valueOf(it) }.getOrNull() }
+    }
+
+    /**
+     * Returns the latest recorded footprint entry, or null if no history exists.
+     */
+    fun getLatestEntry(): DailyFootprintEntry? {
+        val latest = database.dailyFootprintQueries.selectLatest().executeAsOneOrNull() ?: return null
+        return DailyFootprintEntry(
+            date = LocalDate.parse(latest.date),
+            kgCO2e = latest.total_kg,
+            ghgAppUsage = latest.app_usage_kg,
+            ghgDisplay = latest.display_kg,
+            ghgBackground = latest.background_kg,
+            measuredAt = latest.calculated_at
+        )
+    }
+
+    /**
+     * Returns every recorded day incl. category and app breakdown, keyed by date.
+     * The history is small (one row per day), so it is loaded in one go.
+     */
+    fun getAllDays(): Map<LocalDate, DayHistory> = database.transactionWithResult {
+        val queries = database.dailyFootprintQueries
+        val apps = queries.selectAllApps().executeAsList()
+            .groupBy { it.date to it.category }
+        val categories = queries.selectAllCategories().executeAsList()
+            .groupBy { it.date }
+
+        queries.selectAll().executeAsList().associate { day ->
+            val dayCategories = categories[day.date].orEmpty().mapNotNull { c ->
+                val category = runCatching { AppCategory.valueOf(c.category) }.getOrNull()
+                    ?: return@mapNotNull null
+                CategoryHistory(
+                    category = category,
+                    totalKg = c.total_kg,
+                    apps = apps[day.date to c.category].orEmpty()
+                        .map { AppHistory(it.app_name, it.total_kg) }
+                        .sortedByDescending { it.totalKg }
+                )
+            }
+            val date = LocalDate.parse(day.date)
+            date to DayHistory(
+                date = date,
+                totalKg = day.total_kg,
+                appUsageKg = day.app_usage_kg,
+                displayKg = day.display_kg,
+                backgroundKg = day.background_kg,
+                categories = dayCategories
+            )
+        }
+    }
+
+    /** Invokes [onChange] when daily history is committed. The caller removes the listener when done. */
+    fun observeHistoryChanges(onChange: () -> Unit): () -> Unit {
+        val query = database.dailyFootprintQueries.selectAll()
+        val listener = Query.Listener { onChange() }
+        query.addListener(listener)
+        return { query.removeListener(listener) }
+    }
+
+    fun isDailyFootprintCalculated(date: LocalDate): Boolean {
+        return database.dailyFootprintQueries.selectLatest().executeAsOneOrNull()?.date == date.toString()
+    }
+
+    private fun fromDeviation(today: Double, baseline: Double): GardenState {
+        val percentage = (today - baseline) / baseline
+        return when {
+            percentage <= -0.30 -> GardenState.FLOURISHING
+            percentage <= -0.10 -> GardenState.GROWING
+            percentage <   0.10 -> GardenState.STABLE
+            percentage <=  0.40 -> GardenState.WILTING
+            else                -> GardenState.WITHERED
+        }
+    }
+
+}

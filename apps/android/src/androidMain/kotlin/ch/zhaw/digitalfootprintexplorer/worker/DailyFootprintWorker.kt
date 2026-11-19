@@ -28,6 +28,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.telephony.TelephonyManager
 import android.util.Log
+import kotlinx.coroutines.CancellationException
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
@@ -69,17 +70,27 @@ class DailyFootprintWorker(
 ) : CoroutineWorker(appContext, params) {
 
     override suspend fun doWork(): Result = try {
+        // The periodic request carries no trigger, only runNow marks its runs.
+        val trigger = inputData.getString(KEY_TRIGGER) ?: TRIGGER_PERIODIC
+        WorkerRunLog.append(appContext, "RUN_START", "trigger=$trigger attempt=$runAttemptCount")
         doWorkInternal()
+    } catch (e: CancellationException) {
+        // The system stopped the run (constraints, quota, doze, ...): keep the reason, then let it cancel.
+        val reason = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) stopReason.toString() else "n/a"
+        WorkerRunLog.append(appContext, "RUN_STOPPED", "stopReason=$reason")
+        throw e
     } catch (e: Exception) {
         Log.e(TAG, "❌ Worker failed with exception", e)
+        WorkerRunLog.append(appContext, "RUN_FAILED", "${e::class.simpleName}: ${e.message}")
         Result.failure(
             workDataOf(KEY_DEBUG_SUMMARY to "❌ ERROR: ${e::class.simpleName}: ${e.message}\n\n${e.stackTraceToString().take(800)}")
         )
     }
 
     private suspend fun doWorkInternal(): Result {
+        val startedAtMs = System.currentTimeMillis()
         val workerStartedAt = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault())
-            .format(java.util.Date())
+            .format(java.util.Date(startedAtMs))
         Log.d(TAG, "▶ Worker started at $workerStartedAt")
         val app = appContext.applicationContext as DFEApplication
 
@@ -91,6 +102,7 @@ class DailyFootprintWorker(
         // do not re-run the calculation if it already calculated the footprint for yesterday
         if (alreadyCalculated) {
             Log.d(TAG, "Worker already ran for yesterday (${yesterday}) — skipping calculation")
+            WorkerRunLog.append(appContext, "RUN_SKIPPED", "day=$yesterday already stored")
             return Result.success()
         }
 
@@ -158,6 +170,20 @@ class DailyFootprintWorker(
         Log.d(TAG, "✅ Worker finished — widget updated")
 
         showDailyFootprintNotification(gardenState)
+
+        WorkerRunLog.append(
+            appContext, "RUN_DONE",
+            "day=$yesterday total=${f(emissionResult.ghgTotal * 1000)}g " +
+                "appUsage=${f(emissionResult.ghgAppUsage * 1000)}g " +
+                "display=${f(emissionResult.ghgDisplay * 1000)}g " +
+                "background=${f(emissionResult.ghgBackground * 1000)}g " +
+                "baseline=${f(baseline * 1000)}g garden=$gardenState " +
+                "apps=${networkMetrics.size} appsWithData=$measuredApps " +
+                "wifi=${f(totalWifiMB)}MB cellular=${f(totalCellMB)}MB " +
+                "displayIntervals=${displayInput.intervals.size} " +
+                "backgroundProcesses=${backgroundInput.activeProcesses.size} " +
+                "durationMs=${System.currentTimeMillis() - startedAtMs}"
+        )
 
         return Result.success()
     }
@@ -290,6 +316,9 @@ class DailyFootprintWorker(
 
     companion object {
         const val TAG = "DFE_Worker"
+        private const val KEY_TRIGGER = "trigger"
+        private const val TRIGGER_PERIODIC = "periodic"
+        private const val TRIGGER_APP_OPEN = "app_open"
 
         /**
          * Fallback method to trigger the worker immediately.
@@ -299,6 +328,7 @@ class DailyFootprintWorker(
 
             val request = OneTimeWorkRequestBuilder<DailyFootprintWorker>()
                 .addTag(TAG)
+                .setInputData(workDataOf(KEY_TRIGGER to TRIGGER_APP_OPEN))
                 .build()
 
             WorkManager.getInstance(context).enqueueUniqueWork(
@@ -309,7 +339,8 @@ class DailyFootprintWorker(
 
         }
 
-        fun scheduleNext(context: Context) {
+        /** [source] only names the caller in the worker log, e.g. "process_start" or "boot". */
+        fun scheduleNext(context: Context, source: String) {
             val now = Calendar.getInstance()
 
             val next3am = Calendar.getInstance().apply {
@@ -327,6 +358,10 @@ class DailyFootprintWorker(
             val delayMs = next3am.timeInMillis - now.timeInMillis
 
             Log.d(TAG, "Ensuring periodic worker: first run in ${delayMs}ms (3 AM), then every 24h")
+            WorkerRunLog.append(
+                context, "SCHEDULE",
+                "source=$source policy=KEEP firstRunInMin=${TimeUnit.MILLISECONDS.toMinutes(delayMs)} (only used if no work exists yet)"
+            )
 
             // A periodic request is re-armed by WorkManager itself and survives reboots. The former
             // self-rescheduling one-time chain was a no-op: KEEP ignores new work while the current run is

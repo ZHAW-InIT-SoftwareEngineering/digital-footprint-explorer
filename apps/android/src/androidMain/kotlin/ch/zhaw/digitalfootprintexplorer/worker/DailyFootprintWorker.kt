@@ -69,9 +69,16 @@ class DailyFootprintWorker(
     params: WorkerParameters
 ) : CoroutineWorker(appContext, params) {
 
-    override suspend fun doWork(): Result = try {
+    override suspend fun doWork(): Result {
         // The periodic request carries no trigger, only runNow marks its runs.
         val trigger = inputData.getString(KEY_TRIGGER) ?: TRIGGER_PERIODIC
+        val result = runAndLog(trigger)
+        // Not reached when the system stops the run: WorkManager retries it, the pin follows that retry.
+        if (trigger == TRIGGER_PERIODIC) pinNextRunTo3am()
+        return result
+    }
+
+    private suspend fun runAndLog(trigger: String): Result = try {
         WorkerRunLog.append(appContext, "RUN_START", "trigger=$trigger attempt=$runAttemptCount")
         doWorkInternal()
     } catch (e: CancellationException) {
@@ -85,6 +92,28 @@ class DailyFootprintWorker(
         Result.failure(
             workDataOf(KEY_DEBUG_SUMMARY to "❌ ERROR: ${e::class.simpleName}: ${e.message}\n\n${e.stackTraceToString().take(800)}")
         )
+    }
+
+    /**
+     * WorkManager counts the 24h period from the end of the last run, so every run that doze delayed
+     * would push all following nights later (observed: 03:00 drifted to 07:57 within nine days). The
+     * override is used for the next run only, hence it is set again after every periodic run.
+     */
+    private fun pinNextRunTo3am() {
+        try {
+            // At least an hour ahead, so a run that starts shortly before 3 AM is not repeated the same night.
+            val nextRunMs = next3amAfter(System.currentTimeMillis() + TimeUnit.HOURS.toMillis(1))
+            val request = PeriodicWorkRequestBuilder<DailyFootprintWorker>(24, TimeUnit.HOURS)
+                .setId(id)
+                .setNextScheduleTimeOverride(nextRunMs)
+                .build()
+            val outcome = WorkManager.getInstance(appContext).updateWork(request).get()
+            val format = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.US)
+            WorkerRunLog.append(appContext, "NEXT_RUN_PINNED", "nextRun=${format.format(java.util.Date(nextRunMs))} result=$outcome")
+        } catch (e: Exception) {
+            Log.e(TAG, "Could not pin the next run to 3 AM", e)
+            WorkerRunLog.append(appContext, "NEXT_RUN_PIN_FAILED", "${e::class.simpleName}: ${e.message}")
+        }
     }
 
     private suspend fun doWorkInternal(): Result {
@@ -341,21 +370,8 @@ class DailyFootprintWorker(
 
         /** [source] only names the caller in the worker log, e.g. "process_start" or "boot". */
         fun scheduleNext(context: Context, source: String) {
-            val now = Calendar.getInstance()
-
-            val next3am = Calendar.getInstance().apply {
-                timeInMillis = now.timeInMillis
-                set(Calendar.HOUR_OF_DAY, 3)
-                set(Calendar.MINUTE, 0)
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
-
-                if (!after(now)) {
-                    add(Calendar.DAY_OF_YEAR, 1)
-                }
-            }
-
-            val delayMs = next3am.timeInMillis - now.timeInMillis
+            val nowMs = System.currentTimeMillis()
+            val delayMs = next3amAfter(nowMs) - nowMs
 
             Log.d(TAG, "Ensuring periodic worker: first run in ${delayMs}ms (3 AM), then every 24h")
             WorkerRunLog.append(
@@ -376,5 +392,15 @@ class DailyFootprintWorker(
                 request
             )
         }
+
+        /** The first 3 AM local time strictly after [afterMs]. */
+        internal fun next3amAfter(afterMs: Long): Long = Calendar.getInstance().apply {
+            timeInMillis = afterMs
+            set(Calendar.HOUR_OF_DAY, 3)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+            if (timeInMillis <= afterMs) add(Calendar.DAY_OF_YEAR, 1)
+        }.timeInMillis
     }
 }

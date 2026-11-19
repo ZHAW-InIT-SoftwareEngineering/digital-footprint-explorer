@@ -32,8 +32,10 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.work.CoroutineWorker
+import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
@@ -89,7 +91,6 @@ class DailyFootprintWorker(
         // do not re-run the calculation if it already calculated the footprint for yesterday
         if (alreadyCalculated) {
             Log.d(TAG, "Worker already ran for yesterday (${yesterday}) — skipping calculation")
-            scheduleNext(appContext)
             return Result.success()
         }
 
@@ -157,9 +158,6 @@ class DailyFootprintWorker(
         Log.d(TAG, "✅ Worker finished — widget updated")
 
         showDailyFootprintNotification(gardenState)
-
-        //reschedule the next worker
-        scheduleNext(appContext)
 
         return Result.success()
     }
@@ -326,24 +324,20 @@ class DailyFootprintWorker(
                 }
             }
 
-            var delayMs = next3am.timeInMillis - now.timeInMillis
+            val delayMs = next3am.timeInMillis - now.timeInMillis
 
-            // Sanity check: the delay should be between 0 and 24h, but in case of any clock issues we clamp it to 25h to avoid scheduling a worker far in the future or with a negative delay.
-            val maxDelayMs = TimeUnit.HOURS.toMillis(25)
-            if (delayMs !in 1..maxDelayMs) {
-                Log.w(TAG, "Computed delay $delayMs ms looks wrong — clamping to 24h")
-                delayMs = TimeUnit.HOURS.toMillis(24)
-            }
+            Log.d(TAG, "Ensuring periodic worker: first run in ${delayMs}ms (3 AM), then every 24h")
 
-            Log.d(TAG, "Rescheduling worker: delay=${delayMs}ms until 3 AM next time")
-
-            val request = OneTimeWorkRequestBuilder<DailyFootprintWorker>()
+            // A periodic request is re-armed by WorkManager itself and survives reboots. The former
+            // self-rescheduling one-time chain was a no-op: KEEP ignores new work while the current run is
+            // still active, so the chain ended after the first night.
+            val request = PeriodicWorkRequestBuilder<DailyFootprintWorker>(24, TimeUnit.HOURS)
                 .setInitialDelay(delayMs, TimeUnit.MILLISECONDS)
                 .build()
 
-            WorkManager.getInstance(context).enqueueUniqueWork(
+            WorkManager.getInstance(context).enqueueUniquePeriodicWork(
                 NEW_WORKER_NAME,
-                ExistingWorkPolicy.KEEP,
+                ExistingPeriodicWorkPolicy.KEEP,
                 request
             )
         }

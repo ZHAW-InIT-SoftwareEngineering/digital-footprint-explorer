@@ -2,7 +2,7 @@
 
 ## Privacy policy
 
-Last updated: 15 November 2026
+Last updated: 22 November 2026
 
 Digital Footprint Explorer helps you understand an estimated carbon footprint of your device use. Your settings, calculations and history are processed on your device. You do not need an app account.
 
@@ -88,9 +88,9 @@ These are local notifications prepared on your device. They do not use an app se
 
 You can turn Daily garden update off in the app or manage notification permission in device settings. Turning it off in the app cancels this feature's pending messages, but keeps its delivery dates to avoid repeats. Messages already shown in Notification Center remain until you clear them there. Turning notifications off does not disconnect Screen Time or delete your saved estimates. Disconnecting Screen Time leaves the separate reminder choice unchanged; turn Daily garden update off too if you do not want reminders.
 
-### Disconnecting Screen Time
+### Removing Screen Time access
 
-In Settings, choose Disconnect Screen Time to stop new imports and clear the app's saved choices. Your earlier daily estimates are kept so you can still review them. You can also manage the permission in your device settings.
+In DFE Settings, open Connection details. Choose Disconnect Screen Time if automatic estimates are connected, or Remove Screen Time access if only permission has been granted. Confirm to remove permission, stop new imports and clear the app's saved activity choices. Your earlier daily estimates stay available. You can also manage permission in iOS Settings.
 
 Disconnecting does not erase Apple's own Screen Time records. Deleting data in this app and removing Apple's permission are separate actions.
 
@@ -102,7 +102,7 @@ Choose Delete all entries in Settings to clear your history, saved app choices, 
 
 If automatic estimates were connected, they stay connected with the standard calculation settings. The app and widget ignore days before the reset. Shared storage uses a new setup marker so earlier work cannot restore deleted records. A paused widget stays paused.
 
-Delete all entries does not revoke Apple's Screen Time or notification permission. Use Disconnect Screen Time to remove activity access, and device notification settings to change notification permission.
+Delete all entries does not revoke Apple's Screen Time or notification permission. To remove Screen Time permission, use Connection details in DFE Settings. Change notification permission in iOS Settings.
 
 Deleting entries does not remove files you previously shared, copies held by other people, or older device backups. Removing the app also removes its local app storage; manage existing backups separately.
 

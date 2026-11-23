@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- STUDY: texts of the user study 2026, see study/README.md -->
+<resources>
+    <string name="study_share_title">Daten teilen</string>
+    <string name="study_code_label">Teilnehmercode (Pflichtfeld)</string>
+    <string name="study_code_description">Erstellen Sie Ihren Teilnehmercode. Verwenden Sie die ersten zwei Buchstaben des Vornamens Ihrer Mutter + Ihren Geburtstag (zwei Ziffern) + die letzten zwei Ziffern Ihrer Telefonnummer, zum Beispiel MA0732.</string>
+    <string name="study_code_invalid">Verwenden Sie zwei Buchstaben und danach vier Ziffern, zum Beispiel MA0732.</string>
+    <string name="study_share_button">Daten per E-Mail senden</string>
+    <string name="study_share_chooser">Studiendaten senden</string>
+    <string name="study_share_failed">Die Daten konnten nicht exportiert werden. Bitte versuchen Sie es erneut.</string>
+    <string name="study_mail_subject">DFE-Studiendaten %1$s</string>
+    <string name="study_mail_body">Teilnehmercode: %1$s\n\nIm Anhang sind meine Studiendaten aus dem Digital Footprint Explorer.</string>
+</resources>

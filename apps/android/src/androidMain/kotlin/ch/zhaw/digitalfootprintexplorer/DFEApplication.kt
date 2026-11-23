@@ -20,6 +20,7 @@ package ch.zhaw.digitalfootprintexplorer
 import android.app.Application
 import android.util.Log
 import androidx.work.WorkManager
+import ch.zhaw.digitalfootprintexplorer.database.DFEDatabase
 import ch.zhaw.digitalfootprintexplorer.database.DatabaseDriverFactory
 import ch.zhaw.digitalfootprintexplorer.database.createDatabase
 import ch.zhaw.digitalfootprintexplorer.model.GardenStateCalculator
@@ -27,6 +28,7 @@ import ch.zhaw.digitalfootprintexplorer.servicelayerplatform.service.BackgroundP
 import ch.zhaw.digitalfootprintexplorer.servicelayerplatform.service.DisplayBrightnessObserver
 import ch.zhaw.digitalfootprintexplorer.servicelayerplatform.service.TodayFootprintCalculator
 import ch.zhaw.digitalfootprintexplorer.servicelayerplatform.service.TrackingService
+import ch.zhaw.digitalfootprintexplorer.study.Study // STUDY:
 import ch.zhaw.digitalfootprintexplorer.util.OLD_WORKER_NAME_V2
 import ch.zhaw.digitalfootprintexplorer.util.WORKER_NAME
 import ch.zhaw.digitalfootprintexplorer.widget.GardenWidget
@@ -60,10 +62,15 @@ class DFEApplication : Application() {
     lateinit var todayFootprint: TodayFootprintCalculator
         private set
 
+    // STUDY: read by the study export (study/StudyExport.kt)
+    lateinit var database: DFEDatabase
+        private set
+
     override fun onCreate() {
         super.onCreate()
 
         val db = createDatabase(DatabaseDriverFactory(this))
+        database = db // STUDY:
         gardenStateCalculator = GardenStateCalculator(db)
 
         displayBrightnessObserver = DisplayBrightnessObserver(this)
@@ -78,6 +85,8 @@ class DFEApplication : Application() {
         WorkManager.getInstance(this).cancelUniqueWork(OLD_WORKER_NAME_V2)
         DailyFootprintWorker.scheduleNext(this, source = "process_start")
         WorkerRunLog.logProcessStart(this)
+
+        Study.onProcessStart(this) // STUDY: schedules the daily widget / notification check
     }
 
     private fun restoreWidgetIfUpdated() {

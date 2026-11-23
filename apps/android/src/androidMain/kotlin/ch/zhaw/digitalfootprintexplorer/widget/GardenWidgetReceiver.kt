@@ -17,9 +17,23 @@
 
 package ch.zhaw.digitalfootprintexplorer.widget
 
+import android.content.Context
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
+import ch.zhaw.digitalfootprintexplorer.study.Study // STUDY:
 
 class GardenWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = GardenWidget()
+
+    // STUDY: logs when the first widget is placed on the home screen
+    override fun onEnabled(context: Context) {
+        super.onEnabled(context)
+        Study.onWidgetAdded(context)
+    }
+
+    // STUDY: logs every removed widget
+    override fun onDeleted(context: Context, appWidgetIds: IntArray) {
+        super.onDeleted(context, appWidgetIds)
+        Study.onWidgetRemoved(context, appWidgetIds.size)
+    }
 }

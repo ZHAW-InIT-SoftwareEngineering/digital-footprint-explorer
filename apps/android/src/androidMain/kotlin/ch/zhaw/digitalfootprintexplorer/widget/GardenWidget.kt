@@ -44,6 +44,7 @@ import ch.zhaw.digitalfootprintexplorer.ui.theme.surfaceContainerLowDark
 import ch.zhaw.digitalfootprintexplorer.MainActivity
 import ch.zhaw.digitalfootprintexplorer.R
 import ch.zhaw.digitalfootprintexplorer.model.GardenState
+import ch.zhaw.digitalfootprintexplorer.study.Study // STUDY:
 
 class GardenWidget : GlanceAppWidget() {
 
@@ -66,7 +67,8 @@ class GardenWidget : GlanceAppWidget() {
             val prefs     = currentState<Preferences>()
             val stateName = prefs[KEY_STATE] ?: GardenState.FLOURISHING.name
             val state     = runCatching { GardenState.valueOf(stateName) }.getOrDefault(GardenState.FLOURISHING)
-            GardenContent(state)
+            // STUDY: STABLE during the baseline phase, also for a widget placed before the first calculation
+            GardenContent(Study.displayedGardenState(state) ?: state)
         }
     }
 

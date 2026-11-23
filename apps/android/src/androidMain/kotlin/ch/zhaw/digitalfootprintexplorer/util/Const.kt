@@ -18,4 +18,5 @@
 package ch.zhaw.digitalfootprintexplorer.util
 
 const val WORKER_NAME = "daily_footprint"
-const val NEW_WORKER_NAME = "daily_footprint_v2"
+const val NEW_WORKER_NAME = "daily_footprint_v3"
+const val OLD_WORKER_NAME_V2 = "daily_footprint_v2"

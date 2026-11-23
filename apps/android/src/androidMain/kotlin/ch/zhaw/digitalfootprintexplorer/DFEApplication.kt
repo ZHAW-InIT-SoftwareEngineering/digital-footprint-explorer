@@ -27,9 +27,11 @@ import ch.zhaw.digitalfootprintexplorer.servicelayerplatform.service.BackgroundP
 import ch.zhaw.digitalfootprintexplorer.servicelayerplatform.service.DisplayBrightnessObserver
 import ch.zhaw.digitalfootprintexplorer.servicelayerplatform.service.TodayFootprintCalculator
 import ch.zhaw.digitalfootprintexplorer.servicelayerplatform.service.TrackingService
+import ch.zhaw.digitalfootprintexplorer.util.OLD_WORKER_NAME_V2
 import ch.zhaw.digitalfootprintexplorer.util.WORKER_NAME
 import ch.zhaw.digitalfootprintexplorer.widget.GardenWidget
 import ch.zhaw.digitalfootprintexplorer.worker.DailyFootprintWorker
+import ch.zhaw.digitalfootprintexplorer.worker.WorkerRunLog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -73,7 +75,9 @@ class DFEApplication : Application() {
         TrackingService.start(this)
 
         WorkManager.getInstance(this).cancelUniqueWork(WORKER_NAME)
-        DailyFootprintWorker.scheduleNext(this)
+        WorkManager.getInstance(this).cancelUniqueWork(OLD_WORKER_NAME_V2)
+        DailyFootprintWorker.scheduleNext(this, source = "process_start")
+        WorkerRunLog.logProcessStart(this)
     }
 
     private fun restoreWidgetIfUpdated() {

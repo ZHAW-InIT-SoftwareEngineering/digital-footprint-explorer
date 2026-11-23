@@ -38,10 +38,11 @@ struct AutomaticOnboardingView: View {
         #endif
     }
     private var hasDataAccess: Bool { Self.isControlledPreview ? previewConnected : service.state.canImport }
+    private var reportOnly: Bool { service.state == .reportOnly }
     private var presentedAccessState: ScreenTimeState {
         #if DEBUG
-        if Self.isControlledPreview {
-            // [03] Only the separate test screen changes these words; it never changes Apple's permission.
+        if Self.isControlledPreview && !reportOnly {
+            // The setup preview starts from the requested scenario even when test data is already saved.
             return ProcessInfo.processInfo.arguments.contains("-ui-revoked-preview") ? .revoked : .notRequested
         }
         #endif
@@ -62,77 +63,108 @@ struct AutomaticOnboardingView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    if !textSize.isAccessibilitySize {
-                        GardenArtwork(state: .stable).frame(height: 110).frame(maxWidth: .infinity)
-                    }
-                    Text("Let your garden follow your day")
-                        .font(.title2.bold()).fixedSize(horizontal: false, vertical: true)
-                    Text("A little space to notice your device habits, one day at a time. Allow Screen Time once and leave the daily estimates to the app. No app selection or daily forms.")
-                        .fixedSize(horizontal: false, vertical: true)
-                    VStack(alignment: .leading, spacing: 12) {
-                        Label("Your activity stays on this device", systemImage: "lock.shield")
-                            .font(.subheadline.weight(.semibold))
-                            .accessibilityIdentifier("automatic.localPrivacy")
-                        Text("Screen Time supplies available app usage from this device. Carbon emissions, data traffic and the other calculation inputs remain estimates.")
-                            .accessibilityIdentifier("automatic.estimateScope")
-                        Text("Your first estimate waits for a completed day and usable activity from Apple. Until then, your garden will wait with you.")
-                            .accessibilityIdentifier("automatic.firstCompletedDay")
-                    }.font(.subheadline).fixedSize(horizontal: false, vertical: true)
-                    NavigationLink { PrivacyPolicyView(publicURL: ReleaseLinks.privacyPolicy) } label: {
-                        Label("Read the privacy policy", systemImage: "hand.raised")
-                            .frame(minHeight: 44).fixedSize(horizontal: false, vertical: true)
-                    }.accessibilityIdentifier("automatic.privacy")
-                    if !hasDataAccess {
-                        VStack(alignment: .leading, spacing: 12) {
-                            // [04] The button explains reconnection. If access is limited, also explain why automatic input cannot start.
-                            if presentedAccessState != .notRequested && presentedAccessState != .revoked {
-                                Text(appLanguage.text(presentedAccessState.title)).font(.headline)
-                                Text(appLanguage.text(presentedAccessState.explanation)).fixedSize(horizontal: false, vertical: true)
-                            }
-                            if service.supportsAutomaticSetup || Self.isControlledPreview {
-                                Button { start(with: assumptions) } label: {
-                                    HStack(spacing: 10) {
-                                        Text(appLanguage.text(connectionActionTitle)).font(.headline)
-                                        if service.isRequesting { ProgressView().accessibilityHidden(true) }
-                                    }.frame(maxWidth: .infinity, minHeight: 24)
-                                        .fixedSize(horizontal: false, vertical: true)
-                                }.modifier(TodayActionStyle()).controlSize(.large)
-                                    .disabled(service.isRequesting)
-                                    .accessibilityHint(appLanguage.text(connectionActionHint))
-                                    .accessibilityIdentifier("automatic.connect")
-                            } else {
-                                Text("Automatic input needs a supported build, iOS 26.4 or later and Apple's expanded Screen Time access. Access for App Store customers also depends on Apple's EU conditions.")
-                                    .font(.subheadline).fixedSize(horizontal: false, vertical: true)
-                                    .accessibilityIdentifier("automatic.unavailable")
-                            }
-                            if let error = service.lastError { Text(appLanguage.screenTimeMessage(error)).font(.footnote) }
-                        }
-                    } else {
-                        Button { start(with: assumptions) } label: {
-                            Text("Start automatic estimates").font(.headline)
-                                .frame(maxWidth: .infinity, minHeight: 24)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }.modifier(TodayActionStyle()).controlSize(.large)
-                            .accessibilityIdentifier("automatic.start")
-                    }
-                    Text("You can disconnect in Settings whenever you like. There is no account to create and no daily target to meet.")
-                        .font(.footnote).foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-
-
-                }.padding(20).frame(maxWidth: 680).frame(maxWidth: .infinity)
-            }.background(FootprintAppearance.page)
-                .onDisappear { activationTask?.cancel() }
-                .navigationTitle("Automatic setup").navigationBarTitleDisplayMode(.inline)
-                .toolbar { ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                } }
-                .alert("Could not start automatic input", isPresented: Binding(
-                    get: { error != nil }, set: { if !$0 { error = nil } }
-                )) { Button("OK") { error = nil } } message: { Text(appLanguage.text(error ?? "")) }
+            Group {
+                if reportOnly {
+                    limitedAccessAction
+                } else {
+                    setupContent
+                }
+            }
+            .background(FootprintAppearance.page)
+            .onDisappear { activationTask?.cancel() }
+            .navigationTitle("Automatic setup").navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .cancellationAction) {
+                Button(appLanguage.text(reportOnly ? "Done" : "Cancel")) { dismiss() }
+            } }
+            .alert("Could not start automatic input", isPresented: Binding(
+                get: { error != nil }, set: { if !$0 { error = nil } }
+            )) { Button("OK") { error = nil } } message: { Text(appLanguage.text(error ?? "")) }
         }
+    }
+
+    private var limitedAccessAction: some View {
+        Link(destination: ReleaseLinks.support ?? DeviceHelpLinks.screenTime(language: appLanguage)) {
+            Text("Get Screen Time help")
+                .font(.headline)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, minHeight: 28)
+        }
+        .modifier(TodayActionStyle()).controlSize(.large)
+        .accessibilityIdentifier("automatic.support")
+        .frame(maxWidth: 320)
+        .padding(20)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("automatic.limitedAccess")
+    }
+
+    private var setupContent: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                if !textSize.isAccessibilitySize {
+                    GardenArtwork(state: .stable).frame(height: 110).frame(maxWidth: .infinity)
+                }
+                Text("Let your garden follow your day")
+                    .font(.title2.bold()).fixedSize(horizontal: false, vertical: true)
+                Text("A little space to notice your device habits, one day at a time. Allow Screen Time once and leave the daily estimates to the app. No app selection or daily forms.")
+                    .fixedSize(horizontal: false, vertical: true)
+                VStack(alignment: .leading, spacing: 12) {
+                    Label("Your activity stays on this device", systemImage: "lock.shield")
+                        .font(.subheadline.weight(.semibold))
+                        .accessibilityIdentifier("automatic.localPrivacy")
+                    Text("Screen Time supplies available app usage from this device. Carbon emissions, data traffic and the other calculation inputs remain estimates.")
+                        .accessibilityIdentifier("automatic.estimateScope")
+                    Text("Your first estimate waits for a completed day and usable activity from Apple. Until then, your garden will wait with you.")
+                        .accessibilityIdentifier("automatic.firstCompletedDay")
+                }.font(.subheadline).fixedSize(horizontal: false, vertical: true)
+                NavigationLink { PrivacyPolicyView(publicURL: ReleaseLinks.privacyPolicy) } label: {
+                    Label("Read the privacy policy", systemImage: "hand.raised")
+                        .frame(minHeight: 44).fixedSize(horizontal: false, vertical: true)
+                }.accessibilityIdentifier("automatic.privacy")
+                if hasDataAccess {
+                    activationButton("Start automatic estimates")
+                        .accessibilityIdentifier("automatic.start")
+                        .frame(maxWidth: .infinity)
+                } else {
+                    VStack(alignment: .leading, spacing: 12) {
+                        if presentedAccessState != .notRequested && presentedAccessState != .revoked {
+                            Text(appLanguage.text(presentedAccessState.title)).font(.headline)
+                            Text(appLanguage.text(presentedAccessState.explanation))
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        if service.supportsAutomaticSetup || Self.isControlledPreview {
+                            activationButton(connectionActionTitle)
+                                .accessibilityHint(appLanguage.text(connectionActionHint))
+                                .accessibilityIdentifier("automatic.connect")
+                                .frame(maxWidth: .infinity)
+                        } else {
+                            Text("Automatic input needs a supported build, iOS 26.4 or later and Apple's expanded Screen Time access. Access for App Store customers also depends on Apple's EU conditions.")
+                                .font(.subheadline).fixedSize(horizontal: false, vertical: true)
+                                .accessibilityIdentifier("automatic.unavailable")
+                        }
+                        if let error = service.lastError { Text(appLanguage.screenTimeMessage(error)).font(.footnote) }
+                    }
+                }
+                Text("You can disconnect in Settings whenever you like. There is no account to create and no daily target to meet.")
+                    .font(.footnote).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }.padding(20).frame(maxWidth: 680).frame(maxWidth: .infinity)
+        }
+    }
+
+    private func activationButton(_ title: String) -> some View {
+        Button { start(with: assumptions) } label: {
+            HStack(spacing: 10) {
+                Text(appLanguage.text(title)).font(.headline).multilineTextAlignment(.center)
+                if service.isRequesting { ProgressView().accessibilityHidden(true) }
+            }
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, minHeight: 28)
+        }
+        .modifier(TodayActionStyle()).controlSize(.large)
+        .disabled(service.isRequesting)
+        .frame(maxWidth: 360)
     }
 
     // [05] A second tap replaces the earlier start attempt, rather than opening two permission requests.

@@ -62,6 +62,7 @@ final class LanguageUITests: XCTestCase {
         XCTAssertTrue(app.tabBars.buttons["Heute"].waitForExistence(timeout: 12))
         XCTAssertTrue(app.navigationBars["Heute"].waitForExistence(timeout: 8))
         XCTAssertEqual(app.buttons["onboarding.automatic"].label, "Automatische Einrichtung")
+        XCTAssertEqual(app.staticTexts["today.welcome"].label, "Willkommen in deinem Garten")
 
         choose("language.en", using: "Einstellungen", in: app)
         returnToSettings(from: "App language", expecting: "Settings", in: app)
@@ -72,6 +73,7 @@ final class LanguageUITests: XCTestCase {
         XCTAssertTrue(app.tabBars.buttons["Today"].waitForExistence(timeout: 12))
         XCTAssertTrue(app.navigationBars["Today"].waitForExistence(timeout: 8))
         XCTAssertEqual(app.buttons["onboarding.automatic"].label, "Automatic setup")
+        XCTAssertEqual(app.staticTexts["today.welcome"].label, "Welcome to your garden")
     }
 
     private func choose(_ identifier: String, using settingsTitle: String, in app: XCUIApplication) {

@@ -172,6 +172,63 @@ final class AutomaticOnboardingUITests: XCTestCase {
         AutomaticUITestSupport.capture("Offline privacy contact at largest text")
     }
 
+    func testReportOnlyAccessOffersHelpWithoutSavingSetup() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-ui-testing", "-reset-ui-state", "-ui-reset-appearance",
+                               "-ui-automatic-preview", "-ui-report-only-preview"]
+        app.launch()
+
+        let settings = app.tabBars.buttons["Settings"]
+        XCTAssertTrue(settings.waitForExistence(timeout: 8))
+        settings.tap()
+        let status = AutomaticUITestSupport.reachSettings("screen-time.status", in: app)
+        XCTAssertEqual(status.label, "Report access only")
+        let access = AutomaticUITestSupport.reachSettings("settings.automaticSetup", in: app)
+        XCTAssertEqual(access.label, "Screen Time access")
+        access.tap()
+
+        let setup = app.navigationBars["Automatic setup"]
+        XCTAssertTrue(setup.waitForExistence(timeout: 8))
+        let content = AutomaticUITestSupport.element("automatic.limitedAccess", in: app)
+        let support = AutomaticUITestSupport.element("automatic.support", in: content)
+        XCTAssertTrue(support.waitForExistence(timeout: 5))
+        XCTAssertEqual(support.label, "Get Screen Time help")
+        XCTAssertTrue(support.isHittable)
+        XCTAssertGreaterThanOrEqual(support.frame.height, 44)
+        XCTAssertLessThanOrEqual(support.frame.width, 320)
+        let window = app.windows.firstMatch.frame
+        XCTAssertEqual(support.frame.midX, window.midX, accuracy: 2)
+        XCTAssertEqual(support.frame.midY, (setup.frame.maxY + window.maxY) / 2, accuracy: 36)
+        XCTAssertFalse(app.staticTexts["Report access only"].exists)
+        XCTAssertFalse(app.buttons["automatic.connect"].exists)
+        XCTAssertFalse(app.buttons["automatic.start"].exists)
+        AutomaticUITestSupport.capture("Centred Screen Time help with limited access")
+
+        setup.buttons["Done"].tap()
+        XCTAssertEqual(AutomaticUITestSupport.reachSettings("screen-time.status", in: app).label,
+                       "Report access only")
+        XCTAssertFalse(setup.exists)
+
+        AutomaticUITestSupport.reachSettings("screen-time.management", in: app).tap()
+        let remove = AutomaticUITestSupport.reachSettings("screen-time-removeAccess", in: app)
+        XCTAssertEqual(remove.label, "Remove Screen Time access")
+        XCTAssertFalse(AutomaticUITestSupport.element("screen-time-disconnect", in: app).exists)
+        remove.tap()
+        let confirmation = app.alerts["Remove Screen Time access?"]
+        XCTAssertTrue(confirmation.waitForExistence(timeout: 8))
+        XCTAssertTrue(confirmation.buttons["Remove access"].firstMatch.exists)
+        XCTAssertFalse(confirmation.buttons["Disconnect"].firstMatch.exists)
+        confirmation.buttons["Cancel"].firstMatch.tap()
+        XCTAssertEqual(AutomaticUITestSupport.reachSettings("screen-time.status", in: app).label,
+                       "Report access only")
+
+        app.tabBars.buttons["Today"].tap()
+        XCTAssertTrue(app.buttons["onboarding.automatic"].waitForExistence(timeout: 8))
+        XCTAssertFalse(app.staticTexts["footprint.total"].exists)
+        app.tabBars.buttons["History"].tap()
+        XCTAssertTrue(app.staticTexts["history.empty"].waitForExistence(timeout: 8))
+    }
+
     private func assertSetupExplanation(in app: XCUIApplication) {
         let privacyHeading = AutomaticUITestSupport.element("automatic.localPrivacy", in: app)
         AutomaticUITestSupport.reach(privacyHeading, in: app)

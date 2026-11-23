@@ -51,10 +51,17 @@
       <p>DFE uses the app activity Apple makes available, without daily forms or individual app selection. If the app loses access, open the same section in Settings and choose <strong>Reconnect Screen Time</strong> when it appears.</p>
     </section>
 
+    <section id="limited-access" class="card">
+      <h2>What does Report access only mean?</h2>
+      <p>iOS gave DFE basic Screen Time permission. Automatic estimates need expanded access to read app usage. As long as access stays limited, DFE cannot start automatic estimates. You can close setup and still view any saved estimates.</p>
+      <p>To withdraw this permission, open <strong>Connection details</strong> in DFE Settings and choose <strong>Remove Screen Time access</strong>.</p>
+      <p>For App Store downloads, Apple requires an iPhone in the EU and an Apple Account set to an EU country or region. A development profile can let a build use expanded access in Switzerland. Availability for Swiss TestFlight and App Store users is still awaiting confirmation. <a href="https://developer.apple.com/documentation/familycontrols/authorizationstatus/approvedwithdataaccess">Read Apple's Screen Time access requirements</a>.</p>
+    </section>
+
     <section class="card">
       <h2>Why has no daily result appeared yet?</h2>
       <p>Your first estimate can appear after your setup day ends and Apple provides usable app activity. iOS controls when background updates run. If a day is still pending, check your Screen Time connection in DFE and try opening the app again later.</p>
-      <p>If expanded access is unavailable, DFE keeps new days pending and shows any earlier saved estimates. This version does not support entering usage manually. Apple's published requirements for App Store users include both an iPhone located in the EU and an Apple Account set to an EU country or region. Our Swiss tests used development access. <a href="https://developer.apple.com/documentation/familycontrols/authorizationstatus/approvedwithdataaccess">Read Apple's Screen Time access requirements</a>.</p>
+      <p>If DFE shows <a href="#limited-access">Report access only</a>, waiting for another day will leave the setup incomplete as long as the permission stays limited. This version needs expanded access to import usage and does not support entering it manually.</p>
     </section>
 
     <section class="card">
@@ -111,7 +118,7 @@
       <p>For privacy or support questions, contact the DFE Team at <a href="mailto:digital-footprint-explorer.init@zhaw.ch">digital-footprint-explorer.init@zhaw.ch</a>.</p>
       <p>Include your app version, iOS version and the steps that led to the problem. For an import or widget issue, tell us whether <strong>Screen Time</strong> shows <strong>Connected</strong> in DFE Settings and whether the same completed day appears in <strong>Today</strong> and on the Home Screen widget. Keep Screen Time history, passwords and device identifiers out of your message.</p>
       <p>The DFE Team is part of the ZHAW School of Engineering. The <a href="privacy-policy.html#website-support">iOS privacy policy</a> explains how this site and support email handle data.</p>
-      <p class="muted">Last updated <time datetime="2026-11-15">15 November 2026</time>.</p>
+      <p class="muted">Last updated <time datetime="2026-11-17">17 November 2026</time>.</p>
     </section>
   </main>
 

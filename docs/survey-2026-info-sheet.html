@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Information for participants in the 2026 Digital Footprint Explorer user study: what happens, what data is recorded and how ZHAW handles it." />
+  <title>Study information — Digital Footprint Explorer</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="ios-pages.css" />
+  <script src="ios-pages.js" defer></script>
+  <style>
+    /* [01] Both language versions live in this file; the script below shows one of them. */
+    .lang-switch {
+      display: flex;
+      justify-content: center;
+      gap: .5rem;
+      margin-block-end: clamp(1rem, 2.5vw, 1.5rem);
+    }
+    .dfe-site .lang-switch a {
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
+      padding: .375rem 1rem;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      color: var(--text);
+      font-size: .875rem;
+      text-decoration: none;
+    }
+    .dfe-site .lang-switch a[aria-current="true"] {
+      background: var(--zhaw-blue);
+      border-color: var(--zhaw-blue);
+      color: #fff;
+      font-weight: 600;
+    }
+    /* [02] Without JavaScript both versions are shown, one after the other. */
+    .lang-version + .lang-version { margin-block-start: 3rem; }
+    @media print { .lang-switch { display: none; } }
+  </style>
+</head>
+<body class="dfe-site">
+  <a class="skip-link" href="#study-content">Skip to study information</a>
+  <header class="site-header">
+    <div class="site-bar">
+      <a class="site-brand" href="index.html" aria-label="Digital Footprint Explorer home">
+        <img src="images/zhaw_rgb.png" alt="ZHAW" />
+      </a>
+      <strong class="site-title">Digital Footprint Explorer</strong>
+      <nav class="site-nav" aria-label="Project pages">
+        <a href="index.html">Project</a>
+        <a href="support-ios.html">iOS support</a>
+        <a href="privacy-policy.html">iOS privacy</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="study-content" class="container site-content reading-width" tabindex="-1">
+    <nav class="lang-switch" aria-label="Language / Sprache">
+      <a href="#en" hreflang="en" lang="en" data-lang="en">English</a>
+      <a href="#de" hreflang="de" lang="de" data-lang="de">Deutsch</a>
+    </nav>
+
+    <div id="en" class="lang-version" lang="en">
+    <section class="page-intro">
+      <h1>Take part in our smartphone study</h1>
+      <p>
+        Researchers at the Zurich University of Applied Sciences (ZHAW) study how people use their smartphones and
+        how a research app can make the environmental footprint of that use visible. Please read this page before
+        you decide whether to take part.
+      </p>
+      <p class="muted">Information for participants · Version 1, <time datetime="2026-11-23">23 November 2026</time></p>
+      <nav class="topic-links" aria-label="Study topics">
+        <a href="#what-happens">What happens</a>
+        <a href="#data-recorded">What DFE records</a>
+        <a href="#your-data">Your data</a>
+        <a href="#contact">Contact</a>
+      </nav>
+    </section>
+
+    <section class="card card-highlight">
+      <h2>In short</h2>
+      <ul>
+        <li>You use the app <strong>Digital Footprint Explorer (DFE)</strong> on your Android phone for <strong>4 weeks</strong>.</li>
+        <li>You answer a questionnaire before (about 10 minutes) and after (about 15–20 minutes) that period.</li>
+        <li>DFE calculates everything on your phone. Only the questionnaires and a data file that you send yourself reach the study team.</li>
+        <li>You must be at least 18 years old and use an Android phone as your main phone.</li>
+        <li>Taking part is voluntary and unpaid. You can stop at any time without giving a reason.</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>Who runs the study</h2>
+      <p>
+        The study is run by the DFE Team at the ZHAW School of Engineering, Institute of Computer Science (InIT),
+        Winterthur. The person responsible is Dr. Michael Wahler. The results will be used for a scientific
+        publication on eco-feedback for digital behavior.
+      </p>
+      <p>
+        We want to find out how people perceive DFE, whether they understand its feedback, and whether it affects
+        their awareness and their smartphone use. There are no right or wrong answers, and we are not judging your
+        smartphone use.
+      </p>
+    </section>
+
+    <section id="what-happens" class="card">
+      <h2>What happens</h2>
+      <ol>
+        <li><strong>Before you start:</strong> you read this page, give your consent and fill in the first questionnaire. You create a personal code so that we can link your answers without knowing your name.</li>
+        <li><strong>Install DFE:</strong> you install the app from Google Play and allow usage access. DFE then runs in the background.</li>
+        <li><strong>Week 1:</strong> DFE records your phone use but does not show any feedback yet.</li>
+        <li><strong>Weeks 2–4:</strong> DFE shows a digital garden in the app and as a widget on your Home Screen. The garden compares each day with your own recent days. DFE may also send you short notifications. Use your phone as you normally would.</li>
+        <li><strong>At the end:</strong> you export your DFE data in the app, send the file to us together with your code, and fill in the second questionnaire. You can then uninstall DFE or keep using it.</li>
+        <li><strong>Optional:</strong> if you agree, we may invite you to a 20-minute interview, and to a short follow-up questionnaire four weeks later.</li>
+      </ol>
+    </section>
+
+    <section id="data-recorded" class="card">
+      <h2>What DFE records</h2>
+      <div class="platforms">
+        <section>
+          <h3>DFE records</h3>
+          <ul>
+            <li>How long each app is in the foreground</li>
+            <li>How much data each app sends and receives, split into Wi-Fi and mobile data</li>
+            <li>The category of each app, such as video streaming, social media or messaging</li>
+            <li>Screen brightness and when the screen is on or off</li>
+            <li>Whether location services (GPS) and Bluetooth are switched on</li>
+          </ul>
+        </section>
+        <section>
+          <h3>DFE does not record</h3>
+          <ul>
+            <li>The content of your messages, emails, photos or videos</li>
+            <li>The websites you visit</li>
+            <li>Your location or where you have been</li>
+            <li>Your contacts, passwords or accounts</li>
+          </ul>
+        </section>
+      </div>
+      <p>
+        From this data, DFE estimates daily greenhouse gas emissions in carbon dioxide equivalents (CO₂e) and stores the
+        results on your phone. The file you send us contains daily estimates per category (for example, video streaming)
+        and the garden states, not a list of the individual apps you used.
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>Permissions, burden and risks</h2>
+      <ul>
+        <li>DFE needs the Android permission <strong>usage access</strong> to see which apps are used and how much data they transfer.</li>
+        <li>While DFE runs, Android shows a permanent notification. This is required for apps that work in the background.</li>
+        <li>DFE is designed to use little energy, but your battery may run down slightly faster.</li>
+        <li>Seeing a wilting garden may feel unpleasant. The garden is a reflection aid, not a judgment.</li>
+        <li>The questionnaires take about 30 minutes in total.</li>
+      </ul>
+      <p>
+        There is no payment for taking part. At the end of the study you can see your own footprint estimates, and we
+        will send you a summary of the results if you wish.
+      </p>
+    </section>
+
+    <section id="your-data" class="card">
+      <h2>How we handle your data</h2>
+      <ul>
+        <li><strong>Pseudonymous:</strong> your questionnaire answers and your data file are linked only by your personal code. We do not ask for your name. If you agree to an interview, your contact details are stored separately from your answers.</li>
+        <li><strong>Stored at ZHAW:</strong> the data is stored on ZHAW systems in Switzerland. Only the study team has access.</li>
+        <li><strong>Published anonymously:</strong> publications only contain aggregated results, such as averages. Quotes from your written answers are used only if you agree, and never with information that could identify you.</li>
+        <li><strong>Deleted:</strong> data that can be linked to your code is deleted by December 31st, 2027. Interview recordings are deleted once they have been transcribed.</li>
+      </ul>
+      <p class="muted">
+        Data processing follows the Swiss Federal Act on Data Protection (FADP).
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>Taking part is voluntary</h2>
+      <p>
+        You decide freely whether to take part. You can stop at any time without giving a reason and without any
+        disadvantage. If you are a ZHAW student, taking part or not has no effect on your grades or your studies.
+      </p>
+      <p>
+        To withdraw, simply stop and uninstall DFE. If you also want us to delete the data you have already sent,
+        email us your personal code. We can delete your data until December 31st, 2027, when the data is
+        anonymized for analysis. After that date, it can no longer be linked to you.
+      </p>
+    </section>
+
+    <section id="contact" class="card">
+      <h2>Contact</h2>
+      <div class="platforms contact-options">
+        <div class="contact-option">
+          <h3>Questions about the study</h3>
+          <p>Ask us about the procedure, the app or your data, or request deletion with your personal code.</p>
+          <a href="mailto:digital-footprint-explorer.init@zhaw.ch">digital-footprint-explorer.init@zhaw.ch</a>
+        </div>
+        <div class="contact-option">
+          <h3>Person responsible</h3>
+          <p>Dr. Michael Wahler, ZHAW School of Engineering, Institute of Computer Science (InIT), Winterthur</p>
+          <a href="mailto:wahl@zhaw.ch">wahl@zhaw.ch</a>
+        </div>
+      </div>
+    </section>
+    </div>
+
+    <div id="de" class="lang-version" lang="de">
+      <section class="page-intro">
+        <h1>Nehmen Sie an unserer Smartphone-Studie teil</h1>
+        <p>
+          Forschende der Zürcher Hochschule für Angewandte Wissenschaften (ZHAW) untersuchen, wie Menschen ihr
+          Smartphone nutzen und wie eine Forschungs-App den ökologischen Fussabdruck dieser Nutzung sichtbar machen
+          kann. Bitte lesen Sie diese Seite, bevor Sie entscheiden, ob Sie teilnehmen möchten.
+        </p>
+        <p class="muted">Information für Teilnehmende · Version 1, <time datetime="2026-11-23">23. November 2026</time></p>
+        <nav class="topic-links" aria-label="Themen der Studie">
+          <a href="#ablauf">Ablauf</a>
+          <a href="#erfasste-daten">Was DFE erfasst</a>
+          <a href="#ihre-daten">Ihre Daten</a>
+          <a href="#einwilligung">Ihre Einwilligung</a>
+          <a href="#kontakt">Kontakt</a>
+        </nav>
+      </section>
+
+      <section class="card card-highlight">
+        <h2>In Kürze</h2>
+        <ul>
+          <li>Sie nutzen die App <strong>Digital Footprint Explorer (DFE)</strong> während <strong>4 Wochen</strong> auf Ihrem Android-Smartphone.</li>
+          <li>Vorher (ca. 10 Minuten) und nachher (ca. 15–20 Minuten) beantworten Sie einen Fragebogen.</li>
+          <li>DFE berechnet alles auf Ihrem Smartphone. Das Studienteam erhält nur die Fragebögen und eine Datei, die Sie selbst senden.</li>
+          <li>Sie müssen mindestens 18 Jahre alt sein und ein Android-Smartphone als Hauptgerät verwenden.</li>
+          <li>Die Teilnahme ist freiwillig und unbezahlt. Sie können jederzeit ohne Angabe von Gründen aufhören.</li>
+        </ul>
+      </section>
+
+      <section class="card">
+        <h2>Wer die Studie durchführt</h2>
+        <p>
+          Die Studie wird vom DFE-Team der ZHAW School of Engineering, Institut für Informatik (InIT), in Winterthur
+          durchgeführt. Verantwortlich ist Dr. Michael Wahler. Die Ergebnisse werden für eine wissenschaftliche
+          Publikation über Eco-Feedback zu digitalem Verhalten verwendet.
+        </p>
+        <p>
+          Wir möchten herausfinden, wie Menschen DFE wahrnehmen, ob sie die Rückmeldungen der App verstehen und ob die
+          App ihr Bewusstsein und ihre Smartphone-Nutzung beeinflusst. Es gibt keine richtigen oder falschen Antworten,
+          und wir bewerten Ihre Smartphone-Nutzung nicht.
+        </p>
+      </section>
+
+      <section id="ablauf" class="card">
+        <h2>Ablauf</h2>
+        <ol>
+          <li><strong>Vor dem Start:</strong> Sie lesen diese Seite, geben Ihre Einwilligung und füllen den ersten Fragebogen aus. Sie erstellen einen persönlichen Code, damit wir Ihre Antworten verknüpfen können, ohne Ihren Namen zu kennen.</li>
+          <li><strong>DFE installieren:</strong> Sie installieren die App über Google Play und erlauben den Zugriff auf Nutzungsdaten. DFE läuft danach im Hintergrund.</li>
+          <li><strong>Woche 1:</strong> DFE erfasst Ihre Smartphone-Nutzung, zeigt aber noch keine Rückmeldung an.</li>
+          <li><strong>Wochen 2–4:</strong> DFE zeigt in der App und als Widget auf Ihrem Startbildschirm einen digitalen Garten. Der Garten vergleicht jeden Tag mit Ihren eigenen vorangegangenen Tagen. DFE kann Ihnen zudem kurze Benachrichtigungen senden. Nutzen Sie Ihr Smartphone wie gewohnt.</li>
+          <li><strong>Zum Schluss:</strong> Sie exportieren Ihre DFE-Daten in der App, senden uns die Datei zusammen mit Ihrem Code und füllen den zweiten Fragebogen aus. Danach können Sie DFE deinstallieren oder weiter nutzen.</li>
+          <li><strong>Optional:</strong> Wenn Sie einverstanden sind, laden wir Sie zu einem 20-minütigen Interview und vier Wochen später zu einem kurzen Nachfolgefragebogen ein.</li>
+        </ol>
+      </section>
+
+      <section id="erfasste-daten" class="card">
+        <h2>Was DFE erfasst</h2>
+        <div class="platforms">
+          <section>
+            <h3>DFE erfasst</h3>
+            <ul>
+              <li>Wie lange jede App im Vordergrund ist</li>
+              <li>Wie viele Daten jede App sendet und empfängt, getrennt nach WLAN und mobilen Daten</li>
+              <li>Die Kategorie jeder App, zum Beispiel Video-Streaming, soziale Medien oder Messaging</li>
+              <li>Die Bildschirmhelligkeit und wann der Bildschirm ein- oder ausgeschaltet ist</li>
+              <li>Ob Standortdienste (GPS) und Bluetooth eingeschaltet sind</li>
+            </ul>
+          </section>
+          <section>
+            <h3>DFE erfasst nicht</h3>
+            <ul>
+              <li>Den Inhalt Ihrer Nachrichten, E-Mails, Fotos oder Videos</li>
+              <li>Die Websites, die Sie besuchen</li>
+              <li>Ihren Standort oder wo Sie sich aufgehalten haben</li>
+              <li>Ihre Kontakte, Passwörter oder Konten</li>
+            </ul>
+          </section>
+        </div>
+        <p>
+          Aus diesen Daten schätzt DFE die täglichen Treibhausgasemissionen in CO₂-Äquivalenten (CO₂e) und speichert die
+          Ergebnisse auf Ihrem Smartphone. Die Datei, die Sie uns senden, enthält tägliche Schätzungen pro Kategorie
+          (zum Beispiel Video-Streaming) und die Gartenzustände, aber keine Liste der einzelnen Apps, die Sie genutzt haben.
+        </p>
+      </section>
+
+      <section class="card">
+        <h2>Berechtigungen, Aufwand und Risiken</h2>
+        <ul>
+          <li>DFE benötigt die Android-Berechtigung <strong>Zugriff auf Nutzungsdaten</strong>, um zu sehen, welche Apps genutzt werden und wie viele Daten sie übertragen.</li>
+          <li>Solange DFE läuft, zeigt Android eine dauerhafte Benachrichtigung an. Das ist für Apps vorgeschrieben, die im Hintergrund arbeiten.</li>
+          <li>DFE ist auf einen geringen Energieverbrauch ausgelegt, Ihr Akku kann sich aber etwas schneller entladen.</li>
+          <li>Ein welkender Garten kann sich unangenehm anfühlen. Der Garten soll zum Nachdenken anregen und ist keine Bewertung.</li>
+          <li>Die Fragebögen dauern insgesamt etwa 30 Minuten.</li>
+        </ul>
+        <p>
+          Die Teilnahme wird nicht vergütet. Am Ende der Studie können Sie Ihre eigenen Schätzungen einsehen, und auf
+          Wunsch senden wir Ihnen eine Zusammenfassung der Ergebnisse.
+        </p>
+      </section>
+
+      <section id="ihre-daten" class="card">
+        <h2>Wie wir mit Ihren Daten umgehen</h2>
+        <ul>
+          <li><strong>Pseudonymisiert:</strong> Ihre Antworten in den Fragebögen und Ihre Datendatei werden nur über Ihren persönlichen Code verknüpft. Wir fragen nicht nach Ihrem Namen. Wenn Sie einem Interview zustimmen, werden Ihre Kontaktdaten getrennt von Ihren Antworten gespeichert.</li>
+          <li><strong>An der ZHAW gespeichert:</strong> Die Daten werden auf Systemen der ZHAW in der Schweiz gespeichert. Nur das Studienteam hat Zugriff.</li>
+          <li><strong>Anonym veröffentlicht:</strong> Publikationen enthalten nur zusammengefasste Ergebnisse, zum Beispiel Durchschnittswerte. Zitate aus Ihren schriftlichen Antworten verwenden wir nur mit Ihrem Einverständnis und nie zusammen mit Angaben, die Sie identifizieren könnten.</li>
+          <li><strong>Gelöscht:</strong> Daten, die mit Ihrem Code verknüpft werden können, werden bis 31. Dezember 2027 gelöscht. Interviewaufnahmen werden gelöscht, sobald sie transkribiert sind.</li>
+        </ul>
+        <p class="muted">
+          Die Datenbearbeitung richtet sich nach dem Bundesgesetz über den Datenschutz (DSG).
+        </p>
+      </section>
+
+      <section class="card">
+        <h2>Die Teilnahme ist freiwillig</h2>
+        <p>
+          Sie entscheiden frei, ob Sie teilnehmen. Sie können jederzeit ohne Angabe von Gründen und ohne Nachteile
+          aufhören. Wenn Sie an der ZHAW studieren, hat Ihre Teilnahme oder Nichtteilnahme keinen Einfluss auf Ihre
+          Noten oder Ihr Studium.
+        </p>
+        <p>
+          Um auszusteigen, beenden Sie die Teilnahme und deinstallieren DFE. Wenn wir zusätzlich Ihre bereits gesendeten
+          Daten löschen sollen, senden Sie uns Ihren persönlichen Code per E-Mail. Wir können Ihre Daten bis
+          31. Dezember 2027 löschen. Dann werden die Daten für die Auswertung anonymisiert und können Ihnen
+          danach nicht mehr zugeordnet werden.
+        </p>
+      </section>
+
+      <section id="einwilligung" class="card">
+        <h2>Ihre Einwilligung</h2>
+        <p>Zu Beginn des ersten Fragebogens bitten wir Sie, Folgendes zu bestätigen.</p>
+        <div class="platforms">
+          <section>
+            <h3>Für die Teilnahme erforderlich</h3>
+            <ul>
+              <li>Ich habe diese Informationen gelesen und konnte Fragen stellen.</li>
+              <li>Ich bin mindestens 18 Jahre alt.</li>
+              <li>Ich nehme freiwillig teil und kann jederzeit ohne Angabe von Gründen aussteigen.</li>
+              <li>Ich bin einverstanden, DFE während 4 Wochen zu nutzen, und mit der Erfassung der auf dieser Seite beschriebenen Daten.</li>
+              <li>Ich bin einverstanden, dass meine Antworten in den Fragebögen und meine DFE-Datendatei über meinen Code verknüpft und für diese Forschung ausgewertet werden.</li>
+              <li>Ich bin einverstanden, dass die Ergebnisse in zusammengefasster, anonymer Form veröffentlicht werden.</li>
+            </ul>
+          </section>
+          <section>
+            <h3>Optional</h3>
+            <ul>
+              <li>Meine anonymisierten Daten dürfen in einem öffentlichen Forschungsdaten-Repository veröffentlicht werden.</li>
+              <li>Meine schriftlichen Antworten dürfen anonym zitiert werden.</li>
+              <li>Sie dürfen mich für ein 20-minütiges Interview kontaktieren.</li>
+              <li>Sie dürfen mich vier Wochen nach der Studie für einen kurzen Nachfolgefragebogen kontaktieren.</li>
+            </ul>
+          </section>
+        </div>
+        <p class="muted">
+          Sie können jeden optionalen Punkt ablehnen und trotzdem teilnehmen. Vor einem Interview bitten wir Sie separat
+          um Ihre Einwilligung zur Aufnahme und Transkription.
+        </p>
+      </section>
+
+      <section id="kontakt" class="card">
+        <h2>Kontakt</h2>
+        <div class="platforms contact-options">
+          <div class="contact-option">
+            <h3>Fragen zur Studie</h3>
+            <p>Fragen Sie uns zum Ablauf, zur App oder zu Ihren Daten, oder verlangen Sie mit Ihrem persönlichen Code die Löschung Ihrer Daten.</p>
+            <a href="mailto:digital-footprint-explorer.init@zhaw.ch">digital-footprint-explorer.init@zhaw.ch</a>
+          </div>
+          <div class="contact-option">
+            <h3>Verantwortliche Person</h3>
+            <p>Dr. Michael Wahler, ZHAW School of Engineering, Institut für Informatik (InIT), Winterthur</p>
+            <a href="mailto:wahl@zhaw.ch">wahl@zhaw.ch</a>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div>
+        <strong class="footer-name">Digital Footprint Explorer</strong>
+        <p class="muted">© 2026 Zurich University of Applied Sciences (ZHAW)</p>
+      </div>
+      <nav class="footer-links" aria-label="Footer navigation">
+        <a href="support-ios.html">iOS support</a>
+        <a href="privacy-policy.html">iOS privacy</a>
+        <a href="mailto:digital-footprint-explorer.init@zhaw.ch">Email the DFE Team</a>
+      </nav>
+    </div>
+  </footer>
+  <script>
+    // [03] Pick the language from ?lang=, a link to a German section, or the browser language.
+    (() => {
+      const versions = { en: document.getElementById('en'), de: document.getElementById('de') };
+      const titles = {
+        en: 'Study information — Digital Footprint Explorer',
+        de: 'Studieninformation — Digital Footprint Explorer'
+      };
+      const links = document.querySelectorAll('.lang-switch a[data-lang]');
+
+      const show = (lang) => {
+        for (const [key, el] of Object.entries(versions)) el.hidden = key !== lang;
+        document.documentElement.lang = lang;
+        document.title = titles[lang];
+        for (const link of links) {
+          if (link.dataset.lang === lang) link.setAttribute('aria-current', 'true');
+          else link.removeAttribute('aria-current');
+        }
+      };
+
+      const hashTarget = () => {
+        const id = decodeURIComponent(location.hash.slice(1));
+        return id ? document.getElementById(id) : null;
+      };
+      const langOf = (el) => el?.closest('.lang-version')?.id ?? null;
+      const fromBrowser = () => {
+        for (const l of navigator.languages || [navigator.language || 'en']) {
+          if (/^de\b/i.test(l)) return 'de';
+          if (/^en\b/i.test(l)) return 'en';
+        }
+        return 'en';
+      };
+
+      const param = new URLSearchParams(location.search).get('lang');
+      const target = hashTarget();
+      show(param in versions ? param : langOf(target) ?? fromBrowser());
+      if (target && !target.classList.contains('lang-version')) target.scrollIntoView();
+
+      for (const link of links) {
+        link.addEventListener('click', (event) => {
+          event.preventDefault();
+          const lang = link.dataset.lang;
+          show(lang);
+          const url = new URL(location.href);
+          url.searchParams.set('lang', lang);
+          url.hash = '';
+          history.replaceState(null, '', url);
+        });
+      }
+
+      window.addEventListener('hashchange', () => {
+        const el = hashTarget();
+        const lang = langOf(el);
+        if (lang && versions[lang].hidden) {
+          show(lang);
+          el.scrollIntoView();
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -53,7 +53,23 @@ struct ScreenTimeSettingsView: View {
         return setupSaved && service.state.canImport
     }
 
-    private var canDisconnect: Bool {
+    private var statusTitle: String {
+        if connected { return "Connected" }
+        switch service.state {
+        case .reportOnly, .dataAccess: return service.state.title
+        default: return "Not connected"
+        }
+    }
+
+    private var setupActionTitle: String {
+        switch service.state {
+        case .reportOnly: return "Screen Time access"
+        case .revoked: return "Reconnect Screen Time"
+        default: return setupSaved ? "Review connection" : "Enable automatic estimates"
+        }
+    }
+
+    private var canRemoveAccess: Bool {
         #if DEBUG
         if Self.isControlledDisconnectPreview { return !previewDisconnected }
         #endif
@@ -77,7 +93,7 @@ struct ScreenTimeSettingsView: View {
                 // [04] Read the connection as one short message. The shield is decoration,
                 // so older iOS versions should not read its name instead of the status.
                 Label {
-                    Text(appLanguage.text(connected ? "Connected" : "Not connected"))
+                    Text(appLanguage.text(statusTitle))
                 } icon: {
                     Image(systemName: statusSymbol).accessibilityHidden(true)
                 }
@@ -85,7 +101,7 @@ struct ScreenTimeSettingsView: View {
                 .foregroundStyle(statusColor)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityElement(children: .ignore)
-                .accessibilityLabel(appLanguage.text(connected ? "Connected" : "Not connected"))
+                .accessibilityLabel(appLanguage.text(statusTitle))
                 .accessibilityIdentifier("screen-time.status")
                 Text(appLanguage.text(statusExplanation))
                     .font(.subheadline)
@@ -103,9 +119,8 @@ struct ScreenTimeSettingsView: View {
 
             if !connected {
                 Button(action: showSetup) {
-                    SettingsActionLabel(service.state == .revoked ? "Reconnect Screen Time"
-                                        : setupSaved ? "Review connection" : "Enable automatic estimates",
-                                        symbol: "arrow.triangle.2.circlepath")
+                    SettingsActionLabel(setupActionTitle,
+                                        symbol: service.state == .reportOnly ? "info.circle" : "arrow.triangle.2.circlepath")
                 }
                 .foregroundStyle(FootprintAppearance.accent)
                 .accessibilityHint(appLanguage.text(service.state == .revoked
@@ -126,7 +141,7 @@ struct ScreenTimeSettingsView: View {
             }
             #endif
 
-            if connected || setupSaved || service.state == .reportOnly {
+            if setupSaved || canRemoveAccess {
                 DisclosureGroup(isExpanded: $showDetails) {
                     connectionDetails.padding(.top, 12)
                 } label: {
@@ -139,28 +154,32 @@ struct ScreenTimeSettingsView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .modifier(DisconnectScreenTimeConfirmation(isPresented: $confirmDisconnect,
+                                                  connected: connected,
                                                   disconnect: disconnect))
     }
 
-    // [05] Explain the connection, then keep Disconnect behind an explicit confirmation.
+    // [05] Show import details for saved setups and give anyone with permission a way to withdraw it.
     private var connectionDetails: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text(appLanguage.text(service.activityScope == .allAuthorizedApps
-                 ? "All available app activity is included. Unknown apps are grouped under Other apps."
-                 : "Your saved activity choices are kept. Review the connection to include all available app activity."))
-                .accessibilityIdentifier("screen-time.allActivity")
-            Text("Completed days update when the app opens and when iOS allows background work. Missing or incomplete days stay pending.")
-            if canDisconnect {
-                Divider()
+            if connected || (setupSaved && service.state != .reportOnly) {
+                Text(appLanguage.text(service.activityScope == .allAuthorizedApps
+                     ? "All available app activity is included. Unknown apps are grouped under Other apps."
+                     : "Your saved activity choices are kept. Review the connection to include all available app activity."))
+                    .accessibilityIdentifier("screen-time.allActivity")
+                Text("Completed days update when the app opens and when iOS allows background work. Missing or incomplete days stay pending.")
+                if canRemoveAccess { Divider() }
+            }
+            if canRemoveAccess {
                 Button(role: .destructive) {
                     confirmDisconnect = true
                 } label: {
-                    SettingsActionLabel("Disconnect Screen Time", symbol: "xmark.shield")
+                    SettingsActionLabel(connected ? "Disconnect Screen Time" : "Remove Screen Time access",
+                                        symbol: "xmark.shield")
                 }
                 .foregroundStyle(.red)
                 .disabled(isDisconnecting)
                 .accessibilityHint("Asks for confirmation. Your saved daily estimates are kept.")
-                .accessibilityIdentifier("screen-time-disconnect")
+                .accessibilityIdentifier(connected ? "screen-time-disconnect" : "screen-time-removeAccess")
             }
         }
         .font(.subheadline)

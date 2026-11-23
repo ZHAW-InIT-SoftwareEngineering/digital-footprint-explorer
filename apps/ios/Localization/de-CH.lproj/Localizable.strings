@@ -46,6 +46,7 @@
 "App language" = "App-Sprache";
 "App use" = "App-Nutzung";
 "Appearance" = "Erscheinungsbild";
+"Apple granted access to Screen Time reports only. DFE needs expanded access to import app usage and start automatic estimates. You can still view any saved estimates." = "Apple hat nur den Zugriff auf Bildschirmzeitberichte erlaubt. DFE braucht den erweiterten Zugriff, um App-Nutzungszeiten zu importieren und automatische Schätzungen zu starten. Gespeicherte Schätzungen kannst du weiterhin ansehen.";
 "Apple restricts customer access to expanded activity data by device, system version and region, including EU device and Apple Account requirements. Development tests in Switzerland use a separate Apple-provided profile; this does not establish access for Swiss customers. The Watch companion does not change these rules." = "Apple begrenzt den erweiterten Datenzugriff für Kundinnen und Kunden je nach Gerät, Betriebssystem und Region. Dazu gehören Apples Anforderungen an den Gerätestandort und den Apple Account in der EU. Für die Entwicklungstests in der Schweiz wurde ein separates Profil von Apple verwendet. Diese Tests sagen nichts darüber aus, ob der Zugriff für Kundinnen und Kunden in der Schweiz verfügbar ist. Die Apple-Watch-App ändert diese Vorgaben nicht.";
 "Apple's available app time can differ from the daily total in Screen Time. This estimate covers the app activity provided for the saved date on this device." = "Die von Apple bereitgestellte App-Nutzungszeit kann von der Tagessumme in «Bildschirmzeit» abweichen. Diese Schätzung nutzt die für den gespeicherten Tag auf diesem Gerät verfügbaren App-Daten.";
 "Apple's Focus guide" = "Anleitung zum Fokus von Apple";
@@ -114,19 +115,20 @@
 "Day in progress." = "Der Tag läuft noch.";
 "Decide what you want to cover before a video call. When the call is finished, take a break from the screen." = "Überlege vor einem Videoanruf, was du besprechen möchtest. Gönn dir danach eine Pause vom Bildschirm.";
 "Delete all entries" = "Alle Einträge löschen";
-"Delete all entries does not revoke Apple's Screen Time or notification permission. Use Disconnect Screen Time to remove activity access, and device notification settings to change notification permission." = "«Alle Einträge löschen» entzieht DFE weder den Zugriff auf Apples Bildschirmzeit noch die Berechtigung für Mitteilungen. Wähle «Bildschirmzeit trennen», um den Aktivitätszugriff zu entfernen. Ändere die Berechtigung für Mitteilungen in den Geräteeinstellungen.";
+"Delete all entries does not revoke Apple's Screen Time or notification permission. To remove Screen Time permission, use Connection details in DFE Settings. Change notification permission in iOS Settings." = "«Alle Einträge löschen» entzieht DFE weder den Zugriff auf Apples Bildschirmzeit noch die Berechtigung für Mitteilungen. Den Zugriff auf die Bildschirmzeit kannst du unter «Verbindungsdetails» in den DFE-Einstellungen entfernen. Die Berechtigung für Mitteilungen änderst du in den iOS-Einstellungen.";
 "Delete all entries?" = "Alle Einträge löschen?";
 "Deleting entries does not remove files you previously shared, copies held by other people, or older device backups. Removing the app also removes its local app storage; manage existing backups separately." = "Das Löschen entfernt keine früher geteilten Dateien, Kopien bei anderen Personen oder ältere Geräte-Backups. Wenn du die App entfernst, wird auch ihr lokaler Speicher gelöscht. Bestehende Backups kannst du separat verwalten.";
 "Deleting entries in the app does not delete emails you have sent or the website host's logs. Contact the DFE Team if you have a question about a support message or a privacy request." = "Wenn du Einträge in der App löschst, werden früher gesendete E-Mails und die Protokolle von GitHub Pages nicht gelöscht. Wende dich an das DFE-Team, wenn du Fragen zu einer Supportnachricht oder ein Datenschutzanliegen hast.";
 "Device %@ · Network %@ · Servers %@" = "Gerät %@ · Netzwerk %@ · Server %@";
 "DFE and its own widget share a summary in an App Group file that uses iOS file protection: the date, total estimate, garden state, estimate source, calculation time and whether the day is complete. With automatic setup enabled, they also share the setup date, time zone, calculation assumptions and up to eight recent totals for the seven-day garden comparison. The widget does not receive your individual app choices, app names or full history." = "DFE und sein Widget nutzen eine gemeinsame, durch iOS geschützte Datei einer App-Gruppe. Sie enthält eine Zusammenfassung mit Datum, Gesamtschätzung, Gartenzustand, Quelle und Zeitpunkt der Berechnung sowie der Angabe, ob der Tag abgeschlossen ist. Bei aktiven automatischen Schätzungen teilen sie ausserdem das Startdatum, die Zeitzone, Berechnungsannahmen und bis zu acht aktuelle Gesamtwerte für den Gartenvergleich über sieben Tage. Das Widget erhält keine Auswahl einzelner Apps, keine App-Namen und keinen vollständigen Verlauf.";
 "DFE · %@" = "DFE · %@";
+"DFE will lose its Screen Time permission. Your saved days will stay on this device." = "DFE verliert den Zugriff auf die Bildschirmzeit. Deine gespeicherten Tage bleiben auf diesem Gerät.";
 "Digital Footprint Explorer helps you understand an estimated carbon footprint of your device use. Your settings, calculations and history are processed on your device. You do not need an app account." = "Mit dem Digital Footprint Explorer kannst du den geschätzten CO₂-Fussabdruck deiner Gerätenutzung besser verstehen. DFE verarbeitet deine Einstellungen, Berechnungen und deinen Verlauf auf deinem Gerät. Du brauchst kein App-Konto.";
 "Disconnect" = "Trennen";
 "Disconnect Screen Time" = "Bildschirmzeit trennen";
 "Disconnect Screen Time?" = "Bildschirmzeit trennen?";
 "Disconnecting does not erase Apple's own Screen Time records. Deleting data in this app and removing Apple's permission are separate actions." = "Die Bildschirmzeitverbindung zu trennen, löscht Apples eigene Bildschirmzeitdaten nicht. Das Löschen von Daten in DFE und das Entziehen der Apple-Berechtigung sind zwei verschiedene Schritte.";
-"Disconnecting Screen Time" = "Bildschirmzeit trennen";
+"Removing Screen Time access" = "Zugriff auf die Bildschirmzeit entfernen";
 "Done" = "Fertig";
 "Each category can only be entered once." = "Jede Kategorie kann nur einmal erfasst werden.";
 "Earlier versions allowed manual history files to be shared. Deleting local data cannot recall those files or remove copies held by other people." = "Frühere Versionen konnten manuelle Verlaufsdateien teilen. Wenn du lokale Daten löschst, werden diese Dateien nicht zurückgerufen. Auch Kopien bei anderen Personen bleiben bestehen.";
@@ -156,6 +158,7 @@
 "Garden unavailable. Open the app." = "Garten nicht verfügbar. Öffne die App.";
 "Garden: %@" = "Garten: %@";
 "Garden: %@. %@" = "Garten: %@. %@";
+"Get Screen Time help" = "Hilfe zur Bildschirmzeit";
 "GitHub explains its hosting practices in its privacy statement: https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement." = "GitHub erläutert den Umgang mit Hosting-Daten in seiner Datenschutzerklärung: https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement.";
 "Good to have you here" = "Schön, dass du da bist";
 "Growing" = "Wächst";
@@ -171,7 +174,7 @@
 "If you turn on the optional Daily garden update, the app schedules a short local morning reminder. It can invite you back even when the app is closed. A reminder does not mean that a new estimate is ready." = "Wenn du die optionale tägliche Gartenerinnerung aktivierst, plant die App morgens eine kurze lokale Mitteilung. Sie kann dich auch bei geschlossener App an DFE erinnern. Eine Erinnerung bedeutet nicht, dass eine neue Schätzung vorliegt.";
 "Imported app activity: %@" = "Importierte App-Nutzungszeit: %@";
 "In progress" = "In Bearbeitung";
-"In Settings, choose Disconnect Screen Time to stop new imports and clear the app's saved choices. Your earlier daily estimates are kept so you can still review them. You can also manage the permission in your device settings." = "Wähle in den Einstellungen «Bildschirmzeit trennen», um neue Importe zu stoppen und die in DFE gespeicherte Auswahl zu löschen. Du kannst frühere Schätzungen weiterhin ansehen. Die Berechtigung kannst du auch in deinen Geräteeinstellungen verwalten.";
+"In DFE Settings, open Connection details. Choose Disconnect Screen Time if automatic estimates are connected, or Remove Screen Time access if only permission has been granted. Confirm to remove permission, stop new imports and clear the app's saved activity choices. Your earlier daily estimates stay available. You can also manage permission in iOS Settings." = "Öffne in den DFE-Einstellungen «Verbindungsdetails». Wähle «Bildschirmzeit trennen», wenn automatische Schätzungen verbunden sind. Wenn nur eine Berechtigung erteilt wurde, wähle «Zugriff auf die Bildschirmzeit entziehen». Bestätige, um die Berechtigung zu entfernen, neue Importe zu stoppen und die gespeicherte Aktivitätsauswahl zu löschen. Deine bisherigen Schätzungen bleiben verfügbar. Du kannst die Berechtigung auch in den iOS-Einstellungen verwalten.";
 "In Settings, open Screen Time and choose an optional daily time limit. Pick an amount that feels useful to you." = "Öffne in den Einstellungen «Bildschirmzeit» und wähle ein tägliches App-Limit, das für dich passt.";
 "inline" = "In einer Zeile";
 "Install DFE on your paired Apple Watch, then open it" = "Installiere DFE auf deiner gekoppelten Apple Watch und öffne die App";
@@ -185,7 +188,7 @@
 "Last saved day" = "Zuletzt gespeicherter Tag";
 "Last saved day; check your iPhone for a newer result." = "Letzter gespeicherter Tag. Schau auf deinem iPhone nach einem neueren Ergebnis.";
 "Last saved estimate" = "Letzte Schätzung";
-"Last updated: 15 November 2026" = "Zuletzt aktualisiert am 15. November 2026";
+"Last updated: 22 November 2026" = "Zuletzt aktualisiert am 22. November 2026";
 "Latest completed day" = "Letzter abgeschlossener Tag";
 "Latest phone result queued for Apple Watch" = "Die letzte Schätzung wartet auf die Übertragung zur Apple Watch";
 "less than 1 min" = "weniger als 1 Min.";
@@ -268,6 +271,9 @@
 "Refresh from iPhone" = "Vom iPhone aktualisieren";
 "Reminders use local calendar dates and times. The app checks the schedule again when it can run after a clock or time zone change. iOS, Focus, Scheduled Summary and notification settings can delay or hide a message, so an exact 08:00 delivery or a message every day is not guaranteed. A message does not prove that Screen Time, the garden or the widgets refreshed. Removing DFE from multitasking normally stops background launches of the main app. Its widget may update separately when iOS allows it; a reminder alone does not prove that this happened." = "Erinnerungen richten sich nach lokalem Datum und lokaler Uhrzeit. Wenn die Uhrzeit oder Zeitzone wechselt und DFE wieder laufen kann, prüft die App den Zeitplan erneut. iOS, ein Fokus, die geplante Übersicht und die Mitteilungseinstellungen können eine Mitteilung verspäten oder ausblenden. Die Zustellung genau um 08:00 Uhr oder an jedem Tag ist deshalb nicht garantiert. Eine Mitteilung allein zeigt nicht, dass die Bildschirmzeit, der Garten oder die Widgets aktualisiert wurden. Wenn du DFE im App-Umschalter beendest, startet die Haupt-App normalerweise nicht mehr im Hintergrund. Das Widget kann sich separat aktualisieren, wenn iOS es erlaubt. An der Mitteilung ist das nicht erkennbar.";
 "Report access only" = "Nur Zugriff auf Berichte";
+"Remove access" = "Zugriff entziehen";
+"Remove Screen Time access" = "Zugriff auf die Bildschirmzeit entziehen";
+"Remove Screen Time access?" = "Zugriff auf die Bildschirmzeit entziehen?";
 "Resume automatic estimates. Your saved results stay available." = "Setze die automatischen Schätzungen fort. Deine gespeicherten Ergebnisse bleiben verfügbar.";
 "Resume widget updates" = "Widget-Updates fortsetzen";
 "Review automatic access. Your saved results stay available." = "Prüfe den automatischen Zugriff. Deine gespeicherten Ergebnisse bleiben verfügbar.";
@@ -286,6 +292,7 @@
 "Screen Time" = "Bildschirmzeit";
 "Screen Time + estimates" = "Bildschirmzeit + Schätzungen";
 "Screen Time access has been removed. Your saved results remain available. You can reconnect Screen Time to resume automatic input." = "Der Zugriff auf die Bildschirmzeit wurde entzogen. Deine gespeicherten Ergebnisse bleiben verfügbar. Verbinde die Bildschirmzeit erneut, um automatische Schätzungen fortzusetzen.";
+"Screen Time access" = "Zugriff auf die Bildschirmzeit";
 "Screen Time access is available. Enable automatic estimates to finish the setup." = "Der Zugriff auf die Bildschirmzeit ist verfügbar. Aktiviere automatische Schätzungen, um die Einrichtung abzuschliessen.";
 "Screen Time can supply app usage time from this device after you enable automatic input. Data use, brightness and background activity still use model assumptions." = "Mit automatischen Schätzungen kann DFE die App-Nutzungszeiten von diesem Gerät übernehmen. Datenverbrauch, Helligkeit und Hintergrundaktivität beruhen weiterhin auf Modellannahmen.";
 "Screen Time could not be connected. %@" = "Die Bildschirmzeit konnte nicht verbunden werden. %@";
@@ -378,7 +385,6 @@
 "This history was saved by a newer version of the app. Your file has been kept." = "Dieser Verlauf wurde mit einer neueren App-Version gespeichert. Deine Datei bleibt erhalten.";
 "This is the last saved day, not today's estimate." = "Das ist der zuletzt gespeicherte Tag. Für heute liegt hier keine Schätzung vor.";
 "This permanently deletes your saved days and settings. Screen Time access is unchanged." = "Deine gespeicherten Tage und Einstellungen werden endgültig gelöscht. Der Zugriff auf die Bildschirmzeit bleibt bestehen.";
-"This permission allows Screen Time reports, but it does not allow usage time to be imported into the footprint calculation. New automatic days stay pending." = "Diese Berechtigung erlaubt Bildschirmzeitberichte. DFE kann damit jedoch keine Nutzungszeiten für die Schätzung des Fussabdrucks importieren. Neue Tage bleiben offen.";
 "This turns the app icon into a widget. Tap the widget to open your garden." = "Das App-Symbol wird als Widget angezeigt. Tippe darauf, um deinen Garten zu öffnen.";
 "This Watch does not measure app activity." = "Diese Watch erfasst keine App-Aktivität.";
 "Time to Check In" = "Zeit für einen kurzen Blick";
@@ -411,6 +417,7 @@
 "Watch sharing is off" = "Teilen mit der Apple Watch ist ausgeschaltet";
 "Watch sharing is off by default. If you enable Show my garden on Apple Watch on your iPhone, DFE sends the latest saved day, total estimate, garden state, estimate source, calculation time and completion status to your paired Watch through Apple Watch Connectivity. A local installation code and an update number also travel with the summary to keep updates in order and reject delayed updates. It does not send app names, app identifiers, individual app records, usage times or your full history. Apple manages delivery of the summary to your paired Watch through Watch Connectivity. No DFE project server receives it." = "Das Teilen mit der Apple Watch ist standardmässig ausgeschaltet. Wenn du auf dem iPhone «Meinen Garten auf der Apple Watch anzeigen» aktivierst, sendet DFE über Apple Watch Connectivity den letzten gespeicherten Tag, die Gesamtschätzung, den Gartenzustand, die Quelle und den Zeitpunkt der Berechnung sowie die Angabe, ob der Tag abgeschlossen ist, an deine gekoppelte Apple Watch. Ein lokaler Installationscode und eine laufende Nummer helfen, Updates in der richtigen Reihenfolge zu verarbeiten und verspätete Updates zu erkennen. DFE sendet keine App-Namen, App-Kennungen, einzelnen App-Datensätze, Nutzungszeiten oder deinen gesamten Verlauf. Apple übernimmt die Übertragung an deine gekoppelte Watch. DFE betreibt dafür keinen Projektserver.";
 "Website records and browsing details are not used or saved. Time spent in a browser can be included as app use, without reading the websites you visited." = "DFE verwendet und speichert keine Angaben zu besuchten Websites. Die Nutzungsdauer eines Browsers kann als App-Nutzung zählen, ohne dass DFE die besuchten Websites liest.";
+"Welcome to your garden" = "Willkommen in deinem Garten";
 "What can your digital day tell you? Take a moment to explore your garden." = "Was erzählt dir dein digitaler Tag? Nimm dir einen Moment für deinen Garten.";
 "What Does Your Day Leave Behind?" = "Welche Spuren hinterlässt dein Tag?";
 "What it shows" = "Was du im Widget siehst";

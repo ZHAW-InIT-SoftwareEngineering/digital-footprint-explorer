@@ -31,7 +31,7 @@ if grep -q 'Data Migration Failed' "$boot_log"; then
   echo "The selected simulator could not finish data migration. Restart it before running the tests again." >&2
   exit 1
 fi
-# [06] Check the shared calculation and test the app, language selector and connection details with isolated data.
+# [06] Check the shared calculation and test language and Screen Time screens with isolated data.
 cd "$project_dir"
 ./gradlew :shared:iosSimulatorArm64Test --console=plain
 result_bundle="${DFE_RESULT_BUNDLE:-$cache_dir/ios-tests-$(date +%Y%m%d-%H%M%S).xcresult}"
@@ -40,6 +40,7 @@ xcodebuild -project "$ios_dir/iosApp.xcodeproj" -scheme iosApp-ScreenTime -confi
   -derivedDataPath "$cache_dir/DerivedData" -resultBundlePath "$result_bundle" CODE_SIGNING_ALLOWED=NO \
   -only-testing:iosAppTests \
   -only-testing:iosAppUITests/LanguageUITests \
+  -only-testing:iosAppUITests/AutomaticOnboardingUITests/testReportOnlyAccessOffersHelpWithoutSavingSetup \
   -only-testing:iosAppUITests/SettingsLayoutUITests/testConnectionDetailsShowOnlyUserFacingInformation \
   -only-testing:iosAppUITests/SettingsLayoutUITests/testConnectionDetailsRemainReadableAtLargestText \
   -skip-testing:iosAppTests/LiveScreenTimeImportTests \

@@ -29,8 +29,8 @@ struct PrivacyPolicySection: Identifiable {
 enum PrivacyPolicyContent {
     static let appName = "Digital Footprint Explorer"
     static let title = "Privacy policy"
-    static let revision = "2026-11-15"
-    static let updatedText = "Last updated: 15 November 2026"
+    static let revision = "2026-11-22"
+    static let updatedText = "Last updated: 22 November 2026"
     static let contactURL = URL(string: "mailto:digital-footprint-explorer.init@zhaw.ch")!
     static let introduction = [
         "Digital Footprint Explorer helps you understand an estimated carbon footprint of your device use. Your settings, calculations and history are processed on your device. You do not need an app account.",
@@ -114,9 +114,9 @@ enum PrivacyPolicyContent {
         ),
         PrivacyPolicySection(
             id: "permission",
-            title: "Disconnecting Screen Time",
+            title: "Removing Screen Time access",
             paragraphs: [
-                "In Settings, choose Disconnect Screen Time to stop new imports and clear the app's saved choices. Your earlier daily estimates are kept so you can still review them. You can also manage the permission in your device settings.",
+                "In DFE Settings, open Connection details. Choose Disconnect Screen Time if automatic estimates are connected, or Remove Screen Time access if only permission has been granted. Confirm to remove permission, stop new imports and clear the app's saved activity choices. Your earlier daily estimates stay available. You can also manage permission in iOS Settings.",
                 "Disconnecting does not erase Apple's own Screen Time records. Deleting data in this app and removing Apple's permission are separate actions."
             ]
         ),
@@ -127,7 +127,7 @@ enum PrivacyPolicyContent {
                 "You can review saved estimates in History. The current interface does not provide manual entry or correction. Earlier saved entries stay readable. Local history is kept until you choose to delete it; there is no automatic age limit for saved entries.",
                 "Choose Delete all entries in Settings to clear your history, saved app choices, calculation settings, pending widget records and shared garden summary. It resets the appearance, turns off daily reminders and Watch sharing, and clears the local update checks. You can remove reminders already shown in Notification Center there.",
                 "If automatic estimates were connected, they stay connected with the standard calculation settings. The app and widget ignore days before the reset. Shared storage uses a new setup marker so earlier work cannot restore deleted records. A paused widget stays paused.",
-                "Delete all entries does not revoke Apple's Screen Time or notification permission. Use Disconnect Screen Time to remove activity access, and device notification settings to change notification permission.",
+                "Delete all entries does not revoke Apple's Screen Time or notification permission. To remove Screen Time permission, use Connection details in DFE Settings. Change notification permission in iOS Settings.",
                 "Deleting entries does not remove files you previously shared, copies held by other people, or older device backups. Removing the app also removes its local app storage; manage existing backups separately."
             ]
         ),

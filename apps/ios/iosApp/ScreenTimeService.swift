@@ -37,6 +37,7 @@ struct UITestIsolation {
     var permitsAutomaticPreview: Bool { isActive && arguments.contains("-ui-automatic-preview") }
 
     func authorizationState(hasSavedSetup: Bool, previouslyAuthorized: Bool) -> ScreenTimeState {
+        if permitsAutomaticPreview && arguments.contains("-ui-report-only-preview") { return .reportOnly }
         if hasSavedSetup { return .dataAccess }
         return previouslyAuthorized || arguments.contains("-ui-revoked-preview") ? .revoked : .notRequested
     }
@@ -87,7 +88,7 @@ enum ScreenTimeState: Equatable {
         case .unavailable: "Automatic import is unavailable in this build. Saved days remain readable."
         case .notRequested: "Allow Screen Time to start automatic daily estimates. New days stay pending until access and complete data are available."
         case .denied: "Screen Time was not approved on this device. New automatic days stay pending."
-        case .reportOnly: "This permission allows Screen Time reports, but it does not allow usage time to be imported into the footprint calculation. New automatic days stay pending."
+        case .reportOnly: "Apple granted access to Screen Time reports only. DFE needs expanded access to import app usage and start automatic estimates. You can still view any saved estimates."
         case .dataAccess: "Screen Time can supply app usage time from this device after you enable automatic input. Data use, brightness and background activity still use model assumptions."
         case .revoked: "Screen Time access has been removed. Your saved results remain available. You can reconnect Screen Time to resume automatic input."
         }

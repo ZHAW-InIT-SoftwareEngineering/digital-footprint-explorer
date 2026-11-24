@@ -17,6 +17,9 @@
 
 package ch.zhaw.digitalfootprintexplorer.study
 
+import kotlinx.datetime.DatePeriod
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.plus
 import java.math.BigDecimal
 
 /** One stored day as it is exported. Per-category and per-app values are deliberately not exported. */
@@ -59,15 +62,19 @@ object StudyExportFormat {
         }
     }
 
-    /** Number of app opens per calendar day, from the APP_OPEN lines of the study log. */
-    fun appOpensPerDayCsv(logLines: List<String>): String = buildString {
+    /**
+     * One row per calendar day from [from] to [to] (both included) with the number of app opens, 0 if not opened.
+     * Days before [from] with opens (e.g. a test before the study start) are included as well.
+     */
+    fun appOpensPerDayCsv(opensPerDay: Map<LocalDate, Int>, from: LocalDate, to: LocalDate): String = buildString {
         appendLine("date,opens")
-        logLines
-            .filter { it.split(StudyLog.SEPARATOR).getOrNull(1) == StudyLog.EVENT_APP_OPEN }
-            .groupingBy { it.substringBefore(" ") }
-            .eachCount()
-            .toSortedMap()
-            .forEach { (day, opens) -> appendLine("$day,$opens") }
+        val first = (opensPerDay.keys + from).min()
+        val last = (opensPerDay.keys + to).max()
+        var day = first
+        while (day <= last) {
+            appendLine("$day,${opensPerDay[day] ?: 0}")
+            day = day.plus(DatePeriod(days = 1))
+        }
     }
 
     /** Full precision, a dot as decimal separator and no exponent (0.0001, not 1.0E-4). */

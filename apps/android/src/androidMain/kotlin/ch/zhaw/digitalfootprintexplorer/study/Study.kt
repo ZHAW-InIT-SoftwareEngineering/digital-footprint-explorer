@@ -21,6 +21,7 @@ import android.app.Activity
 import android.content.Context
 import androidx.core.content.edit
 import ch.zhaw.digitalfootprintexplorer.model.GardenState
+import kotlinx.datetime.LocalDate
 import kotlin.concurrent.thread
 
 /**
@@ -29,8 +30,8 @@ import kotlin.concurrent.thread
  */
 object Study {
 
-    private const val PREFS = "dfe_study"
-    private const val KEY_LAST_OPEN_DAY = "last_open_day"
+    /** Separate file: one key per calendar day ("2026-11-24"), the value is the number of opens that day. */
+    private const val PREFS_OPENS = "dfe_study_opens"
 
     /** Set when the activity is only recreated (rotation, dark mode, language), which is no new open. */
     @Volatile
@@ -59,6 +60,15 @@ object Study {
         restartingForConfigChange = activity.isChangingConfigurations
     }
 
+    /** Number of app opens per calendar day, for the export. */
+    fun appOpensPerDay(context: Context): Map<LocalDate, Int> =
+        context.getSharedPreferences(PREFS_OPENS, Context.MODE_PRIVATE).all
+            .mapNotNull { (day, count) ->
+                val date = runCatching { LocalDate.parse(day) }.getOrNull()
+                if (date != null && count is Int) date to count else null
+            }
+            .toMap()
+
     /** DailyFootprintWorker, after a day was stored. Logs only, the calculation itself is untouched. */
     fun onCalculationStored(context: Context, day: String, calculatedAt: String, trigger: String) {
         StudyLog.append(context, StudyLog.EVENT_CALCULATION, "day=$day calculated_at=$calculatedAt trigger=$trigger")
@@ -76,11 +86,13 @@ object Study {
     fun onWidgetRemoved(context: Context, count: Int) =
         StudyLog.append(context, StudyLog.EVENT_WIDGET_REMOVED, "count=$count")
 
+    /** Counts every open; only the first open of a calendar day goes into the study log as APP_OPEN. */
+    @Synchronized
     private fun recordAppOpen(context: Context) {
-        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val opens = context.getSharedPreferences(PREFS_OPENS, Context.MODE_PRIVATE)
         val today = StudyPhase.today().toString()
-        val firstOfDay = prefs.getString(KEY_LAST_OPEN_DAY, null) != today
-        prefs.edit { putString(KEY_LAST_OPEN_DAY, today) }
-        StudyLog.append(context, StudyLog.EVENT_APP_OPEN, "first_of_day=$firstOfDay")
+        val count = opens.getInt(today, 0) + 1
+        opens.edit(commit = true) { putInt(today, count) }
+        if (count == 1) StudyLog.append(context, StudyLog.EVENT_APP_OPEN)
     }
 }

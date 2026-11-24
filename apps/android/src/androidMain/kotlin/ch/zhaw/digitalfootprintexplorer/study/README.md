@@ -22,12 +22,12 @@ Vor dem Release `StudyConfig.START_DATE` auf den echten Studienstart setzen. Tag
 **Inhalt des ZIP:** Jede Datei trägt den Code vor der Endung, z. B. `daily_values-MA0732.csv`. So bleiben die Dateien auch nach dem Entpacken einer Person zugeordnet.
 
 - `daily_values.csv`: eine Zeile pro gespeichertem Tag mit `date, app_usage_kg, display_kg, background_kg, total_kg, garden_state, baseline_kg, calculated_at`. `background_kg` umfasst GPS und Bluetooth. `garden_state` ist der berechnete Zustand, auch in der Baseline-Phase.
-- `app_opens_per_day.csv`: Anzahl Öffnungen pro Tag.
+- `app_opens_per_day.csv`: eine Zeile pro Tag vom Studienstart bis zum Export mit `date, opens` (Anzahl Öffnungen, 0 = nicht geöffnet). Tage vor dem Start, an denen die App geöffnet wurde, stehen ebenfalls drin. Gezählt wird in den Einstellungen `dfe_study_opens`, nicht im Log.
 - `study_log.txt`: das ganze Studien-Log.
 
 Werte pro Kategorie und App-Namen werden nicht exportiert.
 
-**Definition "App geöffnet":** Die App kommt in den Vordergrund (`MainActivity.onStart`). Ein Neuaufbau durch Drehen, Dark Mode oder Sprachwechsel zählt nicht. Die Rückkehr aus einer anderen App, z. B. aus den Einstellungen, zählt als Öffnung.
+**Definition "App geöffnet":** Die App kommt in den Vordergrund (`MainActivity.onStart`). Ein Neuaufbau durch Drehen, Dark Mode oder Sprachwechsel zählt nicht. Die Rückkehr aus einer anderen App, z. B. aus den Einstellungen, zählt als Öffnung. Jede Öffnung erhöht den Zähler des Kalendertags (Ortszeit des Geräts). Ins Log kommt nur die erste Öffnung des Tages als `APP_OPEN`, mit ihrem Zeitpunkt.
 
 ## Einstiegspunkte im übrigen Code
 
@@ -86,7 +86,7 @@ Das Studien-Log wird dann nur noch bei App-Öffnungen, Widget-Änderungen und Be
    grep -rn "\.study\." apps/android/src
    ```
 
-Auf den Geräten bleiben `files/study_log.txt` und die Einstellungen `dfe_study` liegen, bis die App deinstalliert wird. Sie stören nicht, auf Wunsch kann man sie beim Start einmal löschen.
+Auf den Geräten bleiben `files/study_log.txt` und die Einstellungen `dfe_study` und `dfe_study_opens` liegen, bis die App deinstalliert wird. Sie stören nicht, auf Wunsch kann man sie beim Start einmal löschen.
 
 ## Studie wiederholen
 

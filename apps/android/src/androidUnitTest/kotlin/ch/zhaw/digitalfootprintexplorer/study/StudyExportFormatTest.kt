@@ -1,5 +1,6 @@
 package ch.zhaw.digitalfootprintexplorer.study
 
+import kotlinx.datetime.LocalDate
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -33,20 +34,31 @@ class StudyExportFormatTest {
     }
 
     @Test
-    fun appOpensAreCountedPerDayFromTheLog() {
-        val log = listOf(
-            StudyLog.formatLine("2026-12-01 08:00:00", StudyLog.EVENT_APP_OPEN, "first_of_day=true"),
-            StudyLog.formatLine("2026-12-01 09:30:00", StudyLog.EVENT_DAILY_CHECK, "widgets=1"),
-            StudyLog.formatLine("2026-12-01 12:00:00", StudyLog.EVENT_APP_OPEN, "first_of_day=false"),
-            StudyLog.formatLine("2026-12-03 07:10:00", StudyLog.EVENT_APP_OPEN, "first_of_day=true"),
-            StudyLog.formatLine("2026-12-03 07:11:00", StudyLog.EVENT_CALCULATION, "day=2026-12-02 trigger=app_open")
+    fun everyDayFromStartToExportHasItsNumberOfOpens() = assertEquals(
+        "date,opens\n2026-12-01,3\n2026-12-02,0\n2026-12-03,1\n2026-12-04,0\n",
+        StudyExportFormat.appOpensPerDayCsv(
+            mapOf(LocalDate(2026, 12, 3) to 1, LocalDate(2026, 12, 1) to 3),
+            LocalDate(2026, 12, 1), LocalDate(2026, 12, 4)
         )
-        assertEquals(
-            "date,opens\n2026-12-01,2\n2026-12-03,1\n",
-            StudyExportFormat.appOpensPerDayCsv(log)
-        )
-    }
+    )
 
     @Test
-    fun emptyLogGivesHeaderOnly() = assertEquals("date,opens\n", StudyExportFormat.appOpensPerDayCsv(emptyList()))
+    fun opensBeforeTheStudyStartAreIncluded() = assertEquals(
+        "date,opens\n2026-11-29,2\n2026-11-30,0\n2026-12-01,0\n",
+        StudyExportFormat.appOpensPerDayCsv(
+            mapOf(LocalDate(2026, 11, 29) to 2), LocalDate(2026, 12, 1), LocalDate(2026, 12, 1)
+        )
+    )
+
+    @Test
+    fun noOpensGivesZeroForEveryStudyDay() = assertEquals(
+        "date,opens\n2026-12-01,0\n2026-12-02,0\n",
+        StudyExportFormat.appOpensPerDayCsv(emptyMap(), LocalDate(2026, 12, 1), LocalDate(2026, 12, 2))
+    )
+
+    @Test
+    fun exportBeforeTheStudyStartGivesHeaderOnly() = assertEquals(
+        "date,opens\n",
+        StudyExportFormat.appOpensPerDayCsv(emptyMap(), LocalDate(2026, 12, 1), LocalDate(2026, 11, 30))
+    )
 }

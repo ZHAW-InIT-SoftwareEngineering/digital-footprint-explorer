@@ -29,7 +29,7 @@ import java.util.Locale
  * it stays in release builds and is never pruned during the study.
  *
  * One line per event: `yyyy-MM-dd HH:mm:ss | EVENT | key=value ...`
- *  - APP_OPEN          the app came to the foreground (first_of_day=true for the first one per day)
+ *  - APP_OPEN          the app came to the foreground for the first time on that calendar day
  *  - DAILY_CHECK       widget and notification status, once per day
  *  - WIDGET_ADDED      the first garden widget was placed on the home screen
  *  - WIDGET_REMOVED    a garden widget was removed

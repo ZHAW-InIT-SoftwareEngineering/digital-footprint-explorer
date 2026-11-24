@@ -37,7 +37,7 @@ object StudyExport {
 
     private const val EXPORT_DIR = "study_export"
 
-    /** Reads database and log, so call it off the main thread. */
+    /** Reads database, log and open counts, so call it off the main thread. */
     fun createZip(context: Context, code: String): File {
         val days = readDays(context)
         val logLines = StudyLog.readLines(context)
@@ -53,7 +53,10 @@ object StudyExport {
                 out.closeEntry()
             }
             entry(StudyExportFormat.DAILY_VALUES_FILE, StudyExportFormat.dailyValuesCsv(days))
-            entry(StudyExportFormat.APP_OPENS_FILE, StudyExportFormat.appOpensPerDayCsv(logLines))
+            entry(
+                StudyExportFormat.APP_OPENS_FILE,
+                StudyExportFormat.appOpensPerDayCsv(Study.appOpensPerDay(context), StudyConfig.START_DATE, StudyPhase.today())
+            )
             entry(StudyExportFormat.STUDY_LOG_FILE, logLines.joinToString("\n", postfix = "\n"))
         }
         return zip

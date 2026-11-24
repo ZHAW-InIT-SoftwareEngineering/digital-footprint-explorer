@@ -9,6 +9,14 @@ class StudyExportFormatTest {
     fun zipIsNamedAfterTheCode() = assertEquals("dfe-MA0732.zip", StudyExportFormat.zipFileName("MA0732"))
 
     @Test
+    fun entriesGetTheCodeBeforeTheExtension() {
+        assertEquals("daily_values-MA0732.csv", StudyExportFormat.entryFileName(StudyExportFormat.DAILY_VALUES_FILE, "MA0732"))
+        assertEquals("app_opens_per_day-MA0732.csv", StudyExportFormat.entryFileName(StudyExportFormat.APP_OPENS_FILE, "MA0732"))
+        assertEquals("study_log-MA0732.txt", StudyExportFormat.entryFileName(StudyExportFormat.STUDY_LOG_FILE, "MA0732"))
+        assertEquals("notes-MA0732", StudyExportFormat.entryFileName("notes", "MA0732"))
+    }
+
+    @Test
     fun dailyValuesHaveOneSortedRowPerDayWithPlainNumbers() {
         val csv = StudyExportFormat.dailyValuesCsv(
             listOf(

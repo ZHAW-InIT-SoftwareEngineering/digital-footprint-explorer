@@ -19,7 +19,7 @@ An der Berechnung, an ihrem Zeitpunkt und an der Baseline des Gartens ändert di
 
 Vor dem Release `StudyConfig.START_DATE` auf den echten Studienstart setzen. Tage vor dem Start zählen ebenfalls als Baseline.
 
-**Inhalt des ZIP:**
+**Inhalt des ZIP:** Jede Datei trägt den Code vor der Endung, z. B. `daily_values-MA0732.csv`. So bleiben die Dateien auch nach dem Entpacken einer Person zugeordnet.
 
 - `daily_values.csv`: eine Zeile pro gespeichertem Tag mit `date, app_usage_kg, display_kg, background_kg, total_kg, garden_state, baseline_kg, calculated_at`. `background_kg` umfasst GPS und Bluetooth. `garden_state` ist der berechnete Zustand, auch in der Baseline-Phase.
 - `app_opens_per_day.csv`: Anzahl Öffnungen pro Tag.

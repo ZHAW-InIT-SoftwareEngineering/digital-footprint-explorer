@@ -47,8 +47,8 @@ object StudyExport {
         val zip = File(dir, StudyExportFormat.zipFileName(code))
 
         ZipOutputStream(zip.outputStream()).use { out ->
-            fun entry(name: String, text: String) {
-                out.putNextEntry(ZipEntry(name))
+            fun entry(baseName: String, text: String) {
+                out.putNextEntry(ZipEntry(StudyExportFormat.entryFileName(baseName, code)))
                 out.write(text.toByteArray(Charsets.UTF_8))
                 out.closeEntry()
             }

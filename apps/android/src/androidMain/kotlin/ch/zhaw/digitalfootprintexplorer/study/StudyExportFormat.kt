@@ -40,6 +40,12 @@ object StudyExportFormat {
 
     fun zipFileName(code: String) = "dfe-$code.zip"
 
+    /** Adds the code before the extension, `daily_values.csv` becomes `daily_values-MA0732.csv`. */
+    fun entryFileName(baseName: String, code: String): String {
+        val dot = baseName.lastIndexOf('.')
+        return if (dot < 0) "$baseName-$code" else "${baseName.substring(0, dot)}-$code${baseName.substring(dot)}"
+    }
+
     /** garden_state is the calculated state, also during the baseline phase when the app shows STABLE. */
     fun dailyValuesCsv(days: List<ExportDay>): String = buildString {
         appendLine("date,app_usage_kg,display_kg,background_kg,total_kg,garden_state,baseline_kg,calculated_at")

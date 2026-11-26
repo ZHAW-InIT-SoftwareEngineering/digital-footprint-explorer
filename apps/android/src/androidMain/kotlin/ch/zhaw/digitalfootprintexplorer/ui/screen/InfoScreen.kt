@@ -203,7 +203,7 @@ fun InfoScreen(innerPadding: PaddingValues) {
             }
         }
 
-        // STUDY: participant code and export by mail
+        // STUDY: participant code and data upload
         Spacer(modifier = Modifier.height(Spacing.gutter))
         ShareDataCard()
     }

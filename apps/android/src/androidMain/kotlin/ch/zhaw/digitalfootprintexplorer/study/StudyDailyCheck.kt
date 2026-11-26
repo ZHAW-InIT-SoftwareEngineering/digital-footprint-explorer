@@ -32,8 +32,6 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import ch.zhaw.digitalfootprintexplorer.DFEApplication
-import ch.zhaw.digitalfootprintexplorer.widget.GardenWidget
 import ch.zhaw.digitalfootprintexplorer.widget.GardenWidgetReceiver
 import android.util.Log
 import androidx.work.WorkInfo
@@ -44,7 +42,7 @@ import java.util.concurrent.TimeUnit
 /**
  * Once per day: is the garden widget on the home screen, and may the app post notifications?
  * Runs as its own periodic work, independent of the nightly footprint worker, and also when the app
- * is opened on a day without a check yet.
+ * is opened on a day without a check yet. The worker also reloads the remote config and starts a due upload.
  */
 object StudyDailyCheck {
 
@@ -56,7 +54,7 @@ object StudyDailyCheck {
     private const val FOOTPRINT_CHANNEL_ID = "daily_footprint"
 
     /**
-     * First run at the next 00:30, so the widget switches right at the start of the first feedback day.
+     * First run at the next 00:30.
      * Work that already exists but is not planned for 00:30 is moved there. Queries WorkManager, so it
      * runs on its own thread.
      */
@@ -173,10 +171,10 @@ class StudyDailyCheckWorker(
 ) : CoroutineWorker(appContext, params) {
 
     override suspend fun doWork(): Result {
+        // Reloads the remote config; a change of survey mode redraws the widget without opening the app.
+        Study.refreshConfig(appContext)
+        StudyUpload.scheduleIfDue(appContext)
         StudyDailyCheck.run(appContext, source = "worker")
-        // Redraws the widget so it switches from the neutral baseline garden on day 8 without opening the app.
-        val app = appContext.applicationContext as DFEApplication
-        app.gardenStateCalculator.getLatestGardenState()?.let { GardenWidget.updateState(appContext, it) }
         StudyDailyCheck.pinNextRun(appContext, id)
         return Result.success()
     }

@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -58,6 +59,16 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 9
         versionName = "1.8"
+
+        // STUDY: endpoints and secret of the study server, from local.properties (not in git), see study/README.md
+        val localProps = Properties().apply {
+            rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
+        }
+        listOf("STUDY_CONFIG_URL", "STUDY_UPLOAD_URL", "STUDY_UPLOAD_SECRET").forEach { key ->
+            val value = localProps.getProperty(key, "").trim()
+            if (value.isEmpty()) logger.warn("w: $key missing in local.properties, the study build cannot reach the server")
+            buildConfigField("String", key, "\"$value\"")
+        }
     }
     packaging {
         resources {

@@ -17,33 +17,42 @@
 
 package ch.zhaw.digitalfootprintexplorer.study
 
+import ch.zhaw.digitalfootprintexplorer.BuildConfig
 import kotlinx.datetime.LocalDate
 
 /**
  * Fixed values of the user study 2026. Everything study-specific lives in this package,
  * see README.md here for how to remove it after the study.
+ *
+ * What changes during the study (survey mode on/off, upload day) is not fixed here but read from
+ * [CONFIG_URL], so the team can switch it without a new release.
  */
 object StudyConfig {
 
     /**
-     * Day 1 of the study. All participants start on the same day.
+     * Day 1 of the study. Only used for the app-opens export (one row per day from here on).
      * TODO(study): set the real start date before the release.
      */
-    val START_DATE: LocalDate = LocalDate(2026, 11, 24)
+    val START_DATE: LocalDate = LocalDate(2026, 12, 1)
 
-    /**
-     * Days 1–7 are the baseline phase: the app records but shows no feedback.
-     * TODO(study): local test with 2 days (24.–25.11.2026), set back to 7 before the release.
-     */
-    const val BASELINE_DAYS = 2
+    // Server values come from local.properties (not in git) via BuildConfig, see README.md "Vor dem Release".
 
-    /** Recipient of the exported study data, as stated in the participant information sheet. */
-    const val RECIPIENT = "digital-footprint-explorer.init@zhaw.ch"
+    /** Remote switches `dfe_config.yaml`, see [StudyRemoteConfig]. Key STUDY_CONFIG_URL. */
+    val CONFIG_URL: String = BuildConfig.STUDY_CONFIG_URL
 
-    /** The daily check runs at 00:30, so the widget switches right at the start of day 8. */
+    /** Upload endpoint `fileupload/upload.php`, see fileupload/README.md. Key STUDY_UPLOAD_URL. */
+    val UPLOAD_URL: String = BuildConfig.STUDY_UPLOAD_URL
+
+    /** Shared secret for [UPLOAD_URL]. Key STUDY_UPLOAD_SECRET. */
+    val UPLOAD_SECRET: String = BuildConfig.STUDY_UPLOAD_SECRET
+
+    /** The daily check runs at 00:30: reloads the config, checks widget/notifications, starts a due upload. */
     const val DAILY_CHECK_HOUR = 0
     const val DAILY_CHECK_MINUTE = 30
 
     /** Unique WorkManager name of the daily widget / notification check. */
     const val DAILY_CHECK_WORK_NAME = "study_daily_check"
+
+    /** Unique WorkManager name of the automatic upload on the upload day. */
+    const val UPLOAD_WORK_NAME = "study_upload"
 }

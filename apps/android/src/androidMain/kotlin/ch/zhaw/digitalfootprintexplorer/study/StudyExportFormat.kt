@@ -41,7 +41,12 @@ object StudyExportFormat {
     const val APP_OPENS_FILE = "app_opens_per_day.csv"
     const val STUDY_LOG_FILE = "study_log.txt"
 
-    fun zipFileName(code: String) = "dfe-$code.zip"
+    /**
+     * Random name, the code is only in the file names inside the ZIP. The server renames the file anyway
+     * (fileupload/upload.php), this keeps the code out of the request as well.
+     */
+    fun randomZipFileName(random: java.util.UUID = java.util.UUID.randomUUID()) =
+        random.toString().replace("-", "") + ".zip"
 
     /** Adds the code before the extension, `daily_values.csv` becomes `daily_values-MA0732.csv`. */
     fun entryFileName(baseName: String, code: String): String {

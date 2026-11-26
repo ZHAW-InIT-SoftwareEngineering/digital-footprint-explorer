@@ -7,7 +7,10 @@ import kotlin.test.assertEquals
 class StudyExportFormatTest {
 
     @Test
-    fun zipIsNamedAfterTheCode() = assertEquals("dfe-MA0732.zip", StudyExportFormat.zipFileName("MA0732"))
+    fun zipNameIsRandomWithoutTheCode() = assertEquals(
+        "123e4567e89b12d3a456426614174000.zip",
+        StudyExportFormat.randomZipFileName(java.util.UUID.fromString("123e4567-e89b-12d3-a456-426614174000"))
+    )
 
     @Test
     fun entriesGetTheCodeBeforeTheExtension() {

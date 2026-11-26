@@ -2,6 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- STUDY: loads dfe_config.yaml and uploads the study data, see study/README.md -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <!-- Network stats per UID (signature permission – only works on non-Play builds) -->
     <uses-permission android:name="android.permission.READ_NETWORK_STATS"
         tools:ignore="ProtectedPermissions" />
@@ -71,16 +74,6 @@
                 android:resource="@xml/garden_widget_info" />
         </receiver>
 
-        <!-- STUDY: shares the export ZIP with the mail app, see study/README.md -->
-        <provider
-            android:name="androidx.core.content.FileProvider"
-            android:authorities="${applicationId}.study.fileprovider"
-            android:exported="false"
-            android:grantUriPermissions="true">
-            <meta-data
-                android:name="android.support.FILE_PROVIDER_PATHS"
-                android:resource="@xml/study_file_paths" />
-        </provider>
 
     </application>
 

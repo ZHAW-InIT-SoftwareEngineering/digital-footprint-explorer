@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- STUDY: the export ZIP shared with the mail app, see study/README.md -->
-<paths>
-    <cache-path name="study_export" path="study_export/" />
-</paths>

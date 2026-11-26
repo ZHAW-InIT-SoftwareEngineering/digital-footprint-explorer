@@ -34,6 +34,13 @@ import java.util.Locale
  *  - WIDGET_ADDED      the first garden widget was placed on the home screen
  *  - WIDGET_REMOVED    a garden widget was removed
  *  - CALCULATION       the worker stored a day (day, calculated_at, trigger=periodic|app_open)
+ *  - CONFIG            remote config loaded the first time or changed (survey, upload_date)
+ *  - CODE_CREATED      the participant code was generated
+ *  - UPLOAD            the export was uploaded (source=auto|manual, server_file)
+ *  - UPLOAD_FAILED     an upload attempt failed (source, reason)
+ *  - WORKER_*          copy of every line of the worker debug log, e.g. WORKER_RUN_START, WORKER_RUN_SKIPPED,
+ *                      WORKER_RUN_STOPPED, WORKER_RUN_FAILED, WORKER_RUN_DONE, WORKER_NEXT_RUN_PINNED,
+ *                      WORKER_PROCESS_START, WORKER_PROCESS_EXIT, WORKER_WORK_STATE, with the device state
  */
 object StudyLog {
 
@@ -43,6 +50,11 @@ object StudyLog {
     const val EVENT_WIDGET_ADDED = "WIDGET_ADDED"
     const val EVENT_WIDGET_REMOVED = "WIDGET_REMOVED"
     const val EVENT_CALCULATION = "CALCULATION"
+    const val EVENT_CONFIG = "CONFIG"
+    const val EVENT_CODE_CREATED = "CODE_CREATED"
+    const val EVENT_UPLOAD = "UPLOAD"
+    const val EVENT_UPLOAD_FAILED = "UPLOAD_FAILED"
+    const val WORKER_PREFIX = "WORKER_"
 
     private const val TAG = "DFE_StudyLog"
     private const val FILE_NAME = "study_log.txt"

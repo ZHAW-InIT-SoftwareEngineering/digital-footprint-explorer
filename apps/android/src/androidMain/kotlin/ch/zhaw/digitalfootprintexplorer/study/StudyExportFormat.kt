@@ -17,12 +17,13 @@
 
 package ch.zhaw.digitalfootprintexplorer.study
 
+import ch.zhaw.digitalfootprintexplorer.model.AppCategory
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.plus
 import java.math.BigDecimal
 
-/** One stored day as it is exported. Per-category and per-app values are deliberately not exported. */
+/** One stored day as it is exported. Per-app values are deliberately not exported. */
 data class ExportDay(
     val date: String,
     val appUsageKg: Double,
@@ -31,7 +32,9 @@ data class ExportDay(
     val totalKg: Double,
     val gardenState: String,
     val baselineKg: Double,
-    val calculatedAt: String
+    val calculatedAt: String,
+    /** Per app category (DailyEmissionCategory), key = category name, e.g. VIDEO_STREAMING. */
+    val categoriesKg: Map<String, Double> = emptyMap()
 )
 
 /** Builds the text files of the export. Pure functions, so they are unit tested without a device. */
@@ -54,18 +57,31 @@ object StudyExportFormat {
         return if (dot < 0) "$baseName-$code" else "${baseName.substring(0, dot)}-$code${baseName.substring(dot)}"
     }
 
-    /** garden_state is the calculated state, also during the baseline phase when the app shows STABLE. */
+    /**
+     * garden_state is the calculated state, also in survey mode when the app shows STABLE.
+     * After calculated_at one column per app category, e.g. `video_streaming_kg`: always every [AppCategory]
+     * in enum order, so all files have the same columns, then any other stored category name, sorted.
+     * A category the worker did not store for a day is 0.
+     */
     fun dailyValuesCsv(days: List<ExportDay>): String = buildString {
-        appendLine("date,app_usage_kg,display_kg,background_kg,total_kg,garden_state,baseline_kg,calculated_at")
+        val known = AppCategory.entries.map { it.name }
+        val categories = known + days.flatMap { it.categoriesKg.keys }.filterNot { it in known }.distinct().sorted()
+        appendLine(
+            (listOf("date", "app_usage_kg", "display_kg", "background_kg", "total_kg", "garden_state", "baseline_kg", "calculated_at") +
+                categories.map { categoryColumn(it) }).joinToString(",")
+        )
         days.sortedBy { it.date }.forEach { d ->
             appendLine(
-                listOf(
+                (listOf(
                     d.date, number(d.appUsageKg), number(d.displayKg), number(d.backgroundKg),
                     number(d.totalKg), d.gardenState, number(d.baselineKg), d.calculatedAt
-                ).joinToString(",")
+                ) + categories.map { number(d.categoriesKg[it] ?: 0.0) }).joinToString(",")
             )
         }
     }
+
+    /** `VIDEO_STREAMING` becomes `video_streaming_kg`. */
+    internal fun categoryColumn(category: String) = category.lowercase() + "_kg"
 
     /**
      * One row per calendar day from [from] to [to] (both included) with the number of app opens, 0 if not opened.

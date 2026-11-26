@@ -57,10 +57,13 @@ object StudyExport {
     }
 
     private fun readDays(context: Context): List<ExportDay> {
-        val app = context.applicationContext as DFEApplication
-        return app.database.dailyFootprintQueries.selectAll { date, total, appUsage, display, background,
-                                                             calculatedAt, gardenState, baseline ->
-            ExportDay(date, appUsage, display, background, total, gardenState, baseline, calculatedAt)
+        val queries = (context.applicationContext as DFEApplication).database.dailyFootprintQueries
+        val categoriesByDate = queries.selectAllCategories().executeAsList()
+            .groupBy({ it.date }, { it.category to it.total_kg })
+            .mapValues { (_, values) -> values.toMap() }
+        return queries.selectAll { date, total, appUsage, display, background, calculatedAt, gardenState, baseline ->
+            ExportDay(date, appUsage, display, background, total, gardenState, baseline, calculatedAt,
+                categoriesByDate[date].orEmpty())
         }.executeAsList()
     }
 }

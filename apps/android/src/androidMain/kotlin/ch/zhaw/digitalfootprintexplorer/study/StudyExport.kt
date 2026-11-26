@@ -49,7 +49,7 @@ object StudyExport {
             entry(StudyExportFormat.DAILY_VALUES_FILE, StudyExportFormat.dailyValuesCsv(days))
             entry(
                 StudyExportFormat.APP_OPENS_FILE,
-                StudyExportFormat.appOpensPerDayCsv(Study.appOpensPerDay(context), StudyConfig.START_DATE, StudyPhase.today())
+                StudyExportFormat.appOpensPerDayCsv(Study.appOpensPerDay(context), StudyPhase.today())
             )
             entry(StudyExportFormat.STUDY_LOG_FILE, logLines.joinToString("\n", postfix = "\n"))
         }

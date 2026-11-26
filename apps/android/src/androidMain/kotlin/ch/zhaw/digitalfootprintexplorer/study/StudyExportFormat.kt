@@ -84,14 +84,15 @@ object StudyExportFormat {
     internal fun categoryColumn(category: String) = category.lowercase() + "_kg"
 
     /**
-     * One row per calendar day from [from] to [to] (both included) with the number of app opens, 0 if not opened.
-     * Days before [from] with opens (e.g. a test before the study start) are included as well.
+     * One row per calendar day from the first recorded open to [to] (both included) with the number of app
+     * opens, 0 if not opened. The first open is recorded when the app is opened after the install, so the
+     * file covers the whole time the study version was on the device. No opens at all: header only.
      */
-    fun appOpensPerDayCsv(opensPerDay: Map<LocalDate, Int>, from: LocalDate, to: LocalDate): String = buildString {
+    fun appOpensPerDayCsv(opensPerDay: Map<LocalDate, Int>, to: LocalDate): String = buildString {
         appendLine("date,opens")
-        val first = (opensPerDay.keys + from).min()
-        val last = (opensPerDay.keys + to).max()
-        var day = first
+        if (opensPerDay.isEmpty()) return@buildString
+        val last = maxOf(opensPerDay.keys.max(), to)
+        var day = opensPerDay.keys.min()
         while (day <= last) {
             appendLine("$day,${opensPerDay[day] ?: 0}")
             day = day.plus(DatePeriod(days = 1))

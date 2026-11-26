@@ -72,31 +72,25 @@ class StudyExportFormatTest {
     )
 
     @Test
-    fun everyDayFromStartToExportHasItsNumberOfOpens() = assertEquals(
+    fun everyDayFromTheFirstOpenToExportHasItsNumberOfOpens() = assertEquals(
         "date,opens\n2026-12-01,3\n2026-12-02,0\n2026-12-03,1\n2026-12-04,0\n",
         StudyExportFormat.appOpensPerDayCsv(
             mapOf(LocalDate(2026, 12, 3) to 1, LocalDate(2026, 12, 1) to 3),
-            LocalDate(2026, 12, 1), LocalDate(2026, 12, 4)
+            LocalDate(2026, 12, 4)
         )
     )
 
     @Test
-    fun opensBeforeTheStudyStartAreIncluded() = assertEquals(
-        "date,opens\n2026-11-29,2\n2026-11-30,0\n2026-12-01,0\n",
+    fun exportOnTheDayOfTheLastOpenEndsThere() = assertEquals(
+        "date,opens\n2026-11-29,2\n2026-11-30,0\n2026-12-01,1\n",
         StudyExportFormat.appOpensPerDayCsv(
-            mapOf(LocalDate(2026, 11, 29) to 2), LocalDate(2026, 12, 1), LocalDate(2026, 12, 1)
+            mapOf(LocalDate(2026, 11, 29) to 2, LocalDate(2026, 12, 1) to 1), LocalDate(2026, 12, 1)
         )
     )
 
     @Test
-    fun noOpensGivesZeroForEveryStudyDay() = assertEquals(
-        "date,opens\n2026-12-01,0\n2026-12-02,0\n",
-        StudyExportFormat.appOpensPerDayCsv(emptyMap(), LocalDate(2026, 12, 1), LocalDate(2026, 12, 2))
-    )
-
-    @Test
-    fun exportBeforeTheStudyStartGivesHeaderOnly() = assertEquals(
+    fun noOpensGivesHeaderOnly() = assertEquals(
         "date,opens\n",
-        StudyExportFormat.appOpensPerDayCsv(emptyMap(), LocalDate(2026, 12, 1), LocalDate(2026, 11, 30))
+        StudyExportFormat.appOpensPerDayCsv(emptyMap(), LocalDate(2026, 12, 2))
     )
 }

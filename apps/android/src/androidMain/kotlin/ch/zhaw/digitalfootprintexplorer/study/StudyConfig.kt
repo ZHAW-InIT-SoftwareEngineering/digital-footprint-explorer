@@ -18,7 +18,6 @@
 package ch.zhaw.digitalfootprintexplorer.study
 
 import ch.zhaw.digitalfootprintexplorer.BuildConfig
-import kotlinx.datetime.LocalDate
 
 /**
  * Fixed values of the user study 2026. Everything study-specific lives in this package,
@@ -28,12 +27,6 @@ import kotlinx.datetime.LocalDate
  * [CONFIG_URL], so the team can switch it without a new release.
  */
 object StudyConfig {
-
-    /**
-     * Day 1 of the study. Only used for the app-opens export (one row per day from here on).
-     * TODO(study): set the real start date before the release.
-     */
-    val START_DATE: LocalDate = LocalDate(2026, 12, 1)
 
     // Server values come from local.properties (not in git) via BuildConfig, see README.md "Vor dem Release".
 

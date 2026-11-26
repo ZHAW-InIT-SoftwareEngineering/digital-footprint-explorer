@@ -10,7 +10,7 @@ An der Berechnung, an ihrem Zeitpunkt und an der Baseline des Gartens ändert di
 
 | Feature | Datei |
 |---|---|
-| Startdatum; URLs von Config und Upload und das Upload-Secret aus `BuildConfig` | `StudyConfig.kt` |
+| URLs von Config und Upload und das Upload-Secret aus `BuildConfig` | `StudyConfig.kt` |
 | Fernsteuerung über die Datei `dfe_config.yaml` auf dem Studienserver (siehe unten) | `StudyRemoteConfig.kt` |
 | Survey-Modus ohne Rückmeldung (Garten fest "Stable", kein Statistik-Tab, keine Push-Nachricht) | `StudyPhase.kt` |
 | Persönlicher Code, automatisch erzeugt (6 Zeichen ohne 0/O/1/I/L, z. B. K7RX4M) | `ParticipantCode.kt` |
@@ -23,7 +23,6 @@ An der Berechnung, an ihrem Zeitpunkt und an der Baseline des Gartens ändert di
 
 Vor dem Release:
 
-- `StudyConfig.START_DATE` auf den echten Studienstart setzen (nur für die CSV der App-Öffnungen).
 - In `local.properties` (nicht in git) die drei Werte des Studienservers eintragen. Die echten Werte hat das Studienteam, sie stehen absichtlich nirgends im Repository:
 
   ```properties
@@ -68,7 +67,7 @@ upload_date: 2026-12-29 # ab diesem Tag lädt die App die Daten einmal selbst ho
 **Inhalt des ZIP:** Das ZIP hat einen zufälligen Namen. Jede Datei darin trägt den Code vor der Endung, z. B. `daily_values-K7RX4M.csv`. So bleiben die Dateien einer Person zugeordnet.
 
 - `daily_values.csv`: eine Zeile pro gespeichertem Tag mit `date, app_usage_kg, display_kg, background_kg, total_kg, garden_state, baseline_kg, calculated_at`. `background_kg` umfasst GPS und Bluetooth. `garden_state` ist der berechnete Zustand, auch im Survey-Modus. Danach eine Spalte pro App-Kategorie aus `DailyEmissionCategory`, z. B. `video_streaming_kg`: immer alle Werte von `AppCategory` in derselben Reihenfolge, 0 wenn für den Tag nichts gespeichert ist. Gespeicherte Kategorien, die es im Enum nicht (mehr) gibt, kommen als zusätzliche Spalten ans Ende.
-- `app_opens_per_day.csv`: eine Zeile pro Tag vom Studienstart bis zum Export mit `date, opens` (Anzahl Öffnungen, 0 = nicht geöffnet). Tage vor dem Start, an denen die App geöffnet wurde, stehen ebenfalls drin. Gezählt wird in den Einstellungen `dfe_study_opens`, nicht im Log.
+- `app_opens_per_day.csv`: eine Zeile pro Tag vom ersten Öffnen der Studienversion bis zum Export mit `date, opens` (Anzahl Öffnungen, 0 = nicht geöffnet). Ohne ein einziges Öffnen nur die Kopfzeile. Gezählt wird in den Einstellungen `dfe_study_opens`, nicht im Log.
 - `study_log.txt`: das ganze Studien-Log (inkl. `CODE_CREATED`, `CONFIG`, `UPLOAD`, `UPLOAD_FAILED`). Dazu jede Zeile des Worker-Debug-Logs mit Präfix `WORKER_` (z. B. `WORKER_RUN_START`, `WORKER_RUN_SKIPPED`, `WORKER_RUN_STOPPED`, `WORKER_NEXT_RUN_PINNED`, `WORKER_PROCESS_EXIT`), jeweils mit Gerätezustand (Standby-Bucket, Akku-Optimierung, Energiesparmodus, Doze). So sieht man pro Person, ob und wann der nächtliche Worker lief. Nächte ohne `WORKER_RUN_START` sind Nächte, in denen er nicht lief.
 
 App-Namen (`DailyEmissionApp`) werden nicht exportiert.
@@ -99,56 +98,23 @@ grep -rn "STUDY:" apps/android/src
 
 ## Nach der Studie
 
-**Pflicht: eine neue normale Version in die Produktion hochladen.** Die Teilnehmenden haben die Studienversion über den Test-Track bekommen und behalten sie, auch wenn sie das Testprogramm verlassen. Android geht nicht auf einen tieferen `versionCode` zurück. Erst eine Produktionsversion mit höherem `versionCode` als die letzte Studienversion bringt sie wieder auf die normale App, ohne Datenverlust.
+Der Branch `feat/study` bleibt, wie er ist. Alles passiert auf `main`.
 
-1. Auf `main` in `DFEApplication.onCreate` die Studien-Aufträge abbrechen, sonst plant WorkManager sie auf den Geräten weiter und findet ihre Klassen nicht:
+Die Teilnehmenden behalten die Studienversion, auch wenn sie das Testprogramm verlassen, weil Android nicht auf einen tieferen `versionCode` zurückgeht. Erst eine neue Produktionsversion von `main` bringt sie wieder auf die normale App. Ihre Daten (Verlauf, Baseline des Gartens) bleiben dabei erhalten.
+
+1. **Auf `main` zwei Zeilen in `DFEApplication.onCreate` einfügen:**
    ```kotlin
+   // Removes the jobs of the study version 2026 from devices that ran it, see feat/study study/README.md
    WorkManager.getInstance(this).cancelUniqueWork("study_daily_check")
    WorkManager.getInstance(this).cancelUniqueWork("study_upload")
    ```
-   Diese Zeilen mindestens eine Version lang behalten.
-2. Die Version von `main` bauen (nicht von `feat/study`) und den `versionCode` über den der letzten Studienversion setzen.
-3. In die Produktion hochladen.
-4. Den Test-Track der Studie beenden und die Liste der Testpersonen (E-Mail-Adressen) in der Play Console löschen.
+   Ohne diese Zeilen bleiben die beiden Aufträge auf den Geräten geplant. `main` kennt ihre Klassen nicht, WorkManager meldet jede Nacht einen Fehler und weckt das Gerät für nichts. Die App läuft trotzdem normal, auch der nächtliche Worker. Auf Geräten ohne Studienversion tun die Zeilen nichts. Mindestens eine Version lang behalten.
+2. **Auf `main` den `versionCode` in `apps/android/build.gradle.kts` erhöhen**, über den der letzten Studienversion. Sonst bekommen die Teilnehmenden das Update nicht.
+3. Von `main` bauen (nicht von `feat/study`) und in die Produktion hochladen.
+4. In der Play Console den Test-Track der Studie beenden und die Liste der Testpersonen (E-Mail-Adressen) löschen.
 
-Varianten A und B unten beschreiben, was dafür im Code passiert, falls die Studie in einer normalen Version weiterlaufen soll. Für beide braucht es eine neue Version im Play Store (`versionCode` erhöhen).
-
-### Variante A: nur ausblenden
-
-Auf dem Server `survey: false` setzen. Sichtbar bleibt danach nur die Box "Share Data".
-
-1. In `ui/screen/InfoScreen.kt` die zwei Zeilen unter `// STUDY: participant code and data upload` entfernen (`Spacer` und `ShareDataCard()`).
-2. Optional den täglichen Check stoppen: In `DFEApplication.kt` `Study.onProcessStart(this)` ersetzen durch
-   `WorkManager.getInstance(this).cancelUniqueWork("study_daily_check")`.
-   Dann laden die Geräte die Config nur noch beim Öffnen der App.
-
-Das Studien-Log wird dann nur noch bei App-Öffnungen, Widget-Änderungen und Berechnungen ergänzt. Es bleibt lokal auf dem Gerät.
-
-### Variante B: ganz entfernen
-
-1. An allen `STUDY:`-Stellen aus der Tabelle oben den Studien-Code entfernen:
-   - In `App.kt` den Statistik-Tab wieder ohne `if (!studyBaseline)` einfügen und `GardenStateCard(gardenState)` aufrufen.
-   - In `GardenWidget.kt` wieder `GardenContent(state)` aufrufen.
-   - Im Worker wieder `showDailyFootprintNotification(gardenState)` ohne Bedingung aufrufen.
-   - Den `database`-Property in `DFEApplication.kt` nur entfernen, wenn ihn sonst niemand mehr braucht.
-2. In `DFEApplication.onCreate` den geplanten Check auf den Geräten abbrechen, sonst läuft er nach dem Update weiter und findet seine Klasse nicht mehr:
-   ```kotlin
-   WorkManager.getInstance(this).cancelUniqueWork("study_daily_check")
-   WorkManager.getInstance(this).cancelUniqueWork("study_upload")
-   ```
-   Diese Zeile mindestens eine Version lang behalten.
-3. `INTERNET` im Manifest (sofern sonst nicht gebraucht), die `STUDY_`-`buildConfigField`s in `build.gradle.kts` und die beiden `strings_study.xml` löschen.
-4. Den Ordner `study` löschen, auch die Tests in `androidUnitTest/.../study`.
-5. Prüfen: Beide Suchen dürfen nichts mehr finden, danach muss die App bauen.
-   ```bash
-   grep -rn "STUDY:" apps/android/src
-   ```
-   ```bash
-   grep -rn "\.study\." apps/android/src
-   ```
-
-Auf den Geräten bleiben `files/study_log.txt` und die Einstellungen `dfe_study` und `dfe_study_opens` liegen, bis die App deinstalliert wird. Sie stören nicht, auf Wunsch kann man sie beim Start einmal löschen.
+Auf den Geräten bleiben `files/study_log.txt` und die Einstellungen `dfe_study` und `dfe_study_opens` liegen, bis die App deinstalliert wird. Sie stören nicht.
 
 ## Studie wiederholen
 
-Der Stand liegt auf dem Branch `feat/study`. Nach dem Entfernen am besten mit einem Tag sichern (z. B. `study-2026`). So lässt sich der Ordner später zurückholen. Startdatum und Infoblatt dann neu prüfen.
+Der Stand liegt auf dem Branch `feat/study`. Nach der Studie am besten mit einem Tag sichern (z. B. `study-2026`). Für eine neue Studie von `feat/study` einen neuen Branch erstellen und `main` hineinmergen. `upload_date`, `versionCode` und Infoblatt neu prüfen.

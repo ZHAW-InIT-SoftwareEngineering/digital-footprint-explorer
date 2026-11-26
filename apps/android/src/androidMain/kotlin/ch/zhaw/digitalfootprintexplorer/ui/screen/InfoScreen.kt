@@ -47,6 +47,7 @@ import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import ch.zhaw.digitalfootprintexplorer.ui.theme.Spacing
+import ch.zhaw.digitalfootprintexplorer.study.ShareDataCard // STUDY:
 
 @Composable
 fun InfoScreen(innerPadding: PaddingValues) {
@@ -201,5 +202,9 @@ fun InfoScreen(innerPadding: PaddingValues) {
                 )
             }
         }
+
+        // STUDY: participant code and data upload
+        Spacer(modifier = Modifier.height(Spacing.gutter))
+        ShareDataCard()
     }
 }

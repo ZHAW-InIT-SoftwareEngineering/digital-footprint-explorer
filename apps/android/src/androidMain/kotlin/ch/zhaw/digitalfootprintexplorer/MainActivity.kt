@@ -31,6 +31,7 @@ import android.content.Context
 import ch.zhaw.digitalfootprintexplorer.demo.DemoPreferences
 import ch.zhaw.digitalfootprintexplorer.permission.hasUsageStatsPermission
 import ch.zhaw.digitalfootprintexplorer.servicelayerplatform.service.TrackingService
+import ch.zhaw.digitalfootprintexplorer.study.Study // STUDY:
 import ch.zhaw.digitalfootprintexplorer.widget.GardenWidget
 import ch.zhaw.digitalfootprintexplorer.worker.DailyFootprintWorker
 
@@ -47,6 +48,16 @@ class MainActivity : ComponentActivity() {
         setContent {
             App()
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        Study.onActivityStarted(this) // STUDY: logs the app open
+    }
+
+    override fun onStop() {
+        super.onStop()
+        Study.onActivityStopped(this) // STUDY:
     }
 
     override fun onResume() {

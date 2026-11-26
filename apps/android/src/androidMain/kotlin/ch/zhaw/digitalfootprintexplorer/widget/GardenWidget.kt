@@ -44,6 +44,9 @@ import ch.zhaw.digitalfootprintexplorer.ui.theme.surfaceContainerLowDark
 import ch.zhaw.digitalfootprintexplorer.MainActivity
 import ch.zhaw.digitalfootprintexplorer.R
 import ch.zhaw.digitalfootprintexplorer.model.GardenState
+import androidx.compose.runtime.collectAsState // STUDY:
+import androidx.compose.runtime.getValue // STUDY:
+import ch.zhaw.digitalfootprintexplorer.study.Study // STUDY:
 
 class GardenWidget : GlanceAppWidget() {
 
@@ -66,7 +69,9 @@ class GardenWidget : GlanceAppWidget() {
             val prefs     = currentState<Preferences>()
             val stateName = prefs[KEY_STATE] ?: GardenState.FLOURISHING.name
             val state     = runCatching { GardenState.valueOf(stateName) }.getOrDefault(GardenState.FLOURISHING)
-            GardenContent(state)
+            // STUDY: STABLE in survey mode, also for a widget placed before the first calculation
+            val survey by Study.surveyMode(context).collectAsState()
+            GardenContent(Study.displayedGardenState(state, survey) ?: state)
         }
     }
 

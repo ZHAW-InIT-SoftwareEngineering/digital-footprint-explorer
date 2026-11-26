@@ -25,6 +25,7 @@ import android.os.PowerManager
 import android.util.Log
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
+import ch.zhaw.digitalfootprintexplorer.study.Study // STUDY:
 import ch.zhaw.digitalfootprintexplorer.util.NEW_WORKER_NAME
 import java.io.File
 import java.text.SimpleDateFormat
@@ -62,8 +63,10 @@ object WorkerRunLog {
         try {
             val format = SimpleDateFormat(TIMESTAMP_PATTERN, Locale.US)
             val now = System.currentTimeMillis()
-            val line = listOf(format.format(Date(now)), event, details, deviceState(context))
+            val state = deviceState(context)
+            val line = listOf(format.format(Date(now)), event, details, state)
                 .joinToString(SEPARATOR)
+            Study.onWorkerLog(context, event, details, state) // STUDY: same line in the exported study log
 
             synchronized(lock) {
                 val file = logFile(context)

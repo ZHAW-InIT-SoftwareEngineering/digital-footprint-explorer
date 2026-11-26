@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- STUDY: texts of the user study 2026, see study/README.md -->
+<resources>
+    <string name="study_share_title">Share Data</string>
+    <string name="study_code_label">Participant code</string>
+    <string name="study_code_description">This is your participant code. Enter it in the questionnaires of the study.</string>
+    <string name="study_code_copy">Copy participant code</string>
+    <string name="study_upload_auto">Your study data will be uploaded automatically on %1$s.</string>
+    <string name="study_upload_auto_unknown">Your study data will be uploaded automatically at the end of the study.</string>
+    <string name="study_upload_button">Upload data now</string>
+    <string name="study_upload_failed">The data could not be uploaded. Check your internet connection and try again.</string>
+    <string name="study_upload_last">Last upload: %1$s</string>
+</resources>

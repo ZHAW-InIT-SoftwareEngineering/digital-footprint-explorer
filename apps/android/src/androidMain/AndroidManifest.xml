@@ -2,6 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- STUDY: loads dfe_config.yaml and uploads the study data, see study/README.md -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <!-- Network stats per UID (signature permission – only works on non-Play builds) -->
     <uses-permission android:name="android.permission.READ_NETWORK_STATS"
         tools:ignore="ProtectedPermissions" />
@@ -70,6 +73,7 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/garden_widget_info" />
         </receiver>
+
 
     </application>
 

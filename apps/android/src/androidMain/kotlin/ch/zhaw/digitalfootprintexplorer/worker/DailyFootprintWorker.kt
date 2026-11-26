@@ -52,6 +52,7 @@ import ch.zhaw.digitalfootprintexplorer.servicelayerplatform.service.InstalledAp
 import ch.zhaw.digitalfootprintexplorer.servicelayerplatform.service.MetricCollector
 import ch.zhaw.digitalfootprintexplorer.servicelayerplatform.service.NetworkUsageDataSource
 import ch.zhaw.digitalfootprintexplorer.R
+import ch.zhaw.digitalfootprintexplorer.study.Study // STUDY:
 import ch.zhaw.digitalfootprintexplorer.util.NEW_WORKER_NAME
 import ch.zhaw.digitalfootprintexplorer.widget.GardenWidget
 import kotlinx.datetime.Clock
@@ -80,7 +81,7 @@ class DailyFootprintWorker(
 
     private suspend fun runAndLog(trigger: String): Result = try {
         WorkerRunLog.append(appContext, "RUN_START", "trigger=$trigger attempt=$runAttemptCount")
-        doWorkInternal()
+        doWorkInternal(trigger)
     } catch (e: CancellationException) {
         // The system stopped the run (constraints, quota, doze, ...): keep the reason, then let it cancel.
         val reason = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) stopReason.toString() else "n/a"
@@ -116,7 +117,7 @@ class DailyFootprintWorker(
         }
     }
 
-    private suspend fun doWorkInternal(): Result {
+    private suspend fun doWorkInternal(trigger: String): Result {
         val startedAtMs = System.currentTimeMillis()
         val workerStartedAt = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault())
             .format(java.util.Date(startedAtMs))
@@ -194,11 +195,13 @@ class DailyFootprintWorker(
             appBreakdown      = emissionResult.appBreakdown
         )
         Log.d(TAG, "🌱 GardenState → $gardenState (${f(emissionResult.ghgTotal * 1000)} gCO₂e today, baseline ${f(baseline * 1000)} gCO₂e, measured at $now)")
+        Study.onCalculationStored(appContext, yesterday.toString(), now.toString(), trigger) // STUDY:
 
         GardenWidget.updateState(appContext, gardenState)
         Log.d(TAG, "✅ Worker finished — widget updated")
 
-        showDailyFootprintNotification(gardenState)
+        // STUDY: no notification in survey mode (remote config)
+        if (Study.isFeedbackActive(appContext)) showDailyFootprintNotification(gardenState)
 
         WorkerRunLog.append(
             appContext, "RUN_DONE",

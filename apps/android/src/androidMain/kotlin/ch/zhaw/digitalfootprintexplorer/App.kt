@@ -71,6 +71,7 @@ import ch.zhaw.digitalfootprintexplorer.ui.component.GardenStateCard
 import ch.zhaw.digitalfootprintexplorer.ui.screen.InfoScreen
 import ch.zhaw.digitalfootprintexplorer.ui.screen.UsageStatsPermissionRequiredScreen
 import ch.zhaw.digitalfootprintexplorer.ui.theme.Spacing
+import ch.zhaw.digitalfootprintexplorer.study.Study // STUDY:
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -90,6 +91,8 @@ fun App() {
         var hasNotificationPermissionGranted by remember {
             mutableStateOf(hasNotificationPermission(context))
         }
+        // STUDY: survey mode from the remote config, updates by itself when the server switches it
+        val studyBaseline by Study.surveyMode(context).collectAsState()
 
         // Permission launcher for notifications
         val notificationPermissionLauncher = rememberLauncherForActivityResult(
@@ -211,17 +214,20 @@ fun App() {
                                 label = { Text(stringResource(R.string.home)) }
                             )
 
-                            NavigationBarItem(
-                                selected = selectedTab == 1,
-                                onClick = { selectedTab = 1 },
-                                icon = {
-                                    Icon(
-                                        Icons.Default.BarChart,
-                                        contentDescription = stringResource(R.string.statistics)
-                                    )
-                                },
-                                label = { Text(stringResource(R.string.statistics)) }
-                            )
+                            // STUDY: no statistics tab in survey mode
+                            if (!studyBaseline) {
+                                NavigationBarItem(
+                                    selected = selectedTab == 1,
+                                    onClick = { selectedTab = 1 },
+                                    icon = {
+                                        Icon(
+                                            Icons.Default.BarChart,
+                                            contentDescription = stringResource(R.string.statistics)
+                                        )
+                                    },
+                                    label = { Text(stringResource(R.string.statistics)) }
+                                )
+                            }
 
                             NavigationBarItem(
                                 selected = selectedTab == 2,
@@ -345,7 +351,8 @@ fun App() {
 
                                 Spacer(modifier = Modifier.height(Spacing.gutter))
 
-                                GardenStateCard(gardenState)
+                                // STUDY: STABLE in survey mode
+                                GardenStateCard(Study.displayedGardenState(gardenState, studyBaseline))
                             }
                         }
 

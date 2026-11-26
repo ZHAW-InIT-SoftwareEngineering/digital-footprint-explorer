@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- STUDY: texts of the user study 2026, see study/README.md -->
+<resources>
+    <string name="study_share_title">Daten teilen</string>
+    <string name="study_code_label">Teilnehmercode</string>
+    <string name="study_code_description">Das ist Ihr Teilnehmercode. Geben Sie ihn in den Fragebögen der Studie ein.</string>
+    <string name="study_code_copy">Teilnehmercode kopieren</string>
+    <string name="study_upload_auto">Ihre Studiendaten werden am %1$s automatisch hochgeladen.</string>
+    <string name="study_upload_auto_unknown">Ihre Studiendaten werden am Ende der Studie automatisch hochgeladen.</string>
+    <string name="study_upload_button">Daten jetzt hochladen</string>
+    <string name="study_upload_failed">Die Daten konnten nicht hochgeladen werden. Prüfen Sie Ihre Internetverbindung und versuchen Sie es erneut.</string>
+    <string name="study_upload_last">Letzter Upload: %1$s</string>
+</resources>

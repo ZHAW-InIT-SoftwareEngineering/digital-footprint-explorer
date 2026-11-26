@@ -200,8 +200,8 @@ class DailyFootprintWorker(
         GardenWidget.updateState(appContext, gardenState)
         Log.d(TAG, "✅ Worker finished — widget updated")
 
-        // STUDY: no notification during the baseline phase (days 1–7)
-        if (Study.isFeedbackActive()) showDailyFootprintNotification(gardenState)
+        // STUDY: no notification in survey mode (remote config)
+        if (Study.isFeedbackActive(appContext)) showDailyFootprintNotification(gardenState)
 
         WorkerRunLog.append(
             appContext, "RUN_DONE",

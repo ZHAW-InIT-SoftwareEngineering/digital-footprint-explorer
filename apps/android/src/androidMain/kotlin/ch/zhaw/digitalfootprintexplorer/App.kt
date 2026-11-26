@@ -72,7 +72,6 @@ import ch.zhaw.digitalfootprintexplorer.ui.screen.InfoScreen
 import ch.zhaw.digitalfootprintexplorer.ui.screen.UsageStatsPermissionRequiredScreen
 import ch.zhaw.digitalfootprintexplorer.ui.theme.Spacing
 import ch.zhaw.digitalfootprintexplorer.study.Study // STUDY:
-import ch.zhaw.digitalfootprintexplorer.study.StudyPhase // STUDY:
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -92,8 +91,8 @@ fun App() {
         var hasNotificationPermissionGranted by remember {
             mutableStateOf(hasNotificationPermission(context))
         }
-        // STUDY: baseline phase (days 1–7), re-evaluated on every resume so day 8 needs no restart
-        var studyBaseline by remember { mutableStateOf(StudyPhase.isBaseline()) }
+        // STUDY: survey mode from the remote config, updates by itself when the server switches it
+        val studyBaseline by Study.surveyMode(context).collectAsState()
 
         // Permission launcher for notifications
         val notificationPermissionLauncher = rememberLauncherForActivityResult(
@@ -133,7 +132,6 @@ fun App() {
                 if (event == Lifecycle.Event.ON_RESUME) {
                     hasUsagePermission = hasUsageStatsPermission(context)
                     hasNotificationPermissionGranted = hasNotificationPermission(context)
-                    studyBaseline = StudyPhase.isBaseline() // STUDY:
                 }
             }
 
@@ -216,7 +214,7 @@ fun App() {
                                 label = { Text(stringResource(R.string.home)) }
                             )
 
-                            // STUDY: no statistics tab during the baseline phase
+                            // STUDY: no statistics tab in survey mode
                             if (!studyBaseline) {
                                 NavigationBarItem(
                                     selected = selectedTab == 1,
@@ -353,7 +351,7 @@ fun App() {
 
                                 Spacer(modifier = Modifier.height(Spacing.gutter))
 
-                                // STUDY: STABLE during the baseline phase
+                                // STUDY: STABLE in survey mode
                                 GardenStateCard(Study.displayedGardenState(gardenState, studyBaseline))
                             }
                         }
